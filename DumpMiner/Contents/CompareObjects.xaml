@@ -1,0 +1,18 @@
+﻿<UserControl x:Class="DumpMiner.Contents.CompareObjects"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:contents="clr-namespace:DumpMiner.Contents"
+             mc:Ignorable="d"
+             d:DesignHeight="350"
+             d:DesignWidth="500">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <contents:DumpObject Grid.Column="0"/>
+        <contents:DumpObject  Grid.Column="1"/>
+    </Grid>
+</UserControl>

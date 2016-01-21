@@ -1,0 +1,10 @@
+﻿namespace DumpMiner.Common
+{
+    public static class ViewModelNames
+    {
+        public const string AttachDetachViewModel = "AttachDetachViewModel";
+        public const string OperationTypesViewModel = "OperationTypesViewModel";
+        public const string BaseOperationViewModel = "BaseOperationViewModel";
+        public const string DumpHeapOperationViewModel = "DumpHeapOperationViewModel";
+    }
+}

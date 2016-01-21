@@ -1,0 +1,391 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{6D50B2FE-0722-4362-B02B-98EE9E371CD1}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>DumpMiner</RootNamespace>
+    <AssemblyName>DumpMiner</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>digg.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="FirstFloor.ModernUI, Version=1.0.6.0, Culture=neutral, PublicKeyToken=2d21ec3cd074c59a, processorArchitecture=MSIL">
+      <HintPath>..\packages\ModernUI.WPF.1.0.6\lib\net45\FirstFloor.ModernUI.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.27.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\dev\libs\Microsoft.Diagnostics.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\External Libraries\MahApps.Metro\net45\System.Windows.Interactivity.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Common\ViewModelNames.cs" />
+    <Compile Include="Contents\DumpExceptions.xaml.cs">
+      <DependentUpon>DumpExceptions.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpDisassemblyMethod.xaml.cs">
+      <DependentUpon>DumpDisassemblyMethod.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpGcHandles.xaml.cs">
+      <DependentUpon>DumpGcHandles.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpLargeObjects.xaml.cs">
+      <DependentUpon>DumpLargeObjects.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpMethods.xaml.cs">
+      <DependentUpon>DumpMethods.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpHeapSegments.xaml.cs">
+      <DependentUpon>DumpHeapSegments.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpMemoryRegions.xaml.cs">
+      <DependentUpon>DumpMemoryRegions.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpModules.xaml.cs">
+      <DependentUpon>DumpModules.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpFinalizerQueue.xaml.cs">
+      <DependentUpon>DumpFinalizerQueue.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\CompareObjects.xaml.cs">
+      <DependentUpon>CompareObjects.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\GetObjectSize.xaml.cs">
+      <DependentUpon>GetObjectSize.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\TargetProcessInfo.xaml.cs">
+      <DependentUpon>TargetProcessInfo.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\GetObjectRoot.xaml.cs">
+      <DependentUpon>GetObjectRoot.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpObject.xaml.cs">
+      <DependentUpon>DumpObject.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Debugger\ClrObject.cs" />
+    <Compile Include="Infrastructure\Mef\CommandAttribute.cs" />
+    <Compile Include="Infrastructure\Mef\IViewModelLoader.cs" />
+    <Compile Include="Infrastructure\Mef\MefViewModelLoader.cs" />
+    <Compile Include="Infrastructure\Mef\OperationViewAttribute.cs" />
+    <Compile Include="Infrastructure\Mef\ViewModelAttribute.cs" />
+    <Compile Include="Infrastructure\Mef\ContentAttribute.cs" />
+    <Compile Include="Debugger\DebuggerSession.cs" />
+    <Compile Include="Infrastructure\Mef\IViewModelMetadata.cs" />
+    <Compile Include="Infrastructure\UI\BytesToKbOrMbConverter.cs" />
+    <Compile Include="Infrastructure\UI\Controls\OperationView.xaml.cs">
+      <DependentUpon>OperationView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Infrastructure\UI\CountToVisibilityConverter.cs" />
+    <Compile Include="Infrastructure\UI\DialogService.cs" />
+    <Compile Include="Common\GlobalCommands.cs" />
+    <Compile Include="Common\IDialogService.cs" />
+    <Compile Include="Models\GeneralDebugInfoModel.cs" />
+    <Compile Include="Models\OperationModel.cs" />
+    <Compile Include="Operations\DumpExceptionsOperation.cs" />
+    <Compile Include="Operations\DumpClrStackOperation.cs" />
+    <Compile Include="Operations\DumpGcHandlesOperation.cs" />
+    <Compile Include="Operations\DumpLargeObjectsOperation.cs" />
+    <Compile Include="Operations\DumpHeapSegmentsOperation.cs" />
+    <Compile Include="Operations\DumpMemoryRegionsOperation.cs" />
+    <Compile Include="Operations\DumpDisassemblyMethodOperation.cs" />
+    <Compile Include="Operations\DumpMethodsOperation.cs" />
+    <Compile Include="Operations\DumpModulesOperation.cs" />
+    <Compile Include="Operations\DumpFinalizerQueueOperation.cs" />
+    <Compile Include="Operations\GetObjectSizeOperation.cs" />
+    <Compile Include="Operations\TargetProcessInfoOperation.cs" />
+    <Compile Include="Operations\DumpHeapStatOperation.cs" />
+    <Compile Include="Operations\DumpHeapOperation.cs" />
+    <Compile Include="Infrastructure\Mef\ICommandMetadata.cs" />
+    <Compile Include="Infrastructure\Mef\IContentMetadata.cs" />
+    <Compile Include="Common\IDebuggerOperation.cs" />
+    <Compile Include="Common\IDebuggerSession.cs" />
+    <Compile Include="Infrastructure\Mef\MefContentLoader.cs" />
+    <Compile Include="Infrastructure\Mef\MefLinkNavigator.cs" />
+    <Compile Include="Infrastructure\Mef\IViewMetadata.cs" />
+    <Compile Include="Common\OperationNames.cs" />
+    <Compile Include="Contents\DumpClrStack.xaml.cs">
+      <DependentUpon>DumpClrStack.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpHeapStat.xaml.cs">
+      <DependentUpon>DumpHeapStat.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpHeap.xaml.cs">
+      <DependentUpon>DumpHeap.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Infrastructure\Mef\ViewAttribute.cs" />
+    <Compile Include="Common\NativeMethods.cs" />
+    <Compile Include="Operations\DumpObjectOperation.cs" />
+    <Compile Include="Operations\GetObjectRootOperation.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="ViewModels\BaseOperationViewModel.cs" />
+    <Compile Include="Common\BaseViewModel.cs" />
+    <Compile Include="Common\IHasViewModel.cs" />
+    <Compile Include="ViewModels\DumpHeapOperationViewModel.cs" />
+    <Compile Include="ViewModels\OperationTypesViewModel.cs" />
+    <Compile Include="ViewModels\AttachDetachViewModel.cs" />
+    <Page Include="Contents\DumpExceptions.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpDisassemblyMethod.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpGcHandles.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpLargeObjects.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpMethods.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpHeapSegments.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpMemoryRegions.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpModules.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpFinalizerQueue.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\CompareObjects.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\GetObjectSize.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\TargetProcessInfo.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\GetObjectRoot.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpObject.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Infrastructure\UI\Controls\OperationView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Include="Pages\OperationTypesPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Contents\DumpClrStack.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpHeapStat.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpHeap.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Contents\About.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Compile Include="Pages\OperationTypesPage.xaml.cs">
+      <DependentUpon>OperationTypesPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\About.xaml.cs">
+      <DependentUpon>About.xaml</DependentUpon>
+    </Compile>
+    <Page Include="Contents\Appearance.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Compile Include="Contents\Appearance.xaml.cs">
+      <DependentUpon>Appearance.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ViewModels\AppearanceViewModel.cs" />
+    <Page Include="Pages\AttachDetachPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Pages\SettingsPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Compile Include="Pages\AttachDetachPage.xaml.cs">
+      <DependentUpon>AttachDetachPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Pages\SettingsPage.xaml.cs">
+      <DependentUpon>SettingsPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="digg.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.5.1">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.5.1 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

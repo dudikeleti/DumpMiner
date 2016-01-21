@@ -1,0 +1,73 @@
+﻿<UserControl x:Class="DumpMiner.Infrastructure.UI.Controls.OperationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mui="http://firstfloorsoftware.com/ModernUI"
+             xmlns:ui="clr-namespace:DumpMiner.Infrastructure.UI"
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             d:DesignWidth="300">
+    <UserControl.Resources>
+        <ui:BytesToKbOrMbConverter x:Key="SizeConverter"/>
+    </UserControl.Resources>
+    <Grid Style="{StaticResource ContentRoot}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="20" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <mui:ModernProgressRing Grid.Row="0"
+                                Grid.RowSpan="3"
+                                IsActive="{Binding IsLoading}"
+                                Panel.ZIndex="1"
+                                Width="80"
+                                Height="80" />
+        <StackPanel Grid.Row="0">
+            <TextBlock Name="HeaderTextBlock"
+                       Style="{StaticResource Heading1}" />
+            <TextBlock TextWrapping="Wrap"
+                       Name="ExplanationTextBlock"
+                       FontStyle="Italic"/>
+        </StackPanel>
+
+        <DockPanel Grid.Row="2">
+            <WrapPanel DockPanel.Dock="Top">
+                <TextBlock Name="ObjectAddressTextBlock" ToolTip="Enter here the object address that you want to investigate"
+                           Margin="3">Object address</TextBlock>
+                <TextBox Name="ObjectAddressTextBox"
+                         Text="{Binding ObjectAddress, UpdateSourceTrigger=PropertyChanged}"
+                         MinWidth="100"
+                         Margin="3" />
+                <TextBlock Name="ObjectTypesTextBlock"
+                           ToolTip="Enter here the object types that you want to filter"
+                           Margin="3">Object types</TextBlock>
+                <TextBox Name="ObjectTypesTextBox"
+                         Text="{Binding Types, UpdateSourceTrigger=PropertyChanged}"
+                         MinWidth="100"
+                         Margin="3" />
+                <mui:ModernButton Command="{Binding ExecuteOperationCommand}"
+                                  IsDefault="True"
+                                  Margin="3"
+                                  IconData="M17.12,10L16.04,8.18L15.31,11.05L17.8,15.59V22H16V17L13.67,13.89L12.07,18.4L7.25,20.5L6.2,19L10.39,16.53L12.91,6.67L10.8,7.33V11H9V5.8L14.42,4.11L14.92,4.03C15.54,4.03 16.08,4.37 16.38,4.87L18.38,8.2H22V10H17.12M17,3.8C16,3.8 15.2,3 15.2,2C15.2,1 16,0.2 17,0.2C18,0.2 18.8,1 18.8,2C18.8,3 18,3.8 17,3.8M7,9V11H4A1,1 0 0,1 3,10A1,1 0 0,1 4,9H7M9.25,13L8.75,15H5A1,1 0 0,1 4,14A1,1 0 0,1 5,13H9.25M7,5V7H3A1,1 0 0,1 2,6A1,1 0 0,1 3,5H7Z" />
+                <mui:ModernButton Command="{Binding GoToPreResultCommand}"
+                                  Margin="3"
+                                  IconData="M6,18.14V6.14H8V18.14H6M9.5,12.14L18,6.14V18.14L9.5,12.14Z" />
+                <mui:ModernButton Command="{Binding GoToNextResultCommand}"
+                                  Margin="3"
+                                  IconData="M16,18.14H18V6.14H16M6,18.14L14.5,12.14L6,6.14V18.14Z" />
+                <mui:ModernButton Command="{Binding CancelOperationCommand}"
+                                  Margin="3"
+                                  Visibility="{Binding CancelOperationVisibility}"
+                                  IconHeight="16"
+                                  IconWidth="16"
+                                  IconData="F1 M 31.6667,19L 44.3333,19L 57,31.6667L 57,44.3333L 44.3333,57L 31.6667,57L 19,44.3333L 19,31.6667L 31.6667,19 Z M 26.4762,45.0454L 30.9546,49.5238L 38,42.4783L 45.0454,49.5238L 49.5237,45.0454L 42.4783,38L 49.5238,30.9546L 45.0454,26.4763L 38,33.5217L 30.9546,26.4762L 26.4762,30.9546L 33.5217,38L 26.4762,45.0454 Z " />
+                <TextBlock Text="{Binding Count, StringFormat=Count: {0}}"
+                           Margin="5"></TextBlock>
+            </WrapPanel>
+            <ListView Name="ItemsList" SelectionChanged="ItemsList_OnSelectionChanged"
+                      ItemsSource="{Binding Items}"
+                      SelectedItem="{Binding SelectedItem}" />
+        </DockPanel>
+    </Grid>
+</UserControl>

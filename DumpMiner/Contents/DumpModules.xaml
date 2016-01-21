@@ -1,0 +1,29 @@
+﻿<UserControl x:Class="DumpMiner.Contents.DumpModules"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="350"
+             d:DesignWidth="500">
+    <controls:OperationView ObjectAddressVisibility="Collapsed"
+                            Header="Dump modules"
+                            Explanation="Dump all loaded modules">
+        <controls:OperationView.ItemsView>
+            <GridView>
+                <GridViewColumn Header="Name"
+                                DisplayMemberBinding="{Binding Name}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="Is Dynamic">
+                    <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsDynamic, Mode=OneWay}" />
+                        </DataTemplate>
+                    </GridViewColumn.CellTemplate>
+                </GridViewColumn>
+            </GridView>
+        </controls:OperationView.ItemsView>
+    </controls:OperationView>
+</UserControl>
