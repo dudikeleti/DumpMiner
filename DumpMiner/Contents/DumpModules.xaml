@@ -12,8 +12,20 @@
                             Explanation="Dump all loaded modules">
         <controls:OperationView.ItemsView>
             <GridView>
+                <GridViewColumn Header="Id"
+                                DisplayMemberBinding="{Binding Identifier}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
                 <GridViewColumn Header="Name"
                                 DisplayMemberBinding="{Binding Name}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="Path"
+                                DisplayMemberBinding="{Binding FilePath}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="Size"
+                                DisplayMemberBinding="{Binding Size}" />
                 <GridViewColumn Width="20"
                                 DisplayMemberBinding="{Binding Empty}" />
                 <GridViewColumn Header="Is Dynamic">

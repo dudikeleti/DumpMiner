@@ -17,31 +17,38 @@
                         BorderThickness="1"
                         CornerRadius="3"
                         Padding="3">
-                    <StackPanel>
-                        <TextBlock Text="{Binding OSThreadId, StringFormat= OS Thread Id: {0}}"
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="{Binding OSThreadId, StringFormat= OS Thread Id: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
-                        <TextBlock Text="{Binding ManagedThreadId, StringFormat= Managed Thread Id: {0}}"
+                            <TextBlock Text="{Binding ManagedThreadId, StringFormat= Managed Thread Id: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
-                        <TextBlock Text="{Binding StackBase, StringFormat= Stack base: {0}}"
+                            <TextBlock Text="{Binding StackBase, StringFormat= Stack base: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
-                        <TextBlock Text="{Binding StackLimit, StringFormat= Stack limit: {0}}"
+                            <TextBlock Text="{Binding StackLimit, StringFormat= Stack limit: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
-                        <WrapPanel>
-                            <TextBlock Text="Last Exception: "
+                            <WrapPanel>
+                                <TextBlock Text="Last Exception: "
                                        FontStyle="Oblique"
                                        FontWeight="Medium" />
-                            <TextBlock Text="{Binding Exception.Type.Name, StringFormat= - {0}}"
+                                <TextBlock Text="{Binding Exception.Type.Name, StringFormat= - {0}}"
                                        FontStyle="Oblique"
                                        FontWeight="Medium" />
-                            <TextBlock Text="{Binding Exception.Message}"
+                                <TextBlock Text="{Binding Exception.Message}"
                                        FontStyle="Oblique"
                                        FontWeight="Medium" />
-                        </WrapPanel>
-                        <ListView ItemsSource="{Binding StackFrames}">
+                            </WrapPanel>
+                        </StackPanel>
+                        <ListView Grid.Row="1" ItemsSource="{Binding StackFrames}"  ScrollViewer.VerticalScrollBarVisibility="Visible" MaxHeight="200">
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Stack Pointer"
@@ -99,7 +106,7 @@
                                 </GridView>
                             </ListView.View>
                         </ListView>
-                        <Expander Header="Stack objects"
+                        <Expander Grid.Row="2" Header="Stack objects"
                                   MaxHeight="300">
                             <ListView ItemsSource="{Binding StackObjects}">
                                 <ListView.View>
@@ -171,7 +178,7 @@
                                 </ListView.View>
                             </ListView>
                         </Expander>
-                    </StackPanel>
+                    </Grid>
                 </Border>
             </DataTemplate>
         </controls:OperationView.ItemsTemplate>

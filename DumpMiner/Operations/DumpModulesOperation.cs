@@ -23,7 +23,14 @@ namespace DumpMiner.Operations
                                  from module in appDomain.Modules
                                  let name = module.Name
                                  where !string.IsNullOrEmpty(name) && (types == null || types.Any(t => name.ToLower().Contains(t.ToLower())))
-                                 select new { Name = name, IsDynamic = module.IsDynamic };
+                                 select new
+                                 {
+                                     Identifier = module.AssemblyId,
+                                     Name = name.Substring(name.LastIndexOf('\\') + 1),
+                                     FilePath = name.Substring(0, name.LastIndexOf('\\')),
+                                     Size = module.Size,
+                                     IsDynamic = module.IsDynamic
+                                 };
                 return enumerable.ToList();
             });
         }

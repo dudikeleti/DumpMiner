@@ -18,6 +18,7 @@ namespace DumpMiner.Operations
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
+                //TODO: Add support of inner exceptions
                 var heap = DebuggerSession.Instance.Heap;
                 var enumerable = from obj in heap.EnumerateObjectAddresses()
                                  let type = heap.GetObjectType(obj)

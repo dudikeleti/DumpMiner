@@ -17,6 +17,7 @@ namespace DumpMiner.Operations
 
         public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
         {
+            //TODO: add support of local variables
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 var result = new List<ClrStackDump>();

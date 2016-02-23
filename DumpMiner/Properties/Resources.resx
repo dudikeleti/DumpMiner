@@ -118,9 +118,9 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="DllsFolder" xml:space="preserve">
-    <value>c:\dev\libs</value>
+    <value>c:\dev\libs;c:\dev\ozocde\bin\debug</value>
   </data>
   <data name="SymbolCache" xml:space="preserve">
-    <value>C:\Users\Dudi\AppData\Local\Temp\SymbolCache</value>
+    <value>c:\symbols;C:\Users\Dudi\AppData\Local\Temp\SymbolCache</value>
   </data>
 </root>

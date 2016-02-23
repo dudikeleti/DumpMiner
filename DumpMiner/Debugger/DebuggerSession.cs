@@ -41,6 +41,8 @@ namespace DumpMiner.Debugger
                     DataTarget.SymbolLocator.SymbolPath += ";" + s;
             else
                 DataTarget.SymbolLocator.SymbolPath = path.Single();
+
+            DataTarget.SymbolLocator.SymbolCache = Properties.Resources.SymbolCache;
         }
 
         public async Task<IEnumerable<object>> ExecuteOperation(Func<IEnumerable<object>> operation)
@@ -102,9 +104,8 @@ namespace DumpMiner.Debugger
         private bool CreateRuntime()
         {
             GC.ReRegisterForFinalize(this);
-
             var clrVersion = DataTarget.ClrVersions.FirstOrDefault();
-            if (clrVersion == null)
+            if(clrVersion == null)
                 return false;
             Runtime = clrVersion.CreateRuntime();
             Heap = Runtime.GetHeap();

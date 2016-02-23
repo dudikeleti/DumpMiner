@@ -250,7 +250,9 @@ namespace DumpMiner.ViewModels
                     new
                     {
                         Icon = CreateBitmapSourceFromFilePath(fileName),
+                        ID = process.Id,
                         Name = process.ProcessName,
+                        Title = process.MainWindowTitle,
                         Description = fileDescription
                     });
             }

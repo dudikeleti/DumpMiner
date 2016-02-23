@@ -57,26 +57,29 @@
 
         <!--Runinng processes-->
         <ListView Grid.Row="3" ItemsSource="{Binding ProcessesView}" SelectedItem="{Binding SelectedItem}">
-                    <ListView.Resources>
-                        <Style TargetType="ListViewItem">
-                            <EventSetter Event="MouseDoubleClick" Handler="EventSetter_OnHandler"/>
-                        </Style>
-                    </ListView.Resources>
-                    <ListView.View>
-                        <GridView>
-                            <GridViewColumn>
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Image Source="{Binding Icon}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Width="10" DisplayMemberBinding="{Binding Empty}"/>
-                            <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}"/>
-                            <GridViewColumn Width="10" DisplayMemberBinding="{Binding Empty}"/>
-                            <GridViewColumn Header="Description" DisplayMemberBinding="{Binding Description}"/>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
+            <ListView.Resources>
+                <Style TargetType="ListViewItem">
+                    <EventSetter Event="MouseDoubleClick" Handler="EventSetter_OnHandler"/>
+                </Style>
+            </ListView.Resources>
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Image Source="{Binding Icon}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="ID" DisplayMemberBinding="{Binding ID}"/>
+                    <GridViewColumn Width="10" DisplayMemberBinding="{Binding Empty}"/>
+                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}"/>
+                    <GridViewColumn Width="10" DisplayMemberBinding="{Binding Empty}"/>
+                    <GridViewColumn Header="Title" DisplayMemberBinding="{Binding Title}"/>
+                    <GridViewColumn Width="10" DisplayMemberBinding="{Binding Empty}"/>
+                    <GridViewColumn Header="Description" DisplayMemberBinding="{Binding Description}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
     </Grid>
 </UserControl>

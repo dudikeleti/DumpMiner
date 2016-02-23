@@ -23,7 +23,7 @@
                         <TextBlock Text="{Binding Name, StringFormat= Type name: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
-                        <TextBlock Text="{Binding Message, StringFormat= Message: {0}}"
+                        <TextBox Text="{Binding Message, StringFormat= Message: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
                         <TextBlock Text="{Binding HResult, StringFormat= HResult: {0}}"
@@ -70,7 +70,7 @@
                                                             <TextBlock Grid.Row="2"
                                                                        Grid.Column="1"
                                                                        Text="Metadata token" />
-                                                            <TextBlock Grid.Row="2"
+                                                            <TextBox Grid.Row="2"
                                                                        Grid.Column="3"
                                                                        Text="{Binding Method.MetadataToken}" />
                                                             <TextBlock Grid.Row="4"
