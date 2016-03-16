@@ -1,0 +1,44 @@
+﻿<UserControl x:Class="DumpMiner.Contents.GetObjectRoot"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="350"
+             d:DesignWidth="500">
+    <controls:OperationView ObjectTypeVisibility="Collapsed"
+                            Header="Get object root"
+                            Explanation="Enter an object address and get the path to the root. i.e. why the object is not collected.">
+        <controls:OperationView.ItemsView>
+            <GridView>
+                <GridViewColumn Header="Address">
+                    <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Address, Mode=OneWay}"
+                                     BorderBrush="{x:Null}" />
+                        </DataTemplate>
+                    </GridViewColumn.CellTemplate>
+                </GridViewColumn>
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="Type">
+                    <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Type, Mode=OneWay}"
+                                     BorderBrush="{x:Null}" />
+                        </DataTemplate>
+                    </GridViewColumn.CellTemplate>
+                </GridViewColumn>
+                <GridViewColumn Header="MetadataToken">
+                    <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding MetadataToken, Mode=OneWay}"
+                                     BorderBrush="{x:Null}" />
+                        </DataTemplate>
+                    </GridViewColumn.CellTemplate>
+                </GridViewColumn>
+            </GridView>
+        </controls:OperationView.ItemsView>
+    </controls:OperationView>
+</UserControl>

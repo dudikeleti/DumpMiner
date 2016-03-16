@@ -1,0 +1,97 @@
+﻿<UserControl x:Class="DumpMiner.Contents.DumpExceptions"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             d:DesignWidth="300">
+    <controls:OperationView Header="Dump Exceptions" Explanation="Dump all the throwed exceptions"
+                            ObjectAddressVisibility="Collapsed"
+                            ObjectTypeVisibility="Collapsed">
+        <controls:OperationView.ItemsTemplate>
+            <DataTemplate>
+                <Border BorderBrush="Black"
+                        BorderThickness="1"
+                        CornerRadius="3"
+                        Padding="3">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Address, StringFormat= Address: {0}}"
+                                   FontStyle="Oblique"
+                                   FontWeight="Medium" />
+                        <TextBlock Text="{Binding Name, StringFormat= Type name: {0}}"
+                                   FontStyle="Oblique"
+                                   FontWeight="Medium" />
+                        <TextBox Text="{Binding Message, StringFormat= Message: {0}}"
+                                   FontStyle="Oblique"
+                                   FontWeight="Medium" />
+                        <TextBlock Text="{Binding HResult, StringFormat= HResult: {0}}"
+                                   FontStyle="Oblique"
+                                   FontWeight="Medium" />
+                        <ListView ItemsSource="{Binding}">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Stack Pointer"
+                                                    DisplayMemberBinding="{Binding StackPointer}" />
+                                    <GridViewColumn Header="Instruction Pointer"
+                                                    DisplayMemberBinding="{Binding InstructionPointer}" />
+                                    <GridViewColumn Header="Kind"
+                                                    DisplayMemberBinding="{Binding Kind}" />
+                                    <GridViewColumn Header="Module Name"
+                                                    DisplayMemberBinding="{Binding ModuleName}" />
+                                    <GridViewColumn Header="Method">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Expander Header="{Binding DisplayString}"
+                                                          IsExpanded="False">
+                                                    <Border BorderBrush="Thistle"
+                                                            BorderThickness="0,1,0,1">
+                                                        <Grid>
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition />
+                                                                <RowDefinition Height="5" />
+                                                                <RowDefinition />
+                                                                <RowDefinition Height="5" />
+                                                                <RowDefinition />
+                                                            </Grid.RowDefinitions>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="25" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="10" />
+                                                                <ColumnDefinition />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Row="0"
+                                                                       Grid.Column="1"
+                                                                       Text="Compiliation type" />
+                                                            <TextBlock Grid.Row="0"
+                                                                       Grid.Column="3"
+                                                                       Text="{Binding Method.CompilationType}" />
+                                                            <TextBlock Grid.Row="2"
+                                                                       Grid.Column="1"
+                                                                       Text="Metadata token" />
+                                                            <TextBox Grid.Row="2"
+                                                                       Grid.Column="3"
+                                                                       Text="{Binding Method.MetadataToken}" />
+                                                            <TextBlock Grid.Row="4"
+                                                                       Grid.Column="1"
+                                                                       Text="Is static" />
+                                                            <CheckBox Grid.Row="4"
+                                                                      Grid.Column="3"
+                                                                      IsChecked="{Binding Method.IsStatic, Mode=OneWay}"
+                                                                      IsEnabled="False" />
+                                                        </Grid>
+                                                    </Border>
+                                                </Expander>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+        </controls:OperationView.ItemsTemplate>
+    </controls:OperationView>
+</UserControl>

@@ -1,0 +1,24 @@
+﻿<UserControl x:Class="DumpMiner.Contents.GetObjectSize"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="350"
+             d:DesignWidth="500">
+    <controls:OperationView ObjectTypeVisibility="Collapsed"
+                            Header="Get object size"
+                            Explanation="Get the total size of all objects the given object keeps alive">
+        <controls:OperationView.ItemsView>
+            <GridView>
+                <GridViewColumn Header="Referenced"
+                                DisplayMemberBinding="{Binding ReferencedCount}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="Total size"
+                                DisplayMemberBinding="{Binding TotalSize, Converter={StaticResource SizeConverter}}" />
+            </GridView>
+        </controls:OperationView.ItemsView>
+    </controls:OperationView>
+</UserControl>

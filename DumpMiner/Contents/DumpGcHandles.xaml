@@ -1,0 +1,79 @@
+﻿<UserControl x:Class="DumpMiner.Contents.DumpGcHandles"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="350"
+             d:DesignWidth="500">
+    <controls:OperationView ObjectTypeVisibility="Collapsed"
+                            x:Name="OperationView"
+                            Header="Dump object"
+                            Explanation="Dump all GC handles. There are 9 handle types: 1. WeakShort. 2. WeakLong. 3. Strong. 4. Pinned. 5. AsyncPinned. 6. Variable. 7. RefCount. 8. Dependent. 9. SizedRef. For more info, see: https://github.com/Microsoft/dotnetsamples/blob/master/Microsoft.Diagnostics.Runtime/CLRMD/docs/ClrRuntime.md">
+        <controls:OperationView.ItemsView>
+            <GridView>
+                <GridViewColumn Header="Address">
+                    <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Address, Mode=OneWay}"
+                                     BorderBrush="{x:Null}" />
+                        </DataTemplate>
+                    </GridViewColumn.CellTemplate>
+                </GridViewColumn>
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="Type">
+                    <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Type, Mode=OneWay}"
+                                     BorderBrush="{x:Null}" />
+                        </DataTemplate>
+                    </GridViewColumn.CellTemplate>
+                </GridViewColumn>
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="HandlType"
+                                DisplayMemberBinding="{Binding HandlType}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="IsStrong"
+                                DisplayMemberBinding="{Binding IsStrong}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="IsPinned"
+                                DisplayMemberBinding="{Binding IsPinned}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="RefCount"
+                                DisplayMemberBinding="{Binding RefCount}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="DependentTarget">
+                    <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding DependentTarget, Mode=OneWay}"
+                                     BorderBrush="{x:Null}" />
+                        </DataTemplate>
+                    </GridViewColumn.CellTemplate>
+                </GridViewColumn>
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="DependentType">
+                    <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding DependentType, Mode=OneWay}"
+                                     BorderBrush="{x:Null}" />
+                        </DataTemplate>
+                    </GridViewColumn.CellTemplate>
+                </GridViewColumn>
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="AppDomain"
+                                DisplayMemberBinding="{Binding AppDomain}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+            </GridView>
+        </controls:OperationView.ItemsView>
+    </controls:OperationView>
+</UserControl>
