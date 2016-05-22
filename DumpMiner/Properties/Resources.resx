@@ -121,6 +121,6 @@
     <value>c:\dev\libs;c:\dev\ozocde\bin\debug</value>
   </data>
   <data name="SymbolCache" xml:space="preserve">
-    <value>c:\symbols;C:\Users\Dudi\AppData\Local\Temp\SymbolCache</value>
+    <value>c:\Users\Dudi\AppData\Local\Temp\SymbolCache</value>
   </data>
 </root>

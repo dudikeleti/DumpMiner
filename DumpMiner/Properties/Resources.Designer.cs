@@ -70,7 +70,7 @@ namespace DumpMiner.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to c:\symbols;C:\Users\Dudi\AppData\Local\Temp\SymbolCache.
+        ///   Looks up a localized string similar to c:\Users\Dudi\AppData\Local\Temp\SymbolCache.
         /// </summary>
         internal static string SymbolCache {
             get {
