@@ -1,0 +1,9 @@
+/build/
+*.suo
+*.user
+_ReSharper.*/
+bin/
+obj/
+Debug/
+Release/
+*.log
