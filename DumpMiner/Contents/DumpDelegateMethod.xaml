@@ -1,0 +1,52 @@
+﻿<UserControl x:Class="DumpMiner.Contents.DumpDelegateMethod"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="350"
+             d:DesignWidth="500">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="0.9*" />
+            <RowDefinition Height="0.1*" />
+        </Grid.RowDefinitions>
+        <controls:OperationView ObjectTypeVisibility="Collapsed"
+                                Grid.Row="0"
+                                x:Name="OperationView"
+                                Header="Dump Delegate Method"
+                                Explanation="Enter a _methodPtr for i nstance method or _methodPtrAux for static method and get the method that this delegate will call">
+            <controls:OperationView.ItemsView>
+                <GridView>
+                    <GridViewColumn Header="Signature">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Signature, Mode=OneWay}"
+                                         BorderBrush="{x:Null}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Header="Metadata Token"
+                                    DisplayMemberBinding="{Binding MetadataToken}" />
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Header="MethodDesc"
+                                    DisplayMemberBinding="{Binding MethodDesc}" />
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Header="Compilation Type"
+                                    DisplayMemberBinding="{Binding CompilationType}" />
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Header="Enclosing Type"
+                                    DisplayMemberBinding="{Binding EnclosingType}" />
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding Empty}" />
+                </GridView>
+            </controls:OperationView.ItemsView>
+        </controls:OperationView>
+    </Grid>
+</UserControl>

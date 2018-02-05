@@ -1,0 +1,117 @@
+﻿<UserControl x:Class="DumpMiner.Contents.DumpSyncBlock"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             xmlns:ui="clr-namespace:DumpMiner.Infrastructure.UI"
+             mc:Ignorable="d"
+             d:DesignHeight="350"
+             d:DesignWidth="500">
+    <UserControl.Resources>
+        <ui:BiggerThanZeroConverter x:Key="BiggerThanZeroConverter"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <controls:OperationView Grid.Row="1"
+                                ObjectAddressVisibility="Collapsed"
+                                ObjectTypeVisibility="Collapsed"
+                                Header="Dump sync block"
+                                Explanation="Check which thread owns the lock and if there is waiting threads">
+            <controls:OperationView.ItemsView>
+                <GridView>
+                    <GridViewColumn Header="Associated object">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Object, Mode=OneWay}"
+                                         BorderBrush="{x:Null}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Header="Owner thread">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Owner.ManagedThreadId, Mode=OneWay}"
+                                         BorderBrush="{x:Null}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Header="Taken" DisplayMemberBinding="{Binding Taken}" />
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Header="RecursionCount" DisplayMemberBinding="{Binding RecursionCount}" />
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Header="HasSingleOwner" DisplayMemberBinding="{Binding HasSingleOwner}" />
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Header="Reason" DisplayMemberBinding="{Binding Reason}" />
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+
+                    <GridViewColumn Header="Owners">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Expander MaxHeight="250"
+                                          MinWidth="120"
+                                          MaxWidth="200">
+                                    <Border BorderBrush="Thistle"
+                                            BorderThickness="0,1,0,1">
+                                        <ListView ItemsSource="{Binding Owners}">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn>
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <TextBox Text="{Binding ManagedThreadId, Mode=OneWay}"
+                                                                         BorderBrush="{x:Null}" />
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </Border>
+                                </Expander>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+
+                    <GridViewColumn Header="Waiters">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Expander MaxHeight="250"
+                                          MinWidth="120"
+                                          MaxWidth="200">
+                                    <Border BorderBrush="Thistle"
+                                            BorderThickness="0,1,0,1">
+                                        <ListView ItemsSource="{Binding Waiters}">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn>
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <TextBox Text="{Binding ManagedThreadId, Mode=OneWay}"
+                                                                         BorderBrush="{x:Null}" >
+                                                                </TextBox>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </Border>
+                                </Expander>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </controls:OperationView.ItemsView>
+        </controls:OperationView>
+    </Grid>
+
+</UserControl>

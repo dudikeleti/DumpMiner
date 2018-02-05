@@ -6,6 +6,7 @@
         public const string DumpHeapStat = "DumpHeapStatOperation";
         public const string DumpClrStack = "DumpClrStackOperation";
         public const string DumpObject = "DumpObjectOperation";
+        public const string DumpDelegateMethod = "DumpDelegateMethodOperation";
         public const string GetObjectRoot = "GetObjectRootOperation";
         public const string TargetProcessInfo = "TargetProcessInfoOperation";
         public const string DumpModules = "DumpModulesOperation";
@@ -18,5 +19,7 @@
         public const string DumpFinalizerQueue = "DumpFinalizerQueue";
         public const string DumpGcHnadles = "DumpGCHnadles";
         public const string DumpLargeObjects = "DumpLargeObjects";
+        public const string DumpSyncBlock = "DumpSyncBlock";
+        public const string TypeFromHandle = "TypeFromHandle";
     }
 }

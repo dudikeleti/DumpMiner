@@ -95,13 +95,11 @@
     <ApplicationIcon>digg.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="FirstFloor.ModernUI, Version=1.0.6.0, Culture=neutral, PublicKeyToken=2d21ec3cd074c59a, processorArchitecture=MSIL">
-      <HintPath>..\packages\ModernUI.WPF.1.0.6\lib\net45\FirstFloor.ModernUI.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="FirstFloor.ModernUI, Version=1.0.9.0, Culture=neutral, PublicKeyToken=bc9b0c37bf06c6a9, processorArchitecture=MSIL">
+      <HintPath>..\packages\ModernUI.WPF.1.0.9\lib\net45\FirstFloor.ModernUI.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.27.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\dev\libs\Microsoft.Diagnostics.Runtime.dll</HintPath>
+    <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
@@ -130,6 +128,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Common\ViewModelNames.cs" />
+    <Compile Include="Contents\TypeFromHandle.xaml.cs">
+      <DependentUpon>TypeFromHandle.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Contents\DumpExceptions.xaml.cs">
       <DependentUpon>DumpExceptions.xaml</DependentUpon>
     </Compile>
@@ -138,6 +139,12 @@
     </Compile>
     <Compile Include="Contents\DumpGcHandles.xaml.cs">
       <DependentUpon>DumpGcHandles.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpDelegateMethod.xaml.cs">
+      <DependentUpon>DumpDelegateMethod.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Contents\DumpSyncBlock.xaml.cs">
+      <DependentUpon>DumpSyncBlock.xaml</DependentUpon>
     </Compile>
     <Compile Include="Contents\DumpLargeObjects.xaml.cs">
       <DependentUpon>DumpLargeObjects.xaml</DependentUpon>
@@ -181,6 +188,7 @@
     <Compile Include="Infrastructure\Mef\ContentAttribute.cs" />
     <Compile Include="Debugger\DebuggerSession.cs" />
     <Compile Include="Infrastructure\Mef\IViewModelMetadata.cs" />
+    <Compile Include="Infrastructure\UI\BiggerThanZeroConverter.cs" />
     <Compile Include="Infrastructure\UI\BytesToKbOrMbConverter.cs" />
     <Compile Include="Infrastructure\UI\Controls\OperationView.xaml.cs">
       <DependentUpon>OperationView.xaml</DependentUpon>
@@ -201,6 +209,8 @@
     <Compile Include="Operations\DumpMethodsOperation.cs" />
     <Compile Include="Operations\DumpModulesOperation.cs" />
     <Compile Include="Operations\DumpFinalizerQueueOperation.cs" />
+    <Compile Include="Operations\DumpDelegateMethodOperation.cs" />
+    <Compile Include="Operations\DumpSyncBlockOperation.cs" />
     <Compile Include="Operations\GetObjectSizeOperation.cs" />
     <Compile Include="Operations\TargetProcessInfoOperation.cs" />
     <Compile Include="Operations\DumpHeapStatOperation.cs" />
@@ -226,6 +236,7 @@
     <Compile Include="Common\NativeMethods.cs" />
     <Compile Include="Operations\DumpObjectOperation.cs" />
     <Compile Include="Operations\GetObjectRootOperation.cs" />
+    <Compile Include="Operations\TypeFromHandleOperation.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -237,6 +248,10 @@
     <Compile Include="ViewModels\DumpHeapOperationViewModel.cs" />
     <Compile Include="ViewModels\OperationTypesViewModel.cs" />
     <Compile Include="ViewModels\AttachDetachViewModel.cs" />
+    <Page Include="Contents\TypeFromHandle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Contents\DumpExceptions.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -246,6 +261,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Contents\DumpGcHandles.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpDelegateMethod.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Contents\DumpSyncBlock.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
