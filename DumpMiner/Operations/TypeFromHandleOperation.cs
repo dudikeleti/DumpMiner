@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel.Composition;
@@ -22,7 +19,7 @@ namespace DumpMiner.Operations
                 var heap = DebuggerSession.Instance.Runtime.GetHeap();
 
                 var type = heap.GetTypeByMethodTable(model.ObjectAddress);
-                var test = type.GetRuntimeType(model.ObjectAddress);
+
                 if (type == null)
                 {
                     return new[] { new { Signature = "Type not found" } };

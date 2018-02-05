@@ -19,7 +19,6 @@ namespace DumpMiner.Operations
             {
                 var heap = DebuggerSession.Instance.Runtime.GetHeap();
 
-                var ff = heap.GetTypeByMethodTable(model.ObjectAddress);
                 // the first 8 bytes is some padding (maybe the first 5 is code stub and the rest some flags)
                 // so we need to read the 7th byte to get the offset to first MethodDesc
                 // and the 6th byte to see the offset inside the MethodDescs slots
