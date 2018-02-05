@@ -1,11 +1,13 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace DumpMiner.Common
 {
     public class BaseViewModel : INotifyPropertyChanged, IDisposable
     {
+        public ManualResetEventSlim Mre = new ManualResetEventSlim(false);
         public Action<BaseViewModel> ViewModelDisposed;
 
         private bool _isLoading;
@@ -30,6 +32,9 @@ namespace DumpMiner.Common
                 OnPropertyChanged();
             }
         }
+
+        // indicates the last operation error
+        public string LastError { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged([CallerMemberName]string propertyName = "")

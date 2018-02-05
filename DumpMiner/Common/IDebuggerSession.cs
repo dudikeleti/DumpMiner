@@ -9,8 +9,8 @@ namespace DumpMiner.Common
     interface IDebuggerSession : IDisposable
     {
         Action OnDetach { get; set; }
-        Task<bool> Attach(Process process, uint milliseconds);
-        Task<bool> LoadDump(string fileName,  CrashDumpReader readerType);
+        void Attach(Process process, uint milliseconds);
+        Task<bool> LoadDump(string fileName, CrashDumpReader readerType);
         void Detach();
         bool IsAttached { get; }
         void SetSymbolPath(string[] path, bool append);

@@ -17,29 +17,29 @@
                         CornerRadius="3"
                         Padding="3">
                     <StackPanel>
-                        <TextBlock Text="{Binding Address, StringFormat= Address: {0}}"
+                        <TextBlock Text="{Binding Address, Mode=OneWay, StringFormat= Address: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
-                        <TextBlock Text="{Binding Name, StringFormat= Type name: {0}}"
+                        <TextBlock Text="{Binding Name, Mode=OneWay, StringFormat= Type name: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
-                        <TextBox Text="{Binding Message, StringFormat= Message: {0}}"
+                        <TextBox Text="{Binding Message, Mode=OneWay, StringFormat= Message: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
-                        <TextBlock Text="{Binding HResult, StringFormat= HResult: {0}}"
+                        <TextBlock Text="{Binding HResult, Mode=OneWay, StringFormat= HResult: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
                         <ListView ItemsSource="{Binding}">
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Stack Pointer"
-                                                    DisplayMemberBinding="{Binding StackPointer}" />
+                                                    DisplayMemberBinding="{Binding StackPointer, Mode=OneWay}" />
                                     <GridViewColumn Header="Instruction Pointer"
-                                                    DisplayMemberBinding="{Binding InstructionPointer}" />
+                                                    DisplayMemberBinding="{Binding InstructionPointer, Mode=OneWay}" />
                                     <GridViewColumn Header="Kind"
-                                                    DisplayMemberBinding="{Binding Kind}" />
+                                                    DisplayMemberBinding="{Binding Kind, Mode=OneWay}" />
                                     <GridViewColumn Header="Module Name"
-                                                    DisplayMemberBinding="{Binding ModuleName}" />
+                                                    DisplayMemberBinding="{Binding ModuleName, Mode=OneWay}" />
                                     <GridViewColumn Header="Method">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
@@ -66,13 +66,13 @@
                                                                        Text="Compiliation type" />
                                                             <TextBlock Grid.Row="0"
                                                                        Grid.Column="3"
-                                                                       Text="{Binding Method.CompilationType}" />
+                                                                       Text="{Binding Method.CompilationType, Mode=OneWay}" />
                                                             <TextBlock Grid.Row="2"
                                                                        Grid.Column="1"
                                                                        Text="Metadata token" />
                                                             <TextBox Grid.Row="2"
                                                                        Grid.Column="3"
-                                                                       Text="{Binding Method.MetadataToken}" />
+                                                                       Text="{Binding Method.MetadataToken, Mode=OneWay}" />
                                                             <TextBlock Grid.Row="4"
                                                                        Grid.Column="1"
                                                                        Text="Is static" />

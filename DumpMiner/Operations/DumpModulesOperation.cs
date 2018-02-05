@@ -25,8 +25,9 @@ namespace DumpMiner.Operations
                                  where !string.IsNullOrEmpty(name) && (types == null || types.Any(t => name.ToLower().Contains(t.ToLower())))
                                  select new
                                  {
-                                     Identifier = module.AssemblyId,
                                      Name = name.Substring(name.LastIndexOf('\\') + 1),
+                                     MetadataAddress = module.MetadataAddress,
+                                     ImageBase = module.ImageBase,
                                      FilePath = name.Substring(0, name.LastIndexOf('\\')),
                                      Size = module.Size,
                                      IsDynamic = module.IsDynamic

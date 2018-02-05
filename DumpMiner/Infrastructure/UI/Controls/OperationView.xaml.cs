@@ -17,8 +17,7 @@ namespace DumpMiner.Infrastructure.UI.Controls
                "Header", typeof(string), typeof(OperationView),
                new PropertyMetadata(string.Empty, (o, args) =>
                {
-                   var view = o as OperationView;
-                   view.HeaderTextBlock.Text = (string)args.NewValue;
+                   ((OperationView)o).HeaderTextBlock.Text = (string)args.NewValue;
                }));
 
         public static readonly DependencyProperty ExplanationProperty =
@@ -26,8 +25,7 @@ namespace DumpMiner.Infrastructure.UI.Controls
               "Explanation", typeof(string), typeof(OperationView),
               new PropertyMetadata(string.Empty, (o, args) =>
               {
-                  var view = o as OperationView;
-                  view.ExplanationTextBlock.Text = (string)args.NewValue;
+                  ((OperationView)o).ExplanationTextBlock.Text = (string)args.NewValue;
               }));
 
         public static readonly DependencyProperty ObjectAddressVisibilityProperty =
@@ -35,7 +33,7 @@ namespace DumpMiner.Infrastructure.UI.Controls
                 "ObjectAddressVisibility", typeof(Visibility), typeof(OperationView),
                 new PropertyMetadata(Visibility.Visible, (o, args) =>
                 {
-                    var view = o as OperationView;
+                    var view = ((OperationView)o);
                     view.ObjectAddressTextBlock.Visibility = (Visibility)args.NewValue;
                     view.ObjectAddressTextBox.Visibility = (Visibility)args.NewValue;
                 }));
@@ -45,18 +43,33 @@ namespace DumpMiner.Infrastructure.UI.Controls
                "ObjectTypeVisibility", typeof(Visibility), typeof(OperationView),
                new PropertyMetadata(Visibility.Visible, (o, args) =>
                {
-                   var view = o as OperationView;
+                   var view = ((OperationView)o);
                    view.ObjectTypesTextBlock.Visibility = (Visibility)args.NewValue;
                    view.ObjectTypesTextBox.Visibility = (Visibility)args.NewValue;
                }));
+
+        public static readonly DependencyProperty ObjectAddressNameProperty =
+            DependencyProperty.Register(
+                "ObjectAddressNameProperty", typeof(string), typeof(OperationView),
+                new PropertyMetadata("Object address", (o, args) =>
+                {
+                    ((OperationView)o).ObjectAddressTextBlock.Text = (string)args.NewValue;
+                }));
+
+        public static readonly DependencyProperty ObjectTypeNameProperty =
+            DependencyProperty.Register(
+                "ObjectTypeNameProperty", typeof(string), typeof(OperationView),
+                new PropertyMetadata("Object types", (o, args) =>
+                {
+                    ((OperationView)o).ObjectTypesTextBlock.Text = (string)args.NewValue;
+                }));
 
         public static readonly DependencyProperty ItemsViewProperty =
            DependencyProperty.Register(
                "ItemsView", typeof(GridView), typeof(OperationView),
                new PropertyMetadata(null, (o, args) =>
                {
-                   var view = o as OperationView;
-                   view.ItemsList.View = args.NewValue == null ? null : (GridView)args.NewValue;
+                   ((OperationView)o).ItemsList.View = (GridView)args.NewValue;
                }));
 
 
@@ -65,53 +78,62 @@ namespace DumpMiner.Infrastructure.UI.Controls
               "ItemsTemplate", typeof(DataTemplate), typeof(OperationView),
               new PropertyMetadata(null, (o, args) =>
               {
-                  var view = o as OperationView;
-                  view.ItemsList.ItemTemplate = args.NewValue == null ? null : (DataTemplate)args.NewValue;
+                  ((OperationView)o).ItemsList.ItemTemplate = (DataTemplate)args.NewValue;
               }));
 
 
         public string Header
         {
-            get { return (string)GetValue(HeaderProperty); }
-            set { SetValue(HeaderProperty, value); }
+            get => (string)GetValue(HeaderProperty);
+            set => SetValue(HeaderProperty, value);
         }
 
         public string Explanation
         {
-            get { return (string)GetValue(ExplanationProperty); }
-            set { SetValue(ExplanationProperty, value); }
+            get => (string)GetValue(ExplanationProperty);
+            set => SetValue(ExplanationProperty, value);
         }
 
         public Visibility ObjectAddressVisibility
         {
-            get { return (Visibility)GetValue(ObjectAddressVisibilityProperty); }
-            set { SetValue(ObjectAddressVisibilityProperty, value); }
+            get => (Visibility)GetValue(ObjectAddressVisibilityProperty);
+            set => SetValue(ObjectAddressVisibilityProperty, value);
         }
 
         public Visibility ObjectTypeVisibility
         {
-            get { return (Visibility)GetValue(ObjectTypeVisibilityProperty); }
-            set { SetValue(ObjectTypeVisibilityProperty, value); }
+            get => (Visibility)GetValue(ObjectTypeVisibilityProperty);
+            set => SetValue(ObjectTypeVisibilityProperty, value);
+        }
+
+        public string ObjectAddressName
+        {
+            get => (string)GetValue(ObjectAddressNameProperty);
+            set => SetValue(ObjectAddressNameProperty, value);
+        }
+
+        public string ObjectTypeName
+        {
+            get => (string)GetValue(ObjectTypeNameProperty);
+            set => SetValue(ObjectTypeNameProperty, value);
         }
 
         public GridView ItemsView
         {
-            get { return (GridView)GetValue(ItemsViewProperty); }
-            set { SetValue(ItemsViewProperty, value); }
+            get => (GridView)GetValue(ItemsViewProperty);
+            set => SetValue(ItemsViewProperty, value);
         }
 
         public DataTemplate ItemsTemplate
         {
-            get { return (DataTemplate)GetValue(ItemsTemplateProperty); }
-            set { SetValue(ItemsTemplateProperty, value); }
+            get => (DataTemplate)GetValue(ItemsTemplateProperty);
+            set => SetValue(ItemsTemplateProperty, value);
         }
 
         private void ItemsList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             SelectedItem = e.AddedItems != null && e.AddedItems.Count > 0 ? e.AddedItems[0] : null;
-            var handler = SelectionChange;
-            if (handler != null)
-                handler(sender, e);
+            SelectionChange?.Invoke(sender, e);
         }
     }
 }

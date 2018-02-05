@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Interop;
@@ -30,15 +32,12 @@ namespace DumpMiner.ViewModels
         }
         #region props
         private readonly ListCollectionView _processesView;
-        public ListCollectionView ProcessesView { get { return _processesView; } }
+        public ListCollectionView ProcessesView => _processesView;
 
         private ObservableCollection<object> _runningProcesses;
         public ObservableCollection<object> RunningProcesses
         {
-            get
-            {
-                return _runningProcesses;
-            }
+            get => _runningProcesses;
             set
             {
                 _runningProcesses = value;
@@ -49,10 +48,7 @@ namespace DumpMiner.ViewModels
         private string _filterProcesses;
         public string FilterProcesses
         {
-            get
-            {
-                return _filterProcesses;
-            }
+            get => _filterProcesses;
             set
             {
                 _filterProcesses = value;
@@ -64,10 +60,7 @@ namespace DumpMiner.ViewModels
         private bool _isGetProcessesEnabled;
         public bool IsGetProcessesEnabled
         {
-            get
-            {
-                return _isGetProcessesEnabled;
-            }
+            get => _isGetProcessesEnabled;
             set
             {
                 _isGetProcessesEnabled = value;
@@ -77,10 +70,7 @@ namespace DumpMiner.ViewModels
         private Visibility _detachVisiblity;
         public Visibility DetachVisiblity
         {
-            get
-            {
-                return _detachVisiblity;
-            }
+            get => _detachVisiblity;
             set
             {
                 _detachVisiblity = value;
@@ -91,10 +81,7 @@ namespace DumpMiner.ViewModels
         private string _attachedProcessName;
         public string AttachedProcessName
         {
-            get
-            {
-                return _attachedProcessName;
-            }
+            get => _attachedProcessName;
             set
             {
                 _attachedProcessName = value;
@@ -152,14 +139,29 @@ namespace DumpMiner.ViewModels
         }
         #endregion
 
-        private async void AttachToProcessExecute()
+        private void AttachToProcessExecute()
         {
-            bool success = await DebuggerSession.Instance.Attach(_process[SelectedItem.Name], 5000);
-            if (!success)
+            try
             {
-                App.Container.GetExport<IDialogService>().Value.ShowDialog("Attach to proccess failed");
+                LastError = null;
+                DebuggerSession.Instance.Attach(_process[SelectedItem.Name], 5000);
+            }
+            catch (AggregateException aggregate)
+            {
+                var message = new StringBuilder();
+                foreach (var innerException in aggregate.InnerExceptions)
+                {
+                    message.AppendLine(innerException.Message);
+                }
+                LastError = message.ToString();
                 return;
             }
+            catch (Exception e)
+            {
+                LastError = e.Message;
+                return;
+            }
+
             AttachedProcessName = SelectedItem.Name;
             DetachVisiblity = Visibility.Visible;
             IsGetProcessesEnabled = false;
@@ -201,7 +203,7 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        static bool Is64BitProcess(Process process)
+        private static bool? Is64BitProcess(Process process)
         {
             bool isWow64 = false;
 
@@ -213,9 +215,26 @@ namespace DumpMiner.ViewModels
                 {
                     isWow64 = !(NativeMethods.IsWow64Process(process.Handle, out isWow64) && isWow64);
                 }
-                catch (Exception) //access denied
+                catch (Win32Exception accessDenied)
                 {
-                    isWow64 = false;
+                    if (accessDenied.NativeErrorCode != 0x00000005)
+                    {
+                        if (System.Diagnostics.Debugger.IsAttached)
+                            System.Diagnostics.Debugger.Break();
+                    }
+                    // Log
+                    return null;
+                }
+                catch (InvalidOperationException processExited)
+                {
+                    // Log
+                    return null;
+                }
+                catch (Exception e)
+                {
+                    if (System.Diagnostics.Debugger.IsAttached)
+                        System.Diagnostics.Debugger.Break();
+                    return null;
                 }
             }
             return isWow64;
@@ -242,7 +261,7 @@ namespace DumpMiner.ViewModels
                     fileName = process.MainModule.FileName;
                     fileDescription = process.MainModule.FileVersionInfo.FileDescription;
                 }
-                catch (Exception) //access denied
+                catch (Exception e) //access denied
                 {
                     continue;
                 }

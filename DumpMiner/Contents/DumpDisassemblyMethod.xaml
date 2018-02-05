@@ -7,7 +7,9 @@
              mc:Ignorable="d"
              d:DesignHeight="350"
              d:DesignWidth="500">
-    <controls:OperationView Header="Dump disassembly method" Explanation="Enter type name and metadata token and get the disassembly of the jitted method">
+    <controls:OperationView Header="Dump disassembly method" Explanation="Enter type name and metadata token and get the disassembly of the jitted method"
+                            ObjectAddressName="Metadata token"
+                            ObjectTypeName="Type name">
         <controls:OperationView.ItemsView>
             <GridView>
                 <GridViewColumn Header="Address"

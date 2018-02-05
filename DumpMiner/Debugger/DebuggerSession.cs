@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using DumpMiner.Common;
 using Microsoft.Diagnostics.Runtime;
@@ -11,6 +14,10 @@ namespace DumpMiner.Debugger
 {
     internal class DebuggerSession : IDebuggerSession
     {
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, int dwFlags);
+        private const int LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100;
+
         #region members and props
         private readonly Task _workerTask;
         private Process _attachedProcess;
@@ -23,15 +30,24 @@ namespace DumpMiner.Debugger
         public DataTarget DataTarget { get; private set; }
         public CrashDumpReader DumpReader { get; private set; }
 
-        //In case that we have more than one runtime
-        //private readonly List<ClrRuntime> _runtimes = new List<ClrRuntime>(); 
-        //private readonly List<ModuleInfo> _dacInfo = new List<ModuleInfo>();
         #endregion
 
         private DebuggerSession()
         {
+            EnsureProperDebugEngineIsLoaded();
             _workerTask = new Task(() => { });
             _workerTask.Start();
+        }
+
+        /// <summary>
+        /// https://github.com/Microsoft/clrmd/issues/78
+        /// </summary>
+        private static void EnsureProperDebugEngineIsLoaded()
+        {
+            var sysdir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+            var res = LoadLibraryEx(Path.Combine(sysdir, "dbgeng.dll"), IntPtr.Zero, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
+            if (res == IntPtr.Zero)
+                throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 
         public void SetSymbolPath(string[] path, bool append = true)
@@ -41,8 +57,8 @@ namespace DumpMiner.Debugger
                     DataTarget.SymbolLocator.SymbolPath += ";" + s;
             else
                 DataTarget.SymbolLocator.SymbolPath = path.Single();
-
-            DataTarget.SymbolLocator.SymbolCache = Properties.Resources.SymbolCache;
+            if (string.IsNullOrEmpty(DataTarget.SymbolLocator.SymbolCache))
+                DataTarget.SymbolLocator.SymbolCache = Properties.Resources.SymbolCache;
         }
 
         public async Task<IEnumerable<object>> ExecuteOperation(Func<IEnumerable<object>> operation)
@@ -77,43 +93,58 @@ namespace DumpMiner.Debugger
         private bool LoadDump(string fileName)
         {
             DataTarget = DataTarget.LoadCrashDump(fileName, DumpReader);
-            var result = CreateRuntime();
-            if (!result)
+            var message = CreateRuntime();
+            if (!string.IsNullOrEmpty(message))
                 Dispose(true);
-            return result;
+            return string.IsNullOrEmpty(message);
         }
 
-        public async Task<bool> Attach(Process process, uint milliseconds)
+        public void Attach(Process process, uint milliseconds)
         {
             if (IsAttached)
-                return true;
-            bool result = false;
+                return;
+
             _attachedProcess = process;
-            await _workerTask.ContinueWith(task =>
+
+            _workerTask.ContinueWith(task =>
             {
-                DataTarget = DataTarget.AttachToProcess(_attachedProcess.Id, milliseconds, AttachFlag.NonInvasive);
-                result = CreateRuntime();
-                if (result)
+                try
+                {
+                    DataTarget = DataTarget.AttachToProcess(_attachedProcess.Id, milliseconds, AttachFlag.Passive);
+                    CreateRuntime();
                     _attachedProcess.Exited += Process_Exited;
-                else
-                    Dispose(true);
-            });
-            return result;
+                }
+                catch (Exception e)
+                {
+                    try
+                    {
+                        Dispose(true);
+                    }
+                    catch { }
+                }
+            }).Wait();
         }
 
-        private bool CreateRuntime()
+        private string CreateRuntime()
         {
             GC.ReRegisterForFinalize(this);
-            var clrVersion = DataTarget.ClrVersions.FirstOrDefault();
-            if(clrVersion == null)
-                return false;
-            Runtime = clrVersion.CreateRuntime();
-            Heap = Runtime.GetHeap();
-            if (Heap == null || !Heap.CanWalkHeap)
-                return false;
-            AttachedTime = GetAttachedTime();
-            SetSymbolPath(new[] { Environment.CurrentDirectory, Properties.Resources.SymbolCache, Properties.Resources.DllsFolder });
-            return true;
+            try
+            {
+                var clrVersion = DataTarget.ClrVersions.FirstOrDefault();
+                if (clrVersion == null)
+                    return "CLR version not found";
+                Runtime = clrVersion.CreateRuntime();
+                Heap = Runtime.GetHeap();
+                if (Heap == null || !Heap.CanWalkHeap)
+                    return "Can't get heap";
+                AttachedTime = GetAttachedTime();
+                SetSymbolPath(new[] { Environment.CurrentDirectory, Properties.Resources.SymbolCache, Properties.Resources.DllsFolder });
+                return "";
+            }
+            catch (Exception e)
+            {
+                return e.Message;
+            }
         }
 
         private DateTime GetAttachedTime()
@@ -147,9 +178,7 @@ namespace DumpMiner.Debugger
                         Dispose(true);
                         OnDetach?.Invoke();
                     }
-                    catch (Exception)
-                    {
-                    }
+                    catch { }
                 }
             });
         }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,7 +26,7 @@ namespace DumpMiner.Operations
                 {
                     if (token.IsCancellationRequested)
                         break;
-                
+
                     var stackDetails = new ClrStackDump();
                     stackDetails.StackFrames = new List<object>();
                     stackDetails.StackObjects = new List<object>();
@@ -47,12 +48,12 @@ namespace DumpMiner.Operations
                         });
                     }
 
-                    // We'll need heap data to find objects on the stack.
                     ClrHeap heap = DebuggerSession.Instance.Runtime.GetHeap();
                     var pointerSize = DebuggerSession.Instance.Runtime.PointerSize;
-                    // Walk each pointer aligned address on the stack.  Note that StackBase/StackLimit
-                    // is exactly what they are in the TEB.  This means StackBase > StackLimit on AMD64.
+
+                    // address of TEB (thread execution block) + pointer size
                     ulong start = thread.StackBase;
+                    // address of TEB (thread execution block) + pointer size * 2
                     ulong stop = thread.StackLimit;
 
                     // We'll walk these in pointer order.
@@ -63,25 +64,28 @@ namespace DumpMiner.Operations
                         stop = tmp;
                     }
 
-                    // Walk each pointer aligned address.  Ptr is a stack address.
+                    // ptr is a stack address.
                     for (ulong ptr = start; ptr <= stop; ptr += (ulong)pointerSize)
                     {
-                        // Read the value of this pointer.  If we fail to read the memory, break.  The
-                        // stack region should be in the crash dump.
-                        ulong obj;
-                        if (!DebuggerSession.Instance.Runtime.ReadPointer(ptr, out obj))
+                        HashSet<ulong> stackObjects = new HashSet<ulong>();
+
+                        // fail to read the memory
+                        if (!heap.ReadPointer(ptr, out ulong obj))
                             break;
 
-                        // We check to see if this address is a valid object by simply calling
-                        // GetObjectType.  If that returns null, it's not an object.
+                        // the object added already
+                        if (!stackObjects.Add(obj))
+                            continue;
+
+                        // not an object
                         ClrType type = heap.GetObjectType(obj);
                         if (type == null)
                             continue;
 
-                        // Don't print out free objects as there tends to be a lot of them on
-                        // the stack.
+                        // free space
                         if (type.IsFree) continue;
 
+                        // All good, add it 
                         stackDetails.StackObjects.Add(
                             new
                             {

@@ -35,7 +35,6 @@ namespace DumpMiner.Pages
 
         public bool IsViewModelLoaded { get; set; }
 
-
         public Dictionary<string, object> ExtendedData { get; private set; }
 
         private void EventSetter_OnHandler(object sender, MouseButtonEventArgs e)
@@ -43,17 +42,26 @@ namespace DumpMiner.Pages
             var cmd = App.Container.GetExportedValues<ICommand>("cmd://home/AttachToProcessCommand").FirstOrDefault();
             if (cmd == null) return;
             if (cmd.CanExecute(null))
+            {
                 try
                 {
                     cmd.Execute(null);
+                    var lastError = ((BaseViewModel)DataContext).LastError;
+                    if (!string.IsNullOrEmpty(lastError))
+                    {
+                        ModernDialog.ShowMessage("Error in attach to process. \n" + lastError, "Error", MessageBoxButton.OK);
+                        return;
+                    }
                 }
                 catch (Exception ex)
                 {
                     ModernDialog.ShowMessage("Error in attach to process. \n" + ex.Message, "Error", MessageBoxButton.OK);
+                    return;
                 }
 
-            var bbBlock = new BBCodeBlock();
-            bbBlock.LinkNavigator.Navigate(new Uri("/OperationTypes", UriKind.Relative), this, NavigationHelper.FrameSelf);
+                var bbBlock = new BBCodeBlock();
+                bbBlock.LinkNavigator.Navigate(new Uri("/OperationTypes", UriKind.Relative), this, NavigationHelper.FrameSelf);
+            }
         }
     }
 }

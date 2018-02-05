@@ -34,14 +34,14 @@
         <DockPanel Grid.Row="2">
             <WrapPanel DockPanel.Dock="Top">
                 <TextBlock Name="ObjectAddressTextBlock" ToolTip="Enter here the object address that you want to investigate"
-                           Margin="3">Object address</TextBlock>
+                           Margin="3"></TextBlock>
                 <TextBox Name="ObjectAddressTextBox"
                          Text="{Binding ObjectAddress, UpdateSourceTrigger=PropertyChanged}"
                          MinWidth="100"
                          Margin="3" />
                 <TextBlock Name="ObjectTypesTextBlock"
                            ToolTip="Enter here the object types that you want to filter"
-                           Margin="3">Object types</TextBlock>
+                           Margin="3"></TextBlock>
                 <TextBox Name="ObjectTypesTextBox"
                          Text="{Binding Types, UpdateSourceTrigger=PropertyChanged}"
                          MinWidth="100"

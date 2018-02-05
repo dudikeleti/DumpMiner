@@ -13,10 +13,11 @@ namespace DumpMiner
         readonly string TitleConst;
         DispatcherTimer timer;
         PerformanceCounter exceptionsCounter;
+
         public MainWindow()
         {
             InitializeComponent();
-            TitleConst = "Master Dump " + (Environment.Is64BitProcess ? "(x64) - " : "(x86) - ");
+            TitleConst = "Dump Miner" + (Environment.Is64BitProcess ? "(x64) - " : "(x86) - ");
             exceptionsCounter = new PerformanceCounter(".NET CLR Exceptions", "# of Exceps Thrown", "DumpMiner", true);
             Title = TitleConst + GetMemoryInfo();
             var kb = new KeyBinding(GlobalCommands.LoadDumpCommand, new KeyGesture(Key.O, ModifierKeys.Control));

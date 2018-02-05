@@ -12,8 +12,12 @@
                             Explanation="Dump all loaded modules">
         <controls:OperationView.ItemsView>
             <GridView>
-                <GridViewColumn Header="Id"
-                                DisplayMemberBinding="{Binding Identifier}" />
+                <GridViewColumn Header="Metadata Address"
+                                DisplayMemberBinding="{Binding MetadataAddress}" />
+                <GridViewColumn Width="20"
+                                DisplayMemberBinding="{Binding Empty}" />
+                <GridViewColumn Header="Image Base"
+                                DisplayMemberBinding="{Binding ImageBase}" />
                 <GridViewColumn Width="20"
                                 DisplayMemberBinding="{Binding Empty}" />
                 <GridViewColumn Header="Name"
