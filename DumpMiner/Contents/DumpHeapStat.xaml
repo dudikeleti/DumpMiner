@@ -20,7 +20,7 @@
         </StackPanel>
         <controls:OperationView Grid.Row="1"
                                 ObjectAddressVisibility="Collapsed"
-                                Header="Dump seap -stat"
+                                Header="Dump heap -stat"
                                 Explanation="Dump the GC heap grouped by object type. You can filter by GC generation.">
             <controls:OperationView.ItemsView>
                 <GridView>
