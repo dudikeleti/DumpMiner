@@ -127,6 +127,9 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ObjectExtractors\BitmapExtractor.cs" />
+    <Compile Include="ObjectExtractors\IObjectExtractor.cs" />
+    <Compile Include="ObjectExtractors\ObjectExtraction.cs" />
     <Compile Include="Common\ViewModelNames.cs" />
     <Compile Include="Contents\TypeFromHandle.xaml.cs">
       <DependentUpon>TypeFromHandle.xaml</DependentUpon>
