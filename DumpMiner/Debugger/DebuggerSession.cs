@@ -29,6 +29,8 @@ namespace DumpMiner.Debugger
         public ClrHeap Heap { get; private set; }
         public DataTarget DataTarget { get; private set; }
         public CrashDumpReader DumpReader { get; private set; }
+        public int? AttachedProcessId { get => _attachedProcess?.Id; }
+        public Process AttachedProcess { get => _attachedProcess; }
 
         #endregion
 
@@ -153,6 +155,8 @@ namespace DumpMiner.Debugger
             {
                 uint secondsSinceUnix;
                 var dbgCtrl2 = (IDebugControl2)Runtime.DataTarget.DebuggerInterface;
+                if (dbgCtrl2 == null)
+                    return DateTime.Now;
                 dbgCtrl2.GetCurrentTimeDate(out secondsSinceUnix);
                 var origin = new DateTime(1970, 1, 1, 0, 0, 0, 0);
                 return origin.AddSeconds(secondsSinceUnix).ToLocalTime();
@@ -169,7 +173,7 @@ namespace DumpMiner.Debugger
             {
                 try
                 {
-                    DataTarget.DebuggerInterface.DetachProcesses();
+                    DataTarget.DebuggerInterface?.DetachProcesses();
                 }
                 finally
                 {
