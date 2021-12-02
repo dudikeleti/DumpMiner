@@ -67,7 +67,24 @@
             </WrapPanel>
             <ListView Name="ItemsList" SelectionChanged="ItemsList_OnSelectionChanged"
                       ItemsSource="{Binding Items}"
-                      SelectedItem="{Binding SelectedItem}" />
+                      SelectedItem="{Binding SelectedItem}">
+                <ListView.Resources>
+                    <Style TargetType="ListItem">
+                        <Setter Property="ContextMenu">
+                            <Setter.Value>
+                                <ContextMenu>
+                                    <MenuItem Header="Dump to file..." />
+                                </ContextMenu>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListView.Resources>
+                <ListView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Dump to file..." Click="DumpMenuClicked" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}" />
+                    </ContextMenu>
+                </ListView.ContextMenu>
+            </ListView>
         </DockPanel>
     </Grid>
 </UserControl>

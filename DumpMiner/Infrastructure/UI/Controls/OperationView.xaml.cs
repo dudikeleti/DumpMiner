@@ -1,4 +1,9 @@
-﻿using System.Windows;
+﻿using DumpMiner.Debugger;
+using DumpMiner.ObjectExtractors;
+using System;
+using System.IO;
+using System.Text;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace DumpMiner.Infrastructure.UI.Controls
@@ -134,6 +139,105 @@ namespace DumpMiner.Infrastructure.UI.Controls
         {
             SelectedItem = e.AddedItems != null && e.AddedItems.Count > 0 ? e.AddedItems[0] : null;
             SelectionChange?.Invoke(sender, e);
+        }
+
+        private async void DumpMenuClicked(object sender, RoutedEventArgs e)
+        {
+            if (SelectedItem == null)
+                return;
+
+            var addressProperty = SelectedItem.GetType().GetProperty("Address", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            var sizeProperty = SelectedItem.GetType().GetProperty("Size", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            if (addressProperty == null || sizeProperty == null)
+                return;
+            ulong address = (ulong)addressProperty.GetValue(SelectedItem);
+            ulong size = (ulong)sizeProperty.GetValue(SelectedItem);
+
+            var typeNameProperty = SelectedItem.GetType().GetProperty("Type", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            string typeName = "[unknown]";
+            if (typeNameProperty != null)
+            {
+                typeName = (string)typeNameProperty.GetValue(SelectedItem);
+            }
+
+            if (address == 0)
+            {
+                MessageBox.Show("Selected object address is zero. Cannot dump.", "Error");
+                return;
+            }
+            if (size == 0)
+            {
+                MessageBox.Show("Selected object size is zero. Cannot dump.", "Error");
+                return;
+            }
+            if (size > int.MaxValue)
+            {
+                MessageBox.Show("Selected object size is too large. Cannot dump.", "Error");
+                return;
+            }
+
+            try
+            {
+                byte[] buffer = new byte[size];
+                int bytesRead = 0;
+                bool success = DebuggerSession.Instance.DataTarget.ReadProcessMemory(address, buffer, (int)size, out bytesRead);
+                if (!success || bytesRead <= 0)
+                {
+                    MessageBox.Show("Could not read process memory.", "Error");
+                    return;
+                }
+                if ((uint)bytesRead < size)
+                {
+                    byte[] buffer2 = new byte[bytesRead];
+                    Array.Copy(buffer, buffer2, bytesRead);
+                    buffer = buffer2;
+                }
+
+                string baseFileName = $"pid_{DebuggerSession.Instance.AttachedProcessId?.ToString() ?? "none"}_obj_{address:x16}_{bytesRead:x8}";
+                string dumpFileName = baseFileName + ".dump";
+                string descFileName = baseFileName + ".txt";
+                var dumpDescription = new StringBuilder();
+                dumpDescription.AppendLine("DumpMiner object dump");
+                dumpDescription.AppendLine($"Time: {DateTime.Now.ToString()}");
+                dumpDescription.AppendLine($"Process ID: {DebuggerSession.Instance.AttachedProcessId?.ToString() ?? "N/A"}");
+                dumpDescription.AppendLine($"Process Name: {DebuggerSession.Instance.AttachedProcess?.ProcessName ?? "N/A"}");
+                dumpDescription.AppendLine($"Dumped object type: {typeName}");
+                dumpDescription.AppendLine($"Dumped object address: 0x{address:x16} ({address})");
+                dumpDescription.AppendLine($"Dumped object size: 0x{size:x8} ({size})");
+
+                File.WriteAllBytes(dumpFileName, buffer);
+                File.WriteAllText(descFileName, dumpDescription.ToString());
+
+                MessageBox.Show($"Dumped {bytesRead} raw bytes from address 0x{address:x16} to {dumpFileName}", "Object dumped");
+
+                var extractor = ObjectExtraction.FindExtractor(typeName);
+                if (extractor != null)
+                {
+                    if (MessageBox.Show($"The type {typeName} can be extracted from memory. Would you like to do this?", "Extract?", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    {
+                        string extractFileName = baseFileName + extractor.GetFileNameSuffix();
+                        using (var fs = File.OpenWrite(extractFileName))
+                        {
+                            // truncate the file if it already existed
+                            fs.SetLength(0);
+                            success = await extractor.Extract(fs, address, size, typeName);
+                        }
+                        if (success)
+                        {
+                            MessageBox.Show("Extraction completed successfully.");
+                        }
+                        else
+                        {
+                            MessageBox.Show("Extraction failed.");
+                            try { File.Delete(extractFileName); } catch { }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An exception occurred while dumping the object: {ex.ToString()}", "Error");
+            }
         }
     }
 }
