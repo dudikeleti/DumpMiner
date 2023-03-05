@@ -15,13 +15,13 @@
                 <GridViewColumn Header="Address">
                     <GridViewColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBox Text="{Binding Address, Mode=OneWay}"
+                            <TextBox Text="{Binding Address, StringFormat={}0x{0:X8}, Mode=OneWay}"
                                      BorderBrush="{x:Null}" />
                         </DataTemplate>
                     </GridViewColumn.CellTemplate>
                 </GridViewColumn>
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Type">
                     <GridViewColumn.CellTemplate>
                         <DataTemplate>
@@ -33,7 +33,7 @@
                 <GridViewColumn Header="MetadataToken">
                     <GridViewColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBox Text="{Binding MetadataToken, Mode=OneWay}"
+                            <TextBox Text="{Binding MetadataToken, StringFormat={}0x{0:X8}, Mode=OneWay}"
                                      BorderBrush="{x:Null}" />
                         </DataTemplate>
                     </GridViewColumn.CellTemplate>

@@ -13,90 +13,114 @@
                             ObjectTypeVisibility="Collapsed">
         <controls:OperationView.ItemsTemplate>
             <DataTemplate>
-                <Border BorderBrush="Black"
-                        BorderThickness="1"
-                        CornerRadius="3"
-                        Padding="3">
+                <Border BorderBrush="GhostWhite"
+                        BorderThickness="0.5"
+                        CornerRadius="2"
+                        Padding="3"
+                        Margin="0,0,0,3">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <StackPanel Grid.Row="0">
-                            <TextBlock Text="{Binding OSThreadId, StringFormat= OS Thread Id: {0}}"
-                                   FontStyle="Oblique"
-                                   FontWeight="Medium" />
-                            <TextBlock Text="{Binding ManagedThreadId, StringFormat= Managed Thread Id: {0}}"
-                                   FontStyle="Oblique"
-                                   FontWeight="Medium" />
-                            <TextBlock Text="{Binding StackBase, StringFormat= Stack base: {0}}"
-                                   FontStyle="Oblique"
-                                   FontWeight="Medium" />
-                            <TextBlock Text="{Binding StackLimit, StringFormat= Stack limit: {0}}"
-                                   FontStyle="Oblique"
-                                   FontWeight="Medium" />
-                            <WrapPanel>
-                                <TextBlock Text="Last Exception: "
-                                       FontStyle="Oblique"
-                                       FontWeight="Medium" />
-                                <TextBlock Text="{Binding Exception.Type.Name, StringFormat= - {0}}"
-                                       FontStyle="Oblique"
-                                       FontWeight="Medium" />
-                                <TextBlock Text="{Binding Exception.Message}"
-                                       FontStyle="Oblique"
-                                       FontWeight="Medium" />
-                            </WrapPanel>
-                        </StackPanel>
+
+                        <Border Grid.Row="0" BorderBrush="Gainsboro" 
+                                BorderThickness="0,0,0,0.5" 
+                                Padding="0,0,0,1" 
+                                Margin="0,0,0,1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition></RowDefinition>
+                                    <RowDefinition></RowDefinition>
+                                    <RowDefinition></RowDefinition>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="15"></ColumnDefinition>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="15"></ColumnDefinition>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding OSThreadId, StringFormat= OS thread id:            {0}, FallbackValue= OS thread id:            N/A }"
+                                           FontStyle="Oblique"
+                                           FontWeight="Medium" />
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding ManagedThreadId, StringFormat= Managed thread id:  {0}}"
+                                           FontStyle="Oblique"
+                                           FontWeight="Medium" />
+
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding StackBase, StringFormat= Stack base:  0x{0:X8}}"
+                                           FontStyle="Oblique"
+                                           FontWeight="Medium" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding StackLimit, StringFormat= Stack limit:  0x{0:X8}}"
+                                           FontStyle="Oblique"
+                                           FontWeight="Medium" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Last exception:        "
+                                           FontStyle="Oblique"
+                                           FontWeight="Medium" />
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding Exception.Type.Name, StringFormat= - {0}}"
+                                           FontStyle="Oblique"
+                                           FontWeight="Medium" />
+                                <TextBlock Grid.Row="2" Grid.Column="4" Text="{Binding Exception.Message}"
+                                           FontStyle="Oblique"
+                                           FontWeight="Medium" />
+                            </Grid>
+
+                        </Border>
+
                         <ListView Grid.Row="1" ItemsSource="{Binding StackFrames}"  ScrollViewer.VerticalScrollBarVisibility="Visible" MaxHeight="200">
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Stack Pointer"
-                                                    DisplayMemberBinding="{Binding StackPointer}" />
-                                    <GridViewColumn Header="Method">
+                                                    DisplayMemberBinding="{Binding StackPointer, StringFormat={}0x{0:X8}}"/>
+                                    <GridViewColumn Header="Method" Width="Auto">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Expander>
                                                     <Expander.Header>
                                                         <TextBox Text="{Binding DisplayString, Mode=OneWay}"></TextBox>
                                                     </Expander.Header>
-                                                    <Border BorderBrush="Thistle"
-                                                            BorderThickness="0,1,0,1">
-                                                        <Grid>
-                                                            <Grid.RowDefinitions>
-                                                                <RowDefinition />
-                                                                <RowDefinition Height="5" />
-                                                                <RowDefinition />
-                                                                <RowDefinition Height="5" />
-                                                                <RowDefinition />
-                                                            </Grid.RowDefinitions>
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="25" />
-                                                                <ColumnDefinition Width="Auto" />
-                                                                <ColumnDefinition Width="10" />
-                                                                <ColumnDefinition />
-                                                            </Grid.ColumnDefinitions>
-                                                            <TextBlock Grid.Row="0"
+                                                    <Grid>
+                                                        <Grid.Resources>
+                                                            <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                                                <Setter Property="Foreground" Value="{StaticResource ItemText}"></Setter>
+                                                            </Style>
+                                                        </Grid.Resources>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition />
+                                                            <RowDefinition Height="5" />
+                                                            <RowDefinition />
+                                                            <RowDefinition Height="5" />
+                                                            <RowDefinition />
+                                                        </Grid.RowDefinitions>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="25" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="10" />
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Row="0"
                                                                        Grid.Column="1"
-                                                                       Text="Compiliation type" />
-                                                            <TextBlock Grid.Row="0"
+                                                                       Text="Compilation type"/>
+                                                        <TextBlock Grid.Row="0"
                                                                        Grid.Column="3"
                                                                        Text="{Binding Method.CompilationType}" />
-                                                            <TextBlock Grid.Row="2"
+                                                        <TextBlock Grid.Row="2"
                                                                        Grid.Column="1"
                                                                        Text="Metadata token" />
-                                                            <TextBox Grid.Row="2"
+                                                        <TextBox Grid.Row="2"
                                                                      Grid.Column="3"
-                                                                     Text="{Binding Method.MetadataToken, Mode=OneWay}" />
-                                                            <TextBlock Grid.Row="4"
+                                                                     Text="{Binding Method.MetadataToken, StringFormat={}0x{0:X8}, Mode=OneWay}" />
+                                                        <TextBlock Grid.Row="4"
                                                                        Grid.Column="1"
                                                                        Text="Is static" />
-                                                            <CheckBox Grid.Row="4"
+                                                        <CheckBox Grid.Row="4"
                                                                       Grid.Column="3"
                                                                       IsChecked="{Binding Method.IsStatic, Mode=OneWay}"
                                                                       IsEnabled="False" />
-                                                        </Grid>
-                                                    </Border>
+                                                    </Grid>
                                                 </Expander>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
@@ -107,16 +131,16 @@
                             </ListView.View>
                         </ListView>
                         <Expander Grid.Row="2" Header="Stack objects"
-                                  MaxHeight="300">
+                                  MaxHeight="300" Foreground="{StaticResource ItemText}">
                             <ListView ItemsSource="{Binding StackObjects}">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="Stack adress"
-                                                        DisplayMemberBinding="{Binding Address}" />
+                                        <GridViewColumn Header="Stack address"
+                                                        DisplayMemberBinding="{Binding Address, StringFormat={}0x{0:X8}}" />
                                         <GridViewColumn Header="Object pointer">
                                             <GridViewColumn.CellTemplate>
                                                 <DataTemplate>
-                                                    <TextBox Text="{Binding Object, Mode=OneWay}"
+                                                    <TextBox Text="{Binding Object, StringFormat={}0x{0:X8}, Mode=OneWay}"
                                                              BorderBrush="{x:Null}" />
                                                 </DataTemplate>
                                             </GridViewColumn.CellTemplate>
@@ -135,29 +159,30 @@
                                                     <Expander MaxHeight="200"
                                                               MinWidth="500"
                                                               MaxWidth="700">
-                                                        <Border BorderBrush="Thistle"
-                                                                BorderThickness="0,1,0,1">
+                                                        <Border BorderBrush="GhostWhite"
+                                                                BorderThickness="0,0,0,1"
+                                                                Padding="0,0,0,1">
                                                             <ListView ItemsSource="{Binding Value}">
                                                                 <ListView.View>
                                                                     <GridView>
                                                                         <GridViewColumn Header="Address">
                                                                             <GridViewColumn.CellTemplate>
                                                                                 <DataTemplate>
-                                                                                    <TextBox Text="{Binding Address, Mode=OneWay}"
+                                                                                    <TextBox Text="{Binding Address, StringFormat={}0x{0:X8}, Mode=OneWay}"
                                                                                              BorderBrush="{x:Null}" />
                                                                                 </DataTemplate>
                                                                             </GridViewColumn.CellTemplate>
                                                                         </GridViewColumn>
                                                                         <GridViewColumn Width="20"
-                                                                                        DisplayMemberBinding="{Binding Empty}" />
+                                                                            DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                                                                         <GridViewColumn Header="Type name"
                                                                                         DisplayMemberBinding="{Binding TypeName}" />
                                                                         <GridViewColumn Width="20"
-                                                                                        DisplayMemberBinding="{Binding Empty}" />
+                                                                            DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                                                                         <GridViewColumn Header="Field name"
                                                                                         DisplayMemberBinding="{Binding FieldName}" />
                                                                         <GridViewColumn Width="20"
-                                                                                        DisplayMemberBinding="{Binding Empty}" />
+                                                                            DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                                                                         <GridViewColumn Header="Value">
                                                                             <GridViewColumn.CellTemplate>
                                                                                 <DataTemplate>

@@ -1,0 +1,4 @@
+SymbolCache=c:\dev
+Theme=dark
+AccentColor=1B,A1,E2
+DefaultTimeout=60000

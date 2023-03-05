@@ -8,7 +8,7 @@
         public int ThreadsCount { get; set; }
         public string ClrVersions { get; set; }
         public string DacInfo { get; set; }
-        public string DumpCreatedTime { get; set; }
+        public string CreatedTime { get; set; }
         public string SymbolPath { get; set; }
         public string Architecture { get; set; }
         public bool IsGcServer { get; set; }

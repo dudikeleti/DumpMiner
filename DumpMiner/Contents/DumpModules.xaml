@@ -13,25 +13,25 @@
         <controls:OperationView.ItemsView>
             <GridView>
                 <GridViewColumn Header="Metadata Address"
-                                DisplayMemberBinding="{Binding MetadataAddress}" />
+                                DisplayMemberBinding="{Binding MetadataAddress, StringFormat={}0x{0:X8}}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Image Base"
-                                DisplayMemberBinding="{Binding ImageBase}" />
+                                DisplayMemberBinding="{Binding ImageBase, StringFormat={}0x{0:X8}}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Name"
                                 DisplayMemberBinding="{Binding Name}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Path"
                                 DisplayMemberBinding="{Binding FilePath}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Size"
-                                DisplayMemberBinding="{Binding Size}" />
+                                DisplayMemberBinding="{Binding Size, Converter={StaticResource SizeConverter}}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Is Dynamic">
                     <GridViewColumn.CellTemplate>
                         <DataTemplate>

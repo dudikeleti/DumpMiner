@@ -15,7 +15,7 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.DumpHeapStat;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             List<string> types = model.Types?.Split(';').ToList();
 
@@ -24,7 +24,7 @@ namespace DumpMiner.Operations
                 var heap = DebuggerSession.Instance.Heap;
                 var enumerable = from o in heap.EnumerateObjectAddresses()
                                  let type = heap.GetObjectType(o)
-                                 where type == null || types == null || types.Any(t => type.Name.Contains(t))
+                                 where type == null || types == null || types.Any(t => type.Name.ToLower().Contains(t.ToLower()))
                                  group o by type
                                      into g
                                      let size = g.Sum(o => (uint)g.Key.GetSize(o))
@@ -32,6 +32,7 @@ namespace DumpMiner.Operations
                                      select new
                                      {
                                          Name = g.Key.Name,
+                                         MetadataToken = g.Key.MetadataToken,
                                          Size = size,
                                          Count = g.Count()
                                      };

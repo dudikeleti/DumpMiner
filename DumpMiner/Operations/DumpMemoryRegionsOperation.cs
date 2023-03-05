@@ -16,7 +16,7 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.DumpMemoryRegions;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {

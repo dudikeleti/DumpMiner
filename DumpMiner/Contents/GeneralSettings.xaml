@@ -1,0 +1,30 @@
+﻿<UserControl x:Class="DumpMiner.Contents.GeneralSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             d:DesignWidth="500">
+    <Grid>
+        <ScrollViewer>
+            <StackPanel HorizontalAlignment="Left" MinWidth="400">
+                <TextBlock Text="General Settings"
+                           Style="{StaticResource Heading2}" />
+                <GridSplitter BorderThickness="1"
+                              Height="1"></GridSplitter>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                    <TextBlock Margin="4" MinWidth="200">Symbol cache</TextBlock>
+                    <TextBox Text="{Binding SymbolCache}" MinWidth="250" Margin="4"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                    <TextBlock Margin="4" MinWidth="200">Default timeout</TextBlock>
+                    <TextBox Text="{Binding DefaultTimeout}" MinWidth="250" Margin="4"/>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

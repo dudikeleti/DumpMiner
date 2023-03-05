@@ -17,12 +17,12 @@ namespace DumpMiner.Operations
         private CancellationToken _token;
         public string Name => OperationNames.GetObjectRoot;
 
-        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 _token = token;
-                _heap = DebuggerSession.Instance.Runtime.GetHeap();
+                _heap = DebuggerSession.Instance.Heap;
                 _found = false;
                 var stack = new Stack<ulong>();
                 foreach (var root in _heap.EnumerateRoots())

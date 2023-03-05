@@ -16,7 +16,7 @@
             <TextBlock Margin="3"
                        ToolTip="in bytes">Object size</TextBlock>
             <TextBox Margin="3"
-                     Text="{Binding Generation, Mode=OneWayToSource}"
+                     Text="{Binding Generation, Mode=OneWayToSource, FallbackValue=0}"
                      Width="60" />
         </StackPanel>
 
@@ -29,13 +29,13 @@
                     <GridViewColumn Header="Address">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Address, Mode=OneWay}"
+                                <TextBox Text="{Binding Address, StringFormat={}0x{0:X8}, Mode=OneWay}"
                                          BorderBrush="{x:Null}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Type">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
@@ -45,11 +45,11 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Generation"
                                     DisplayMemberBinding="{Binding Generation}" />
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Size"
                                     DisplayMemberBinding="{Binding Size, Converter={StaticResource SizeConverter}}" />
                 </GridView>

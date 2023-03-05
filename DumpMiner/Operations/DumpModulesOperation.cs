@@ -14,7 +14,7 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.DumpModules;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             List<string> types = model.Types?.Split(';').ToList();
             return await DebuggerSession.Instance.ExecuteOperation(() =>

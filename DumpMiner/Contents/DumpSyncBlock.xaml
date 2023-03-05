@@ -27,12 +27,12 @@
                     <GridViewColumn Header="Associated object">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Object, Mode=OneWay}"
+                                <TextBox Text="{Binding Object, StringFormat={}0x{0:X8}, Mode=OneWay}"
                                          BorderBrush="{x:Null}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Owner thread">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
@@ -41,15 +41,15 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Taken" DisplayMemberBinding="{Binding Taken}" />
-                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="RecursionCount" DisplayMemberBinding="{Binding RecursionCount}" />
-                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="HasSingleOwner" DisplayMemberBinding="{Binding HasSingleOwner}" />
-                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Reason" DisplayMemberBinding="{Binding Reason}" />
-                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
 
                     <GridViewColumn Header="Owners">
                         <GridViewColumn.CellTemplate>
@@ -57,8 +57,8 @@
                                 <Expander MaxHeight="250"
                                           MinWidth="120"
                                           MaxWidth="200">
-                                    <Border BorderBrush="Thistle"
-                                            BorderThickness="0,1,0,1">
+                                    <Border BorderBrush="GhostWhite"
+                                            BorderThickness="0,0,0,1">
                                         <ListView ItemsSource="{Binding Owners}">
                                             <ListView.View>
                                                 <GridView>
@@ -79,7 +79,8 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
 
-                    <GridViewColumn Width="20" DisplayMemberBinding="{Binding Empty}" />
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
 
                     <GridViewColumn Header="Waiters">
                         <GridViewColumn.CellTemplate>
@@ -87,8 +88,8 @@
                                 <Expander MaxHeight="250"
                                           MinWidth="120"
                                           MaxWidth="200">
-                                    <Border BorderBrush="Thistle"
-                                            BorderThickness="0,1,0,1">
+                                    <Border BorderBrush="GhostWhite"
+                                            BorderThickness="0,0,0,1">
                                         <ListView ItemsSource="{Binding Waiters}">
                                             <ListView.View>
                                                 <GridView>

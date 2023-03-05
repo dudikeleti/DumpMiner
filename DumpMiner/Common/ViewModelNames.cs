@@ -6,5 +6,6 @@
         public const string OperationTypesViewModel = "OperationTypesViewModel";
         public const string BaseOperationViewModel = "BaseOperationViewModel";
         public const string DumpHeapOperationViewModel = "DumpHeapOperationViewModel";
+        public const string DumpAnalyzerViewModel = "DumpAnalyzerViewModel";
     }
 }

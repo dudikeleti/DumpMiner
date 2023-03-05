@@ -7,8 +7,9 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid Style="{StaticResource ContentRoot}">
-        <mui:ModernTab Layout="List" SelectedSource="/Settings/Appearance">
+        <mui:ModernTab Layout="List" SelectedSource="/Settings/General">
             <mui:ModernTab.Links>
+                <mui:Link DisplayName="general" Source="/Settings/General" />
                 <mui:Link DisplayName="appearance" Source="/Settings/Appearance" />
                 <mui:Link DisplayName="about" Source="/Settings/About" />
             </mui:ModernTab.Links>

@@ -13,11 +13,11 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.DumpDelegateMethod;
 
-        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
-                var heap = DebuggerSession.Instance.Runtime.GetHeap();
+                var heap = DebuggerSession.Instance.Heap;
 
                 // the first 8 bytes is some padding (maybe the first 5 is code stub and the rest some flags)
                 // so we need to read the 7th byte to get the offset to first MethodDesc

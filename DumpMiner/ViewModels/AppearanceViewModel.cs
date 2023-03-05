@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Media;
 using DumpMiner.Common;
+using DumpMiner.Infrastructure;
 using FirstFloor.ModernUI.Presentation;
 
 namespace DumpMiner.ViewModels
@@ -72,7 +74,26 @@ namespace DumpMiner.ViewModels
             this.themes.Add(new Link { DisplayName = "light", Source = AppearanceManager.LightThemeSource });
 
             this.SelectedFontSize = AppearanceManager.Current.FontSize == FontSize.Large ? FontLarge : FontSmall;
-            SyncThemeAndColor();
+
+            var savedTheme = SettingsManager.Instance.ReadSettingValue(SettingsManager.Theme).ToLower();
+            var theme = themes.FirstOrDefault(t => t.DisplayName.ToLower() == savedTheme);
+            SelectedTheme = theme ?? themes.First();
+
+            var savedColor = SettingsManager.Instance.ReadSettingValue(SettingsManager.AccentColor)?.Split(',');
+            if (savedColor == null || savedColor.Length != 3)
+            {
+                SelectedAccentColor = AppearanceManager.Current.AccentColor;
+            }
+            else
+            {
+                SelectedAccentColor = Color.FromRgb(
+                    byte.Parse(savedColor[0], NumberStyles.HexNumber),
+                    byte.Parse(savedColor[1], NumberStyles.HexNumber),
+                    byte.Parse(savedColor[2], NumberStyles.HexNumber));
+
+            }
+
+            // SyncThemeAndColor();
             AppearanceManager.Current.PropertyChanged += OnAppearanceManagerPropertyChanged;
         }
 
@@ -117,6 +138,7 @@ namespace DumpMiner.ViewModels
                 {
                     this.selectedTheme = value;
                     OnPropertyChanged("SelectedTheme");
+                    SettingsManager.Instance.SaveSettings(nameof(SettingsManager.Theme), value.DisplayName);
 
                     // and update the actual theme
                     AppearanceManager.Current.ThemeSource = value.Source;
@@ -148,6 +170,7 @@ namespace DumpMiner.ViewModels
                 {
                     this.selectedAccentColor = value;
                     OnPropertyChanged("SelectedAccentColor");
+                    SettingsManager.Instance.SaveSettings(nameof(SettingsManager.AccentColor), $"{value.R:X},{value.G:X},{value.B:X}");
 
                     AppearanceManager.Current.AccentColor = value;
                 }

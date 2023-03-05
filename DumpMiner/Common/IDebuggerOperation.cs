@@ -8,6 +8,6 @@ namespace DumpMiner.Common
     public interface IDebuggerOperation
     {
         string Name { get; }
-        Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter);
+        Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter);
     }
 }

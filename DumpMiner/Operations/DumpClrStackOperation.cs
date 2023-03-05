@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,9 +15,9 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.DumpClrStack;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
-            //TODO: add support of local variables
+            //TODO: support local variables 
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 var result = new List<ClrStackDump>();
@@ -43,12 +42,15 @@ namespace DumpMiner.Operations
                             StackPointer = stackFrame.StackPointer,
                             InstructionPointer = stackFrame.InstructionPointer,
                             DisplayString = stackFrame.DisplayString,
-                            //FileAndLine = source != null ? source.FilePath + ": " + source.LineNumber : "",
+                            // FileAndLine = source != null ? source.FilePath + ": " + source.LineNumber : "",
                             Method = stackFrame.Method
                         });
+
+                        if (token.IsCancellationRequested)
+                            break;
                     }
 
-                    ClrHeap heap = DebuggerSession.Instance.Runtime.GetHeap();
+                    ClrHeap heap = DebuggerSession.Instance.Heap;
                     var pointerSize = DebuggerSession.Instance.Runtime.PointerSize;
 
                     // address of TEB (thread execution block) + pointer size
@@ -92,8 +94,12 @@ namespace DumpMiner.Operations
                                 Address = ptr,
                                 Object = obj,
                                 Name = type.Name,
-                                Value = new ClrObject(obj, type).Fields.Value
+                                // Value = new Microsoft.Diagnostics.Runtime.ClrObject(obj, type);
+                                Value = new DumpMiner.Debugger.ClrObject(obj, type, token).Fields.Value
                             });
+
+                        if (token.IsCancellationRequested)
+                            break;
                     }
                     result.Add(stackDetails);
                 }

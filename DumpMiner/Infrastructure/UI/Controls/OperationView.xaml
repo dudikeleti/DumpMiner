@@ -10,6 +10,7 @@
              d:DesignWidth="300">
     <UserControl.Resources>
         <ui:BytesToKbOrMbConverter x:Key="SizeConverter"/>
+        <ui:HexDecConverter x:Key="HexDecConverter"/>
     </UserControl.Resources>
     <Grid Style="{StaticResource ContentRoot}">
         <Grid.RowDefinitions>
@@ -36,14 +37,14 @@
                 <TextBlock Name="ObjectAddressTextBlock" ToolTip="Enter here the object address that you want to investigate"
                            Margin="3"></TextBlock>
                 <TextBox Name="ObjectAddressTextBox"
-                         Text="{Binding ObjectAddress, UpdateSourceTrigger=PropertyChanged}"
+                         Text="{Binding ObjectAddress, UpdateSourceTrigger=LostFocus, Converter={StaticResource HexDecConverter}, FallbackValue=0}"
                          MinWidth="100"
                          Margin="3" />
                 <TextBlock Name="ObjectTypesTextBlock"
                            ToolTip="Enter here the object types that you want to filter"
                            Margin="3"></TextBlock>
                 <TextBox Name="ObjectTypesTextBox"
-                         Text="{Binding Types, UpdateSourceTrigger=PropertyChanged}"
+                         Text="{Binding Types, UpdateSourceTrigger=PropertyChanged, FallbackValue= ' '}"
                          MinWidth="100"
                          Margin="3" />
                 <mui:ModernButton Command="{Binding ExecuteOperationCommand}"

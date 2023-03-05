@@ -15,10 +15,10 @@ namespace DumpMiner.Operations
         //object lockObject = new object();
         public string Name => OperationNames.DumpLargeObjects;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             ulong size;
-            if (!ulong.TryParse(customeParameter.ToString(), out size))
+            if (!ulong.TryParse(customParameter.ToString(), out size))
                 return null;
 
             var operation = App.Container.GetExportedValue<IDebuggerOperation>(OperationNames.GetObjectSize);

@@ -6,10 +6,13 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Infrastructure.Mef;
@@ -22,14 +25,16 @@ namespace DumpMiner.ViewModels
     [ViewModel(ViewModelNames.AttachDetachViewModel)]
     public class AttachDetachViewModel : BaseViewModel
     {
+        private CancellationTokenSource _cancellationTokenSource;
         public AttachDetachViewModel()
         {
-            DetachVisiblity = Visibility.Hidden;
+            DetachVisibility = Visibility.Hidden;
             IsGetProcessesEnabled = true;
             RunningProcesses = new ObservableCollection<object>();
             _processesView = (ListCollectionView)CollectionViewSource.GetDefaultView(RunningProcesses);
             _processesView.Filter = ResourceFilter;
         }
+
         #region props
         private readonly ListCollectionView _processesView;
         public ListCollectionView ProcessesView => _processesView;
@@ -67,13 +72,13 @@ namespace DumpMiner.ViewModels
                 OnPropertyChanged();
             }
         }
-        private Visibility _detachVisiblity;
-        public Visibility DetachVisiblity
+        private Visibility _detachVisibility;
+        public Visibility DetachVisibility
         {
-            get => _detachVisiblity;
+            get => _detachVisibility;
             set
             {
-                _detachVisiblity = value;
+                _detachVisibility = value;
                 OnPropertyChanged();
             }
         }
@@ -143,6 +148,7 @@ namespace DumpMiner.ViewModels
         {
             try
             {
+                _cancellationTokenSource.Cancel();
                 LastError = null;
                 DebuggerSession.Instance.Attach(_process[SelectedItem.Name], 5000);
             }
@@ -163,7 +169,7 @@ namespace DumpMiner.ViewModels
             }
 
             AttachedProcessName = SelectedItem.Name;
-            DetachVisiblity = Visibility.Visible;
+            DetachVisibility = Visibility.Visible;
             IsGetProcessesEnabled = false;
             Dispose(true);
             DetachProcessesCommand.OnCanExecuteChanged();
@@ -189,7 +195,7 @@ namespace DumpMiner.ViewModels
                     App.Container.GetExport<IDialogService>().Value.ShowDialog("Load dump failed");
                 }
                 AttachedProcessName = file.FileName;
-                DetachVisiblity = Visibility.Visible;
+                DetachVisibility = Visibility.Visible;
                 IsGetProcessesEnabled = false;
                 DetachProcessesCommand.OnCanExecuteChanged();
             }
@@ -199,6 +205,10 @@ namespace DumpMiner.ViewModels
         {
             using (var icon = Icon.ExtractAssociatedIcon(path))
             {
+                if (icon == null)
+                {
+                    return null;
+                }
                 return Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
             }
         }
@@ -225,57 +235,88 @@ namespace DumpMiner.ViewModels
                     // Log
                     return null;
                 }
-                catch (InvalidOperationException processExited)
+                catch (InvalidOperationException) // processExited
                 {
                     // Log
                     return null;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    if (System.Diagnostics.Debugger.IsAttached)
-                        System.Diagnostics.Debugger.Break();
                     return null;
                 }
             }
             return isWow64;
         }
 
-        private void GetRunningProcessesExecute()
+        private async void GetRunningProcessesExecute()
         {
             IsLoading = true;
             RunningProcesses.Clear();
-            //var isDebugger64Bit = IntPtr.Size == 8;
             var isDebugger64Bit = Environment.Is64BitProcess;
             _process = new Dictionary<string, Process>();
             string currentProcessName;
             using (var proc = Process.GetCurrentProcess())
                 currentProcessName = proc.ProcessName;
 
-            foreach (var process in Process.GetProcesses().Where(p => p.ProcessName != currentProcessName && isDebugger64Bit == Is64BitProcess(p) && IsManagedProcess(p)))
+            if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
             {
-                string fileName;
-                string fileDescription;
-                _process[process.ProcessName] = process;
-                try
-                {
-                    fileName = process.MainModule.FileName;
-                    fileDescription = process.MainModule.FileVersionInfo.FileDescription;
-                }
-                catch (Exception e) //access denied
-                {
-                    continue;
-                }
-                RunningProcesses.Add(
-                    new
-                    {
-                        Icon = CreateBitmapSourceFromFilePath(fileName),
-                        ID = process.Id,
-                        Name = process.ProcessName,
-                        Title = process.MainWindowTitle,
-                        Description = fileDescription
-                    });
+                _cancellationTokenSource = new CancellationTokenSource();
             }
-            IsLoading = false;
+
+            var dispatcher = Application.Current.Dispatcher;
+            try
+            {
+                await Task.Run(() =>
+               {
+                   try
+                   {
+                       string fileName;
+                       string fileDescription;
+                       Parallel.ForEach(Process.GetProcesses().Where(p => p.ProcessName != currentProcessName && (string.IsNullOrWhiteSpace(FilterProcesses) || p.ProcessName.ToLower().Contains(FilterProcesses.ToLower()))),
+                          new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, TaskScheduler = TaskScheduler.Current, CancellationToken = _cancellationTokenSource.Token },
+                          process =>
+                          {
+                              try
+                              {
+                                  if (process.HasExited || isDebugger64Bit != Is64BitProcess(process) || !IsManagedProcess(process))
+                                  {
+                                      return;
+                                  }
+
+                                  _process[process.ProcessName] = process;
+
+                                  fileName = process.MainModule?.FileName;
+                                  fileDescription = process.MainModule?.FileVersionInfo.FileDescription;
+                              }
+                              catch (Exception) //access denied, invalid operation
+                              {
+                                  return;
+                              }
+
+                              dispatcher.InvokeAsync(() =>
+                              {
+                                  RunningProcesses.Add(
+                                      new
+                                      {
+                                          Icon = CreateBitmapSourceFromFilePath(fileName),
+                                          ID = process.Id,
+                                          Name = process.ProcessName,
+                                          Description = fileDescription,
+                                          Title = process.MainWindowTitle
+                                      });
+                              }, DispatcherPriority.Normal, _cancellationTokenSource.Token);
+                          });
+                   }
+                   catch (OperationCanceledException)
+                   {
+                   }
+               }, _cancellationTokenSource.Token
+               ).ConfigureAwait(false);
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private bool IsManagedProcess(Process process)
@@ -295,7 +336,7 @@ namespace DumpMiner.ViewModels
         {
             DebuggerSession.Instance.Detach();
             AttachedProcessName = "";
-            DetachVisiblity = Visibility.Hidden;
+            DetachVisibility = Visibility.Hidden;
             IsGetProcessesEnabled = true;
             AttachToProcessCommand.OnCanExecuteChanged();
             LoadDumpCommand.OnCanExecuteChanged();
@@ -311,7 +352,6 @@ namespace DumpMiner.ViewModels
             {
                 process.Value.Dispose();
             }
-            _process = null;
         }
 
         protected override void Dispose(bool dispose)

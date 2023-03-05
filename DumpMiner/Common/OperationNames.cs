@@ -6,6 +6,8 @@
         public const string DumpHeapStat = "DumpHeapStatOperation";
         public const string DumpClrStack = "DumpClrStackOperation";
         public const string DumpObject = "DumpObjectOperation";
+        public const string DumpArrayItem = "DumpArrayItemOperation";
+        public const string DumpTypeInfo = "DumpTypeInfoOperation";
         public const string DumpDelegateMethod = "DumpDelegateMethodOperation";
         public const string GetObjectRoot = "GetObjectRootOperation";
         public const string TargetProcessInfo = "TargetProcessInfoOperation";

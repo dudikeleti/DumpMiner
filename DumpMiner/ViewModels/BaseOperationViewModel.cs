@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Input;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
+using DumpMiner.Infrastructure;
 using DumpMiner.Infrastructure.Mef;
 using DumpMiner.Models;
 using FirstFloor.ModernUI.Presentation;
@@ -17,14 +18,25 @@ namespace DumpMiner.ViewModels
     public class BaseOperationViewModel : BaseViewModel
     {
         private readonly List<object[]> _results;
-        private int _resultsCurrentIndex = 0;
+        private int _resultsCurrentIndex;
         public OperationModel Model { get; set; }
-        private CancellationTokenSource _cancellationToken;
+        protected CancellationTokenSource CancellationTokenSource;
+        private readonly TimeSpan _defaultTimeout;
+
         public BaseOperationViewModel()
         {
             CancelOperationVisibility = Visibility.Collapsed;
             Model = new OperationModel();
             _results = new List<object[]>();
+            var setting = SettingsManager.Instance.ReadSettingValue(SettingsManager.DefaultTimeout);
+            if (int.TryParse(setting, out var timeout))
+            {
+                _defaultTimeout = TimeSpan.FromSeconds(timeout);
+            }
+            else
+            {
+                _defaultTimeout = TimeSpan.FromSeconds(60);
+            }
         }
         public virtual IDebuggerOperation Operation { get; set; }
 
@@ -103,10 +115,10 @@ namespace DumpMiner.ViewModels
             Count = 0;
             IsLoading = true;
             IEnumerable<object> result = null;
-            _cancellationToken = new CancellationTokenSource();
+            CancellationTokenSource = new CancellationTokenSource(_defaultTimeout);
             try
             {
-                result = await Operation.Execute(Model, _cancellationToken.Token, o);
+                result = await Operation.Execute(Model, CancellationTokenSource.Token, o);
             }
             catch (OperationCanceledException)
             {
@@ -114,7 +126,7 @@ namespace DumpMiner.ViewModels
             }
             catch (Exception ex)
             {
-                App.Container.GetExport<IDialogService>().Value.ShowDialog("Exception \n" + ex.Message);
+                App.Container.GetExport<IDialogService>().Value.ShowDialog($"Exception{Environment.NewLine}{ex.Message}{Environment.NewLine}{ex.StackTrace.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)[0]}");
             }
 
             if (result != null)
@@ -153,42 +165,42 @@ namespace DumpMiner.ViewModels
                 Count = Items.Count;
             if (Count > 0)
                 _resultsCurrentIndex = _results.Count - 1;
-            _cancellationToken.Dispose();
-            _cancellationToken = null;
+            CancellationTokenSource.Dispose();
+            CancellationTokenSource = null;
             ((RelayCommand)GoToNextResultCommand).OnCanExecuteChanged();
             ((RelayCommand)GoToPreResultCommand).OnCanExecuteChanged();
         }
 
         //private IObservable<object> Observe(IEnumerable<object> enumerable, CancellationToken token)
         //{
-            //return Observable.Create<object>(observer =>
-            // {
-            //     try
-            //     {
-            //         var items = new List<object>();
-            //         int count = 0;
-            //         foreach (var item in enumerable)
-            //         {
-            //             token.ThrowIfCancellationRequested();
-            //             items.Add(item);
-            //             observer.OnNext(item);
-            //             if (++count > 500)
-            //             {
-            //                 Thread.Sleep(8);
-            //                 count = 0;
-            //             }
-            //         }
-            //         if (items.Count > 0)
-            //             _results.Add(items.ToArray());
-            //         observer.OnCompleted();
-            //     }
-            //     catch (Exception ex)
-            //     {
-            //         observer.OnError(ex);
-            //     }
+        //return Observable.Create<object>(observer =>
+        // {
+        //     try
+        //     {
+        //         var items = new List<object>();
+        //         int count = 0;
+        //         foreach (var item in enumerable)
+        //         {
+        //             token.ThrowIfCancellationRequested();
+        //             items.Add(item);
+        //             observer.OnNext(item);
+        //             if (++count > 500)
+        //             {
+        //                 Thread.Sleep(8);
+        //                 count = 0;
+        //             }
+        //         }
+        //         if (items.Count > 0)
+        //             _results.Add(items.ToArray());
+        //         observer.OnCompleted();
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         observer.OnError(ex);
+        //     }
 
-            //     return Disposable.Empty;
-            // });
+        //     return Disposable.Empty;
+        // });
         //}
 
         private RelayCommand _cancelOperationCommand;
@@ -199,8 +211,8 @@ namespace DumpMiner.ViewModels
             {
                 return _cancelOperationCommand ?? (_cancelOperationCommand = new RelayCommand(o =>
                 {
-                    if (_cancellationToken != null)
-                        _cancellationToken.Cancel();
+                    if (CancellationTokenSource != null)
+                        CancellationTokenSource.Cancel();
                 }));
             }
         }
@@ -224,7 +236,7 @@ namespace DumpMiner.ViewModels
                 return _goToPreResultCommand ??
                     (_goToPreResultCommand = new RelayCommand(o =>
                     {
-                            Items = new ObservableCollection<object>(_results[--_resultsCurrentIndex]);
+                        Items = new ObservableCollection<object>(_results[--_resultsCurrentIndex]);
                         Count = Items.Count;
                     },
                         o => _results.Count > 0 && _resultsCurrentIndex > 0 && Operation != null && DebuggerSession.Instance.IsAttached));

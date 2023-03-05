@@ -14,11 +14,11 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.DumpHeapSegments;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
-                var heap = DebuggerSession.Instance.Runtime.GetHeap();
+                var heap = DebuggerSession.Instance.Heap;
                 var enumerable = from segment in heap.Segments
                                  let type = segment.IsEphemeral ? "Ephemeral" : segment.IsLarge ? "Large" : "Ephemeral"
                                  select new

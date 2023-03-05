@@ -14,7 +14,7 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.TargetProcessInfo;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
@@ -33,7 +33,7 @@ namespace DumpMiner.Operations
                 infoModel.Architecture = runtime.DataTarget.Architecture.ToString();
                 infoModel.IsGcServer = runtime.ServerGC;
                 infoModel.HeapCount = runtime.HeapCount;
-                infoModel.DumpCreatedTime = DebuggerSession.Instance.AttachedTime.ToShortTimeString();
+                infoModel.CreatedTime = DebuggerSession.Instance.AttachedTime.ToUniversalTime().ToString("G");
                 infoModel.PointerSize = runtime.PointerSize;
 
                 var enumerable = from prop in infoModel.GetType().GetProperties()

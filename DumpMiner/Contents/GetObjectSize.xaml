@@ -15,7 +15,7 @@
                 <GridViewColumn Header="Referenced"
                                 DisplayMemberBinding="{Binding ReferencedCount}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Total size"
                                 DisplayMemberBinding="{Binding TotalSize, Converter={StaticResource SizeConverter}}" />
             </GridView>

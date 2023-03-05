@@ -15,14 +15,14 @@ namespace DumpMiner.Operations
         private CancellationToken _token;
         public string Name => OperationNames.GetObjectSize;
 
-        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 _token = token;
                 uint count;
                 ulong size;
-                GetObjSize(DebuggerSession.Instance.Runtime.GetHeap(), model.ObjectAddress, out count, out size);
+                GetObjSize(DebuggerSession.Instance.Heap, model.ObjectAddress, out count, out size);
                 var enumerable = new List<object> { new { ReferencedCount = count, TotalSize = size } };
                 var results = new List<object>();
                 foreach (var item in enumerable)

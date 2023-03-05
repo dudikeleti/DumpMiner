@@ -15,12 +15,12 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.DumpHeap;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             List<string> types = model.Types?.Split(';').ToList();
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
-                var generation = (int)customeParameter;
+                var generation = (int)customParameter;
                 var heap = DebuggerSession.Instance.Heap;
                 var results = new List<object>();
                 foreach (var obj in heap.EnumerateObjectAddresses().Where(ptr => (generation != -1 && generation == heap.GetGeneration(ptr)) || generation == -1))
@@ -33,8 +33,11 @@ namespace DumpMiner.Operations
                         continue;
 
                     if (types?.Any(t => type.Name.ToLower().Contains(t.ToLower())) ?? true)
-                        results.Add(new { Address = obj, Type = type.Name, Generation = heap.GetGeneration(obj), Size = type.GetSize(obj) });
+                        results.Add(new { Address = obj, Type = type.Name, MetadataToken = type.MetadataToken, Generation = heap.GetGeneration(obj), Size = type.GetSize(obj) });
                 }
+
+                // update to ClrMD V2
+                // DebuggerSession.Instance.Runtime.Flush();
                 return results;
             });
         }
