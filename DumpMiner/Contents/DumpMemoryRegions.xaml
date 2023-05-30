@@ -15,13 +15,13 @@
                 <GridViewColumn Header="Type"
                                 DisplayMemberBinding="{Binding Type}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Count"
                                 DisplayMemberBinding="{Binding Count}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="TotalSize"
-                                DisplayMemberBinding="{Binding TotalSize}" />
+                                DisplayMemberBinding="{Binding TotalSize, Converter={StaticResource SizeConverter}}" />
             </GridView>
         </controls:OperationView.ItemsView>
     </controls:OperationView>

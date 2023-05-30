@@ -8,22 +8,13 @@
              d:DesignWidth="500">
     <Grid>
         <ScrollViewer>
-            <StackPanel HorizontalAlignment="Left"
-                        Width="400">
+            <StackPanel HorizontalAlignment="Left" MaxWidth="500">
                 <TextBlock Text="ABOUT"
                            Style="{StaticResource Heading2}" />
-                <GridSplitter BorderBrush="Black"
-                              BorderThickness="1"
+                <GridSplitter BorderThickness="1"
                               Height="1"></GridSplitter>
                 <TextBlock TextWrapping="Wrap"
-                           Text="DumpMiner is a set of advanced APIs for programmatically inspecting a crash dump of a .NET program much in the same way as the SOS Debugging Extensions (SOS).
-                           
-                          
-                           
-                           It allows you to write automated crash analysis for your applications and automate many common debugger tasks.
-                          
-                           
-                           In this application you can see part of the capabilities of this API." />
+                           Text="ClrMD is a set of advanced APIs for programmatically inspecting a dump of a .NET application (or a live process), much in the same way as the SOS Debugging Extensions (SOS). It allows you to write automated crash analysis for your applications and automate many common debugger tasks. In this application you can see part of the capabilities of this library." />
             </StackPanel>
         </ScrollViewer>
     </Grid>

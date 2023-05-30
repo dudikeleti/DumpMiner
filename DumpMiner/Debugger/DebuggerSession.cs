@@ -37,6 +37,7 @@ namespace DumpMiner.Debugger
             EnsureProperDebugEngineIsLoaded();
             _workerTask = new Task(() => { });
             _workerTask.Start();
+
         }
 
         /// <summary>
@@ -110,11 +111,16 @@ namespace DumpMiner.Debugger
             {
                 try
                 {
-                    DataTarget = DataTarget.AttachToProcess(_attachedProcess.Id, milliseconds, AttachFlag.Passive);
-                    CreateRuntime();
+                    DataTarget = DataTarget.AttachToProcess(_attachedProcess.Id, milliseconds, AttachFlag.NonInvasive);
+                    var message = CreateRuntime();
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        Dispose(true);
+                        return;
+                    }
                     _attachedProcess.Exited += Process_Exited;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     try
                     {
@@ -134,12 +140,13 @@ namespace DumpMiner.Debugger
                 if (clrVersion == null)
                     return "CLR version not found";
                 Runtime = clrVersion.CreateRuntime();
-                Heap = Runtime.GetHeap();
+                Heap = Runtime.Heap;
                 if (Heap == null || !Heap.CanWalkHeap)
                     return "Can't get heap";
                 AttachedTime = GetAttachedTime();
                 SetSymbolPath(new[] { Environment.CurrentDirectory, Properties.Resources.SymbolCache, Properties.Resources.DllsFolder });
-                return "";
+                // Runtime.RuntimeFlushed += runtime => Heap = Runtime.Heap;
+                return string.Empty;
             }
             catch (Exception e)
             {

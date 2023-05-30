@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
+using DumpMiner.Models;
 using Microsoft.Diagnostics.Runtime;
 
 namespace DumpMiner.Operations
@@ -17,12 +19,12 @@ namespace DumpMiner.Operations
         private CancellationToken _token;
         public string Name => OperationNames.GetObjectRoot;
 
-        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 _token = token;
-                _heap = DebuggerSession.Instance.Runtime.GetHeap();
+                _heap = DebuggerSession.Instance.Heap;
                 _found = false;
                 var stack = new Stack<ulong>();
                 foreach (var root in _heap.EnumerateRoots())
@@ -40,6 +42,11 @@ namespace DumpMiner.Operations
                                  select new { Address = address, Type = type.Name, MetadataToken = type.MetadataToken, };
                 return enumerable.ToList();
             });
+        }
+
+        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        {
+            throw new System.NotImplementedException();
         }
 
         private void GetRefChainFromRootToObject(ulong objPtr, Stack<ulong> refChain, HashSet<ulong> visited)

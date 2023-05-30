@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -18,78 +20,254 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.DumpDisassemblyMethod;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token,
+            object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
-                ClrType type = DebuggerSession.Instance.Runtime.GetHeap().GetTypeByName(model.Types);
-                var results = new List<object>();
-                if (type == null)
+                ClrMethod method = DebuggerSession.Instance.Runtime.GetMethodByHandle(model.ObjectAddress);
+                var results = new List<AssemblyCode>();
+
+                if (method == null)
                 {
-                    results.Add(new
+                    ClrType type = DebuggerSession.Instance.Heap.GetTypeByName(model.Types);
+                    if (type == null)
                     {
-                        Address = "Can not find this type"
+                        results.Add(new AssemblyCode
+                        {
+                            Instruction = "Can not find type"
+                        });
+                        return results;
+                    }
+
+                    ulong metadataToken = model.ObjectAddress;
+                    foreach (ClrMethod m in type.Methods)
+                    {
+                        if (token.IsCancellationRequested)
+                            break;
+
+                        // add also method name?
+                        if (m.MetadataToken != metadataToken)
+                        {
+                            continue;
+                        }
+
+                        method = m;
+                        break;
+                    }
+                }
+
+                if (method == null)
+                {
+                    results.Add(new AssemblyCode
+                    {
+                        Instruction = "Can not find method"
                     });
                     return results;
                 }
-                ulong metadataToken = model.ObjectAddress;
-                foreach (ClrMethod method in type.Methods)
+
+                // This is the first instruction of the JIT'ed (or NGEN'ed) machine code.
+                ulong startAddress = method.NativeCode;
+
+                // use the IL to native mapping to get the end address
+                if (method.ILOffsetMap == null)
                 {
-                    if (token.IsCancellationRequested)
-                        break;
-
-                    // add also method name?
-                    if (!method.Type.Name.StartsWith(model.Types) || method.MetadataToken != metadataToken) continue;
-                    // This is the first instruction of the JIT'ed (or NGEN'ed) machine code.
-                    ulong startAddress = method.NativeCode;
-
-                    // use the IL to native mapping to get the end address
-                    if (method.ILOffsetMap == null)
+                    results.Add(new AssemblyCode
                     {
-                        results.Add(new
-                        {
-                            Address = "The method is not yet jited"
-                        });
-                        break;
-                    }
-                    ulong endAddress = method.ILOffsetMap.Select(entry => entry.EndAddress).Max();
-                    // the assembly code is in the range [startAddress, endAddress] inclusive.
-                    var dbgCtrl = (IDebugControl)DebuggerSession.Instance.DataTarget.DebuggerInterface;
-                    int size = Math.Max(1000000, (int)(endAddress + 1 - startAddress));
-                    uint disassemblySize;
-                    ulong nextInstruction;
-                    var sb = new StringBuilder(size);
-                    var result = dbgCtrl.Disassemble(startAddress, DEBUG_DISASM.EFFECTIVE_ADDRESS, sb, size, out disassemblySize, out nextInstruction);
-                    var disassembly = sb.ToString().Split(' ').ToList();
-                    disassembly.RemoveAll(s => s == "");
-
-                    results.Add(new
-                    {
-                        Address = disassembly.Count > 1 ? disassembly[0] + "  " + disassembly[1] : "",
-                        OpCode = disassembly.Count > 2 ? disassembly[2] : "",
-                        Instruction = disassembly.Count > 4 ? disassembly[3] + " " + disassembly[4] : disassembly.Count > 3 ? disassembly[3] : "",
+                        Instruction = "The method is not yet jited"
                     });
-                    while (nextInstruction < endAddress)
+                    return results;
+                }
+
+                // ulong endAddress = method.ILOffsetMap.Select(entry => entry.EndAddress).Max();
+
+                foreach (var map in GetCompleteNativeMap(method))
+                {
+                    var dbgCtrl = (IDebugControl)DebuggerSession.Instance.DataTarget.DebuggerInterface;
+                    int size = Math.Max(1000000, (int)(map.EndAddress + 1 - map.StartAddress));
+                    var sb = new StringBuilder(size);
+
+                    ulong nextInstruction = 0;
+                    while (nextInstruction < map.EndAddress)
                     {
+                        var result = dbgCtrl.Disassemble(startAddress, DEBUG_DISASM.EFFECTIVE_ADDRESS, sb, size,
+                            out var disassemblySize, out nextInstruction);
                         startAddress = nextInstruction;
-                        result = dbgCtrl.Disassemble(startAddress, DEBUG_DISASM.EFFECTIVE_ADDRESS, sb, size, out disassemblySize, out nextInstruction);
-                        disassembly = sb.ToString().Split(' ').ToList();
-                        disassembly.RemoveAll(s => s == "");
-                        results.Add(new
+                        if (result < 0)
                         {
-                            Address = disassembly.Count > 1 ? disassembly[0] + "  " + disassembly[1] : "",
-                            OpCode = disassembly.Count > 2 ? disassembly[2] : "",
-                            Instruction = disassembly.Count > 4 ? disassembly[3] + " " + disassembly[4] : disassembly.Count > 3 ? disassembly[3] : "",
+                            continue;
+                        }
+
+                        var disassembly = sb.ToString().Split(' ').ToList();
+                        disassembly.RemoveAll(s => s == "");
+                        var address = disassembly.Count > 1 ? disassembly[0] + "  " + disassembly[1] : string.Empty;
+                        var opcode = disassembly.Count > 2 ? disassembly[2] : string.Empty;
+                        var instruction = disassembly.Count > 5
+                            ? $"{disassembly[3]} {disassembly[4]} {disassembly[5]}"
+                            : disassembly.Count > 4
+                                ? $"{disassembly[3]} {disassembly[4]}"
+                                : disassembly.Count > 3
+                                    ? disassembly[3]
+                                    : string.Empty;
+
+                        var methodName = GetMethodNameFromAddressOrNull(opcode, disassembly);
+                        if (string.IsNullOrEmpty(methodName) == false)
+                        {
+                            instruction = instruction.Replace("\n", string.Empty);
+                            instruction += " --> " + methodName;
+                        }
+
+                        if (opcode.ToLower().Contains("nop"))
+                        {
+                            continue;
+                        }
+
+                        results.Add(new AssemblyCode
+                        {
+                            Address = address,
+                            OpCode = opcode,
+                            Instruction = instruction
                         });
                     }
                 }
+
                 if (results.Count == 0)
-                    results.Add(new
+                {
+                    results.Add(new AssemblyCode
                     {
-                        Address = "The metadata token does not exist in this type"
+                        Instruction = $"Can not disassemble method: {method.GetFullSignature()}"
                     });
+                }
+
                 return results;
             });
+        }
+
+        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        {
+            var prompt = model.GptPrompt.ToString();
+            if (prompt.Contains(Gpt.Variables.csharp))
+            {
+                var sourceCodes = (await App.Container.GetExportedValue<IDebuggerOperation>(OperationNames.DumpSourceCode).Execute(model, token, null)).Cast<DumpSourceCodeOperation.SourceCode>();
+                model.GptPrompt = model.GptPrompt.Replace(Gpt.Variables.csharp, sourceCodes.First().Code); // todo: support list of methods
+            }
+
+            if (prompt.Contains(Gpt.Variables.assembly))
+            {
+                var assemblyCode = string.Join(Environment.NewLine, items.Cast<AssemblyCode>());
+                model.GptPrompt = model.GptPrompt.Replace(Gpt.Variables.assembly, assemblyCode);
+            }
+
+            return await Gpt.Ask(new[] { "You are an assembly code and a C# code expert." }, new[] { $"{model.GptPrompt}" });
+        }
+
+        private string GetMethodNameFromAddressOrNull(string opCode, List<string> disassembly)
+        {
+            string address = null;
+            string address2 = null;
+            if (opCode.ToLower().StartsWith("j"))
+            {
+                address = disassembly.Count > 3 ? disassembly[3] : null;
+            }
+            else if (opCode.ToLower() == "call")
+            {
+                address = disassembly.Count > 3 ? disassembly[3] : null;
+                address2 = disassembly.Count > 4 ? disassembly[4] : null;
+            }
+            else
+            {
+                return null;
+            }
+
+            if (address == null)
+            {
+                return null;
+            }
+
+            string methodName = null;
+            if (ulong.TryParse(SanitizeAddress(address),
+                    NumberStyles.HexNumber,
+                    CultureInfo.CurrentCulture,
+                    out var ulongAddress))
+            {
+                methodName = DebuggerSession.Instance.Runtime.GetMethodByAddress(ulongAddress)?.GetFullSignature() ??
+                             DebuggerSession.Instance.Runtime.GetJitHelperFunctionName(ulongAddress);
+            }
+
+            if (methodName == null && address2 != null)
+            {
+                if (ulong.TryParse(SanitizeAddress(address2),
+                        NumberStyles.HexNumber,
+                        CultureInfo.CurrentCulture,
+                        out ulongAddress))
+                {
+                    methodName =
+                        DebuggerSession.Instance.Runtime.GetMethodByAddress(ulongAddress)?.GetFullSignature() ??
+                        DebuggerSession.Instance.Runtime.GetJitHelperFunctionName(ulongAddress);
+                }
+            }
+
+            return methodName;
+        }
+
+        private string SanitizeAddress(string address)
+        {
+            if (string.IsNullOrEmpty(address))
+            {
+                return address;
+            }
+
+            return address.Replace(Environment.NewLine, string.Empty).Replace("`", string.Empty)
+                .Replace("(", string.Empty).Replace(")", string.Empty);
+        }
+
+        private static ILToNativeMap[] GetCompleteNativeMap(ClrMethod method)
+        {
+            // it's better to use one single map rather than few small ones
+            // it's simply easier to get next instruction when decoding ;)
+            var hotColdInfo = method.HotColdInfo;
+            if (hotColdInfo.HotSize > 0 && hotColdInfo.HotStart > 0)
+            {
+                return hotColdInfo.ColdSize <= 0
+                    ? new[]
+                    {
+                        new ILToNativeMap()
+                        {
+                            StartAddress = hotColdInfo.HotStart,
+                            EndAddress = hotColdInfo.HotStart + hotColdInfo.HotSize, ILOffset = -1
+                        }
+                    }
+                    : new[]
+                    {
+                        new ILToNativeMap()
+                        {
+                            StartAddress = hotColdInfo.HotStart,
+                            EndAddress = hotColdInfo.HotStart + hotColdInfo.HotSize, ILOffset = -1
+                        },
+                        new ILToNativeMap()
+                        {
+                            StartAddress = hotColdInfo.ColdStart,
+                            EndAddress = hotColdInfo.ColdStart + hotColdInfo.ColdSize, ILOffset = -1
+                        }
+                    };
+            }
+
+            return method.ILOffsetMap
+                .Where(map => map.StartAddress < map.EndAddress) // some maps have 0 length?
+                .OrderBy(map => map.StartAddress) // we need to print in the machine code order, not IL! #536
+                .ToArray();
+        }
+    }
+
+    class AssemblyCode
+    {
+        public string Address { get; set; }
+        public string OpCode { get; set; }
+        public string Instruction { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Address}: ${OpCode} {Instruction}";
         }
     }
 }

@@ -1,0 +1,85 @@
+﻿<UserControl x:Class="DumpMiner.Contents.DumpArrayItem"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="350"
+             d:DesignWidth="500">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="0.9*" />
+            <RowDefinition Height="0.1*" />
+        </Grid.RowDefinitions>
+        <controls:OperationView ObjectTypeVisibility="Visible"
+                                ObjectAddressName="array address"
+                                ObjectTypeName="item index"
+                                Grid.Row="0"
+                                x:Name="OperationView"
+                                Header="Dump array item"
+                                Explanation="Enter array address and item index to get the item fields.">
+            <controls:OperationView.ItemsView>
+                <GridView>
+                    <GridViewColumn Header="Address">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Address, StringFormat={}0x{0:X8}, Mode=OneWay}"
+                                         BorderBrush="{x:Null}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Offset"
+                                    DisplayMemberBinding="{Binding Offset}" />
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
+                    <GridViewColumn Header="Type name">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding TypeName, Mode=OneWay}"
+                                         BorderBrush="{x:Null}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
+                    <GridViewColumn Header="Base name"
+                                    DisplayMemberBinding="{Binding BaseName}" />
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
+                    <GridViewColumn Header="Field name"
+                                    DisplayMemberBinding="{Binding FieldName}" />
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
+                    <GridViewColumn Header="Value">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Value, Mode=OneWay}" BorderBrush="{x:Null}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Metadata token">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding MetadataToken, StringFormat={}0x{0:X8}, Mode=OneWay}"
+                                         BorderBrush="{x:Null}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Is static"
+                                    DisplayMemberBinding="{Binding IsStatic}" />
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
+                    <GridViewColumn Header="Is thread static"
+                                    DisplayMemberBinding="{Binding IsThreadStatic}" />
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
+                </GridView>
+            </controls:OperationView.ItemsView>
+        </controls:OperationView>
+        <TextBlock Name="SizeTextBlock"
+                   FontStyle="Italic"
+                   Grid.Row="1"></TextBlock>
+    </Grid>
+</UserControl>

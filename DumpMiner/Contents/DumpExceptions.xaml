@@ -7,7 +7,7 @@
              mc:Ignorable="d"
              d:DesignHeight="300"
              d:DesignWidth="300">
-    <controls:OperationView Header="Dump Exceptions" Explanation="Dump all the throwed exceptions"
+    <controls:OperationView Header="Dump Exceptions" Explanation="Dump all the thrown exceptions"
                             ObjectAddressVisibility="Collapsed"
                             ObjectTypeVisibility="Collapsed">
         <controls:OperationView.ItemsTemplate>
@@ -17,7 +17,7 @@
                         CornerRadius="3"
                         Padding="3">
                     <StackPanel>
-                        <TextBlock Text="{Binding Address, Mode=OneWay, StringFormat= Address: {0}}"
+                        <TextBlock Text="{Binding Address, Mode=OneWay, StringFormat= Address: 0x{0:X8}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
                         <TextBlock Text="{Binding Name, Mode=OneWay, StringFormat= Type name: {0}}"
@@ -26,16 +26,16 @@
                         <TextBox Text="{Binding Message, Mode=OneWay, StringFormat= Message: {0}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
-                        <TextBlock Text="{Binding HResult, Mode=OneWay, StringFormat= HResult: {0}}"
+                        <TextBlock Text="{Binding HResult, Mode=OneWay, StringFormat= HResult: 0x{0:X8}}"
                                    FontStyle="Oblique"
                                    FontWeight="Medium" />
                         <ListView ItemsSource="{Binding}">
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Stack Pointer"
-                                                    DisplayMemberBinding="{Binding StackPointer, Mode=OneWay}" />
+                                                    DisplayMemberBinding="{Binding StackPointer, StringFormat={}0x{0:X8}, Mode=OneWay}" />
                                     <GridViewColumn Header="Instruction Pointer"
-                                                    DisplayMemberBinding="{Binding InstructionPointer, Mode=OneWay}" />
+                                                    DisplayMemberBinding="{Binding InstructionPointer, StringFormat={}0x{0:X8}, Mode=OneWay}" />
                                     <GridViewColumn Header="Kind"
                                                     DisplayMemberBinding="{Binding Kind, Mode=OneWay}" />
                                     <GridViewColumn Header="Module Name"
@@ -72,7 +72,7 @@
                                                                        Text="Metadata token" />
                                                             <TextBox Grid.Row="2"
                                                                        Grid.Column="3"
-                                                                       Text="{Binding Method.MetadataToken, Mode=OneWay}" />
+                                                                       Text="{Binding Method.MetadataToken, StringFormat={}0x{0:X8}, Mode=OneWay}" />
                                                             <TextBlock Grid.Row="4"
                                                                        Grid.Column="1"
                                                                        Text="Is static" />

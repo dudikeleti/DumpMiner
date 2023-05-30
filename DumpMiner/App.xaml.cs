@@ -1,9 +1,11 @@
 ﻿using System.ComponentModel.Composition.Hosting;
+using System.Globalization;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Media;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
+using DumpMiner.Infrastructure;
 using DumpMiner.Infrastructure.Mef;
 using DumpMiner.ViewModels;
 using FirstFloor.ModernUI.Presentation;
@@ -13,6 +15,8 @@ namespace DumpMiner
     public partial class App : Application
     {
         public static CompositionContainer Container { get; set; }
+        public static string AttachedTo { get; internal set; }
+
         private static IViewModelLoader _viewModelLoader;
 
         protected override void OnStartup(StartupEventArgs e)
@@ -34,8 +38,37 @@ namespace DumpMiner
 
             _viewModelLoader = Container.GetExport<MefViewModelLoader>().Value;
 
+            LoadAppearanceSettings();
+
             DebuggerSession.Instance.OnDetach += OnDetach;
-            AppearanceManager.Current.AccentColor = Color.FromRgb(0xf0, 0x96, 0x09);
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            DebuggerSession.Instance.Detach();
+            base.OnExit(e);
+        }
+
+        private void LoadAppearanceSettings()
+        {
+            var color = SettingsManager.Instance.ReadSettingValue(SettingsManager.AccentColor);
+            var rgb = color.Split(',');
+            AppearanceManager.Current.AccentColor = Color.FromRgb(
+                byte.Parse(rgb[0], NumberStyles.HexNumber),
+                byte.Parse(rgb[1], NumberStyles.HexNumber),
+                byte.Parse(rgb[2], NumberStyles.HexNumber));
+            // AppearanceManager.Current.AccentColor = Color.FromRgb(0xf0, 0x96, 0x09);
+            var theme = SettingsManager.Instance.ReadSettingValue(SettingsManager.Theme);
+            var themeValue = theme.Substring(theme.IndexOf(",") + 1);
+
+            if (themeValue.ToLower() == "dark")
+            {
+                AppearanceManager.Current.ThemeSource = AppearanceManager.DarkThemeSource;
+            }
+            else
+            {
+                AppearanceManager.Current.ThemeSource = AppearanceManager.LightThemeSource;
+            }
         }
 
         private void OnDetach()

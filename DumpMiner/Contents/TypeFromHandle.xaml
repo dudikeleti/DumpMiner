@@ -22,17 +22,17 @@
                     <GridViewColumn Header="Name"
                                     DisplayMemberBinding="{Binding Name}" />
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Base Type"
                                     DisplayMemberBinding="{Binding BaseType}" />
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Metadata Token"
-                                    DisplayMemberBinding="{Binding MetadataToken}" />
+                                    DisplayMemberBinding="{Binding MetadataToken, StringFormat={}0x{0:X8}}" />
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Method Table"
-                                    DisplayMemberBinding="{Binding MethodTable}" />
+                                    DisplayMemberBinding="{Binding MethodTable, StringFormat={}0x{0:X8}}" />
                 </GridView>
             </controls:OperationView.ItemsView>
         </controls:OperationView>

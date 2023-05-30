@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel.Composition;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
+using DumpMiner.Models;
 
 namespace DumpMiner.Operations
 {
@@ -12,17 +14,17 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.TypeFromHandle;
 
-        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
-                var heap = DebuggerSession.Instance.Runtime.GetHeap();
+                var heap = DebuggerSession.Instance.Heap;
 
                 var type = heap.GetTypeByMethodTable(model.ObjectAddress);
 
                 if (type == null)
                 {
-                    return new[] { new { Signature = "Type not found" } };
+                    return new[] { new { Name = "Type not found" } };
                 }
 
                 return new[]
@@ -36,6 +38,11 @@ namespace DumpMiner.Operations
                         }
                 };
             });
+        }
+
+        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

@@ -7,20 +7,31 @@
              mc:Ignorable="d"
              d:DesignHeight="350"
              d:DesignWidth="500">
-    <controls:OperationView Header="Dump methods"
-                            ObjectAddressVisibility="Collapsed">
+    <controls:OperationView Header="Dump methods" Explanation="Enter type token or type method table or type name and get the type methods"
+                            ObjectAddressName="Metadata token or type method table"
+                            ObjectTypeName="or Type name">
         <controls:OperationView.ItemsView>
             <GridView>
                 <GridViewColumn Header="Metadata Token">
                     <GridViewColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBox Text="{Binding MetadataToken, Mode=OneWay}"
+                            <TextBox Text="{Binding MetadataToken, StringFormat={}0x{0:X8}, Mode=OneWay}"
                                      BorderBrush="{x:Null}" />
                         </DataTemplate>
                     </GridViewColumn.CellTemplate>
                 </GridViewColumn>
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                 DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
+                <GridViewColumn Header="Method Description">
+                    <GridViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding MethodDesc, StringFormat={}0x{0:X8}, Mode=OneWay}"
+                                     BorderBrush="{x:Null}" />
+                        </DataTemplate>
+                    </GridViewColumn.CellTemplate>
+                </GridViewColumn>
+                <GridViewColumn Width="20"
+                                 />
                 <GridViewColumn Header="Signature">
                     <GridViewColumn.CellTemplate>
                         <DataTemplate>
@@ -30,11 +41,11 @@
                     </GridViewColumn.CellTemplate>
                 </GridViewColumn>
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="CompilationType"
                                 DisplayMemberBinding="{Binding CompilationType}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="IsStatic"
                                 DisplayMemberBinding="{Binding IsStatic}" />
             </GridView>

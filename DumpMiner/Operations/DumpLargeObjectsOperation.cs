@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
@@ -15,10 +16,10 @@ namespace DumpMiner.Operations
         //object lockObject = new object();
         public string Name => OperationNames.DumpLargeObjects;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             ulong size;
-            if (!ulong.TryParse(customeParameter.ToString(), out size))
+            if (!ulong.TryParse(customParameter.ToString(), out size))
                 return null;
 
             var operation = App.Container.GetExportedValue<IDebuggerOperation>(OperationNames.GetObjectSize);
@@ -87,6 +88,11 @@ namespace DumpMiner.Operations
                 }
                 return results;
             });
+        }
+
+        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

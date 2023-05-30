@@ -33,6 +33,17 @@ namespace DumpMiner.Common
             }
         }
 
+        private string _empty = string.Empty;
+        public string Empty
+        {
+            get { return _empty; }
+            protected set
+            {
+                _empty = value;
+                OnPropertyChanged();
+            }
+        }
+
         // indicates the last operation error
         public string LastError { get; set; }
 

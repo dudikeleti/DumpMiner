@@ -13,33 +13,33 @@
         <controls:OperationView.ItemsView>
             <GridView>
                 <GridViewColumn Header="Start"
-                                DisplayMemberBinding="{Binding Start}" />
+                                DisplayMemberBinding="{Binding Start, StringFormat={}0x{0:X8}}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="End"
-                                DisplayMemberBinding="{Binding End}" />
+                                DisplayMemberBinding="{Binding End, StringFormat={}0x{0:X8}}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Length"
-                                DisplayMemberBinding="{Binding Length}" />
+                                DisplayMemberBinding="{Binding Length, Converter={StaticResource SizeConverter}}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Committed"
-                                DisplayMemberBinding="{Binding Committed}" />
+                                DisplayMemberBinding="{Binding Committed, Converter={StaticResource SizeConverter}}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Not in use"
-                                DisplayMemberBinding="{Binding NotInUse}" />
+                                DisplayMemberBinding="{Binding NotInUse, Converter={StaticResource SizeConverter}}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Reserved"
-                                DisplayMemberBinding="{Binding Reserved}" />
+                                DisplayMemberBinding="{Binding Reserved, Converter={StaticResource SizeConverter}}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Type"
                                 DisplayMemberBinding="{Binding Type}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Processor affinity"
                                 DisplayMemberBinding="{Binding ProcessorAffinity}" />
             </GridView>

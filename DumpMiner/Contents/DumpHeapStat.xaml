@@ -15,7 +15,7 @@
         <StackPanel Orientation="Horizontal">
             <TextBlock Margin="3">Heap generation</TextBlock>
             <TextBox Margin="3"
-                     Text="{Binding Generation, Mode=OneWayToSource}"
+                     Text="{Binding Generation, Mode=OneWayToSource, FallbackValue=0}"
                      Width="60" />
         </StackPanel>
         <controls:OperationView Grid.Row="1"
@@ -33,11 +33,20 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
+                    <GridViewColumn Header="Metadata token">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding MetadataToken, StringFormat={}0x{0:X8}, Mode=OneWay}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="20"
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Size"
                                     DisplayMemberBinding="{Binding Size, Converter={StaticResource SizeConverter}}" />
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Count"
                                     DisplayMemberBinding="{Binding Count}" />
                 </GridView>

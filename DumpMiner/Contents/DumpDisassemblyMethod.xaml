@@ -7,19 +7,19 @@
              mc:Ignorable="d"
              d:DesignHeight="350"
              d:DesignWidth="500">
-    <controls:OperationView Header="Dump disassembly method" Explanation="Enter type name and metadata token and get the disassembly of the jitted method"
+    <controls:OperationView Header="Dump disassembly method" Explanation="Enter pair of type name and metadata token and get the disassembly of the jitted method"
                             ObjectAddressName="Metadata token"
                             ObjectTypeName="Type name">
         <controls:OperationView.ItemsView>
             <GridView>
                 <GridViewColumn Header="Address"
-                                DisplayMemberBinding="{Binding Address}" />
+                                DisplayMemberBinding="{Binding Address, StringFormat={}0x{0:X8}}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="OpCode"
                                 DisplayMemberBinding="{Binding OpCode}" />
                 <GridViewColumn Width="20"
-                                DisplayMemberBinding="{Binding Empty}" />
+                                DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 <GridViewColumn Header="Instruction"
                                 DisplayMemberBinding="{Binding Instruction}" />
             </GridView>

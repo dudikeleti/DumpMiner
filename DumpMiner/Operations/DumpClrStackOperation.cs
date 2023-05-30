@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
 using Microsoft.Diagnostics.Runtime;
+using ClrObject = DumpMiner.Debugger.ClrObject;
 
 namespace DumpMiner.Operations
 {
@@ -16,9 +19,9 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.DumpClrStack;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customeParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
-            //TODO: add support of local variables
+            //TODO: support local variables 
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 var result = new List<ClrStackDump>();
@@ -28,8 +31,8 @@ namespace DumpMiner.Operations
                         break;
 
                     var stackDetails = new ClrStackDump();
-                    stackDetails.StackFrames = new List<object>();
-                    stackDetails.StackObjects = new List<object>();
+                    stackDetails.StackFrames = new List<Frame>();
+                    stackDetails.StackObjects = new List<StackObject>();
                     foreach (var stackFrame in thread.StackTrace)
                     {
                         stackDetails.StackBase = thread.StackBase;
@@ -38,17 +41,20 @@ namespace DumpMiner.Operations
                         stackDetails.OSThreadID = thread.IsAlive ? thread.OSThreadId.ToString() : "XXX";
                         stackDetails.ManagedThreadId = thread.ManagedThreadId;
                         stackDetails.StackFrames.Add(
-                        new
+                        new Frame
                         {
                             StackPointer = stackFrame.StackPointer,
                             InstructionPointer = stackFrame.InstructionPointer,
                             DisplayString = stackFrame.DisplayString,
-                            //FileAndLine = source != null ? source.FilePath + ": " + source.LineNumber : "",
+                            // FileAndLine = source != null ? source.FilePath + ": " + source.LineNumber : "",
                             Method = stackFrame.Method
                         });
+
+                        if (token.IsCancellationRequested)
+                            break;
                     }
 
-                    ClrHeap heap = DebuggerSession.Instance.Runtime.GetHeap();
+                    ClrHeap heap = DebuggerSession.Instance.Heap;
                     var pointerSize = DebuggerSession.Instance.Runtime.PointerSize;
 
                     // address of TEB (thread execution block) + pointer size
@@ -87,18 +93,55 @@ namespace DumpMiner.Operations
 
                         // All good, add it 
                         stackDetails.StackObjects.Add(
-                            new
+                            new StackObject
                             {
                                 Address = ptr,
                                 Object = obj,
                                 Name = type.Name,
-                                Value = new ClrObject(obj, type).Fields.Value
+                                // Value = new Microsoft.Diagnostics.Runtime.ClrObject(obj, type);
+                                Value = new DumpMiner.Debugger.ClrObject(obj, type, token).Fields.Value
                             });
+
+                        if (token.IsCancellationRequested)
+                            break;
                     }
                     result.Add(stackDetails);
                 }
                 return result;
             });
+        }
+
+        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        {
+            var prompt = model.GptPrompt.ToString();
+            if (prompt.Contains(Gpt.Variables.callstack))
+            {
+                var callstack = GetCallstack(items.Cast<ClrStackDump>());
+                model.GptPrompt = model.GptPrompt.Replace(Gpt.Variables.callstack, callstack);
+            }
+
+            if (prompt.Contains(Gpt.Variables.values))
+            {
+                var values = GetFrameValues(items.Cast<ClrStackDump>());
+                model.GptPrompt = model.GptPrompt.Replace(Gpt.Variables.values, values);
+            }
+
+            return await Gpt.Ask(new[] { "You are an assembly code and a C# code expert." }, new[] { $"{model.GptPrompt}" });
+        }
+
+        private string GetFrameValues(IEnumerable<ClrStackDump> callstack)
+        {
+            // todo: format values in a sensible json
+            return string.Join(Environment.NewLine,
+                callstack.SelectMany(frame =>
+                    frame.StackObjects.Select(so =>
+                        $"{so.Name}: {string.Join(Environment.NewLine, so.Value.Select(v => $"{v.FieldName} = {v.Value}"))}")));
+        }
+
+        private string GetCallstack(IEnumerable<ClrStackDump> callstack)
+        {
+            return string.Join(Environment.NewLine,
+                callstack.SelectMany(frame => frame.StackFrames.Select(frame2 => frame2.DisplayString)));
         }
 
         private class ClrStackDump
@@ -112,8 +155,24 @@ namespace DumpMiner.Operations
             public ClrException Exception { get; set; }
             public ulong StackBase { get; set; }
             public ulong StackLimit { get; set; }
-            public List<object> StackObjects { get; set; }
-            public List<object> StackFrames { get; set; }
+            public List<StackObject> StackObjects { get; set; }
+            public List<Frame> StackFrames { get; set; }
+        }
+
+        private class Frame
+        {
+            public ulong StackPointer { get; set; }
+            public ulong InstructionPointer { get; set; }
+            public string DisplayString { get; set; }
+            public ClrMethod Method { get; set; }
+        }
+
+        private class StackObject
+        {
+            public ulong Address { get; set; }
+            public object Object { get; set; }
+            public string Name { get; set; }
+            public List<ClrObject.ClrObjectModel> Value { get; set; }
         }
     }
 }

@@ -16,7 +16,7 @@
                                 Grid.Row="0"
                                 x:Name="OperationView"
                                 Header="Dump Delegate Method"
-                                Explanation="Enter a _methodPtr for i nstance method or _methodPtrAux for static method and get the method that this delegate will call">
+                                Explanation="Enter a _methodPtr for instance method or _methodPtrAux for static method and get the method that this delegate will call">
             <controls:OperationView.ItemsView>
                 <GridView>
                     <GridViewColumn Header="Signature">
@@ -28,23 +28,23 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Metadata Token"
-                                    DisplayMemberBinding="{Binding MetadataToken}" />
+                                    DisplayMemberBinding="{Binding MetadataToken, StringFormat={}0x{0:X8}}" />
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="MethodDesc"
                                     DisplayMemberBinding="{Binding MethodDesc}" />
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Compilation Type"
                                     DisplayMemberBinding="{Binding CompilationType}" />
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                     <GridViewColumn Header="Enclosing Type"
                                     DisplayMemberBinding="{Binding EnclosingType}" />
                     <GridViewColumn Width="20"
-                                    DisplayMemberBinding="{Binding Empty}" />
+                                    DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
                 </GridView>
             </controls:OperationView.ItemsView>
         </controls:OperationView>

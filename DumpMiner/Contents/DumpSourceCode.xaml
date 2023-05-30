@@ -1,0 +1,77 @@
+﻿<UserControl x:Class="DumpMiner.Contents.DumpSourceCode"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             xmlns:syntaxBox="clr-namespace:UI.SyntaxBox;assembly=UI.SyntaxBox"
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             d:DesignWidth="300">
+    <controls:OperationView Header="Dump source code"
+                            Explanation="Dump a decompilation code of a method"
+                            ObjectAddressVisibility="Visible"
+                            ObjectTypeVisibility="Collapsed">
+        <controls:OperationView.ItemsTemplate>
+            <DataTemplate>
+                <Border BorderBrush="{StaticResource ModernButtonBorder}"
+                        BorderThickness="0.5"
+                        CornerRadius="2"
+                        Padding="3"
+                        Margin="0,0,0,3">
+                    <TextBox 
+                Text="{Binding Code, Mode=OneWay}"
+                syntaxBox:SyntaxBox.Enable="True"
+                syntaxBox:SyntaxBox.ExpandTabs="True"
+                syntaxBox:SyntaxBox.AutoIndent="True"
+                syntaxBox:SyntaxBox.ShowLineNumbers="True"
+                syntaxBox:SyntaxBox.LineNumbersBackground="LightGray"
+                syntaxBox:SyntaxBox.LineNumbersForeground="SlateGray"
+                
+                AcceptsReturn="True" 
+                AcceptsTab="True"
+                VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Auto"
+                Padding="0,0,0,0"
+                FontFamily="Consolas"
+                FontSize="11pt">
+                        <syntaxBox:SyntaxBox.SyntaxDrivers>
+                            <syntaxBox:SyntaxConfig>
+                                <!-- Keywords -->
+                                <syntaxBox:KeywordRule Foreground="CornflowerBlue"
+                            Keywords="abstract,as,base,bool,break,byte,case,catch,char,checked,class,const,continue,decimal,default,delegate,do,double,else,enum,event,explicit,extern,false,finally,fixed,float,for,foreach,goto,if,implicit,in,int,interface,internal,is,lock,long,namespace,new,null,object,operator,out,override,params,private,protected,public,readonly,ref,return,sbyte,sealed,short,sizeof,stackalloc,static,string,struct,switch,this,throw,true,try,typeof,uint,ulong,unchecked,unsafe,ushort,using,using,static,virtual,void,volatile,while,get,set,yield,var"
+                        />
+
+                                <syntaxBox:KeywordRule Foreground="CadetBlue"
+                                                       Keywords="System,Microsoft"/>
+                                <!-- Operators -->
+                                <syntaxBox:KeywordRule Foreground="DarkOrchid"
+                            Keywords="!,+,-,/,*,%,=,&amp;,^,|,&lt;,&gt;"
+                            WholeWordsOnly="False"
+                        />
+                                <!--<syntax:RegexRule Op="Line" Foreground="Purple" Pattern="[\!+-\/\*%=&amp;\^|\?&lt;&gt;]" />-->
+
+                                <!-- Preproc directives -->
+                                <syntaxBox:RegexRule Op="Line" Foreground="Gray" Pattern="^\s*#.*" />
+
+                                <!-- String -->
+                                <syntaxBox:RegexRule Op="Line" Foreground="Maroon" Pattern="&quot;(?:[^&quot;\\]|\\.)*&quot;" />
+
+                                <!-- Verbatim string -->
+                                <syntaxBox:RegexRule Op="Block" Foreground="Maroon" Pattern="@&quot;(?:[^&quot;])*&quot;" />
+
+                                <!-- Comment -->
+                                <syntaxBox:RegexRule Op="Line" Foreground="Green" Pattern="//.*" />
+
+                                <!-- Multiline comment -->
+                                <syntaxBox:RegexRule Op="Block" Foreground="Green" Pattern="(?m)/\*[^*]*\*+(?:[^\/*][^*]*\*+)*/" />
+
+                            </syntaxBox:SyntaxConfig>
+                        </syntaxBox:SyntaxBox.SyntaxDrivers>
+
+                    </TextBox>
+                </Border>
+            </DataTemplate>
+        </controls:OperationView.ItemsTemplate>
+    </controls:OperationView>
+</UserControl>
