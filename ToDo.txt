@@ -1,7 +1,7 @@
-1. Dump synblock
-2. display inner exceptions in "Dump Exceptions"
-3. Display local variables in "Dump CLR Stack"
-4. Add tooltips to result columns
-5. Add support for hot keys (same as windbg)
-6. Make some of controls link to the relevant operation (such as pressing object address go to dump object)
+- Display inner exceptions in "Dump Exceptions"
+- Display local variables in "Dump CLR Stack"
+- Add tooltips to result columns
+- Add support for hot keys (same as windbg)
+- Make some of controls link to the relevant operation (such as pressing object address go to dump object)
+- Support GPT in all operation (and improve existing)
 
