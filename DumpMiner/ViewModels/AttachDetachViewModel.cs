@@ -169,6 +169,7 @@ namespace DumpMiner.ViewModels
             }
 
             AttachedProcessName = SelectedItem.Name;
+            App.AttachedTo = AttachedProcessName;
             DetachVisibility = Visibility.Visible;
             IsGetProcessesEnabled = false;
             Dispose(true);
@@ -195,6 +196,7 @@ namespace DumpMiner.ViewModels
                     App.Container.GetExport<IDialogService>().Value.ShowDialog("Load dump failed");
                 }
                 AttachedProcessName = file.FileName;
+                App.AttachedTo = AttachedProcessName;
                 DetachVisibility = Visibility.Visible;
                 IsGetProcessesEnabled = false;
                 DetachProcessesCommand.OnCanExecuteChanged();

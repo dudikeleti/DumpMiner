@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
+using DumpMiner.Models;
 using Microsoft.Diagnostics.Runtime;
 
 namespace DumpMiner.Operations
@@ -40,6 +42,11 @@ namespace DumpMiner.Operations
                                  select new { Address = address, Type = type.Name, MetadataToken = type.MetadataToken, };
                 return enumerable.ToList();
             });
+        }
+
+        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        {
+            throw new System.NotImplementedException();
         }
 
         private void GetRefChainFromRootToObject(ulong objPtr, Stack<ulong> refChain, HashSet<ulong> visited)

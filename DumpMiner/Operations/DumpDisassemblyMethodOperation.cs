@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Globalization;
 using System.Linq;
@@ -19,19 +20,20 @@ namespace DumpMiner.Operations
     {
         public string Name => OperationNames.DumpDisassemblyMethod;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
+        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token,
+            object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 ClrMethod method = DebuggerSession.Instance.Runtime.GetMethodByHandle(model.ObjectAddress);
-                var results = new List<object>();
+                var results = new List<AssemblyCode>();
 
                 if (method == null)
                 {
                     ClrType type = DebuggerSession.Instance.Heap.GetTypeByName(model.Types);
                     if (type == null)
                     {
-                        results.Add(new
+                        results.Add(new AssemblyCode
                         {
                             Instruction = "Can not find type"
                         });
@@ -57,7 +59,7 @@ namespace DumpMiner.Operations
 
                 if (method == null)
                 {
-                    results.Add(new
+                    results.Add(new AssemblyCode
                     {
                         Instruction = "Can not find method"
                     });
@@ -70,7 +72,7 @@ namespace DumpMiner.Operations
                 // use the IL to native mapping to get the end address
                 if (method.ILOffsetMap == null)
                 {
-                    results.Add(new
+                    results.Add(new AssemblyCode
                     {
                         Instruction = "The method is not yet jited"
                     });
@@ -88,7 +90,8 @@ namespace DumpMiner.Operations
                     ulong nextInstruction = 0;
                     while (nextInstruction < map.EndAddress)
                     {
-                        var result = dbgCtrl.Disassemble(startAddress, DEBUG_DISASM.EFFECTIVE_ADDRESS, sb, size, out var disassemblySize, out nextInstruction);
+                        var result = dbgCtrl.Disassemble(startAddress, DEBUG_DISASM.EFFECTIVE_ADDRESS, sb, size,
+                            out var disassemblySize, out nextInstruction);
                         startAddress = nextInstruction;
                         if (result < 0)
                         {
@@ -114,7 +117,12 @@ namespace DumpMiner.Operations
                             instruction += " --> " + methodName;
                         }
 
-                        results.Add(new
+                        if (opcode.ToLower().Contains("nop"))
+                        {
+                            continue;
+                        }
+
+                        results.Add(new AssemblyCode
                         {
                             Address = address,
                             OpCode = opcode,
@@ -124,12 +132,33 @@ namespace DumpMiner.Operations
                 }
 
                 if (results.Count == 0)
-                    results.Add(new
+                {
+                    results.Add(new AssemblyCode
                     {
                         Instruction = $"Can not disassemble method: {method.GetFullSignature()}"
                     });
+                }
+
                 return results;
             });
+        }
+
+        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        {
+            var prompt = model.GptPrompt.ToString();
+            if (prompt.Contains(Gpt.Variables.csharp))
+            {
+                var sourceCodes = (await App.Container.GetExportedValue<IDebuggerOperation>(OperationNames.DumpSourceCode).Execute(model, token, null)).Cast<DumpSourceCodeOperation.SourceCode>();
+                model.GptPrompt = model.GptPrompt.Replace(Gpt.Variables.csharp, sourceCodes.First().Code); // todo: support list of methods
+            }
+
+            if (prompt.Contains(Gpt.Variables.assembly))
+            {
+                var assemblyCode = string.Join(Environment.NewLine, items.Cast<AssemblyCode>());
+                model.GptPrompt = model.GptPrompt.Replace(Gpt.Variables.assembly, assemblyCode);
+            }
+
+            return await Gpt.Ask(new[] { "You are an assembly code and a C# code expert." }, new[] { $"{model.GptPrompt}" });
         }
 
         private string GetMethodNameFromAddressOrNull(string opCode, List<string> disassembly)
@@ -172,8 +201,9 @@ namespace DumpMiner.Operations
                         CultureInfo.CurrentCulture,
                         out ulongAddress))
                 {
-                    methodName = DebuggerSession.Instance.Runtime.GetMethodByAddress(ulongAddress)?.GetFullSignature() ??
-                                 DebuggerSession.Instance.Runtime.GetJitHelperFunctionName(ulongAddress);
+                    methodName =
+                        DebuggerSession.Instance.Runtime.GetMethodByAddress(ulongAddress)?.GetFullSignature() ??
+                        DebuggerSession.Instance.Runtime.GetJitHelperFunctionName(ulongAddress);
                 }
             }
 
@@ -199,11 +229,26 @@ namespace DumpMiner.Operations
             if (hotColdInfo.HotSize > 0 && hotColdInfo.HotStart > 0)
             {
                 return hotColdInfo.ColdSize <= 0
-                    ? new[] { new ILToNativeMap() { StartAddress = hotColdInfo.HotStart, EndAddress = hotColdInfo.HotStart + hotColdInfo.HotSize, ILOffset = -1 } }
+                    ? new[]
+                    {
+                        new ILToNativeMap()
+                        {
+                            StartAddress = hotColdInfo.HotStart,
+                            EndAddress = hotColdInfo.HotStart + hotColdInfo.HotSize, ILOffset = -1
+                        }
+                    }
                     : new[]
                     {
-                        new ILToNativeMap() { StartAddress = hotColdInfo.HotStart, EndAddress = hotColdInfo.HotStart + hotColdInfo.HotSize, ILOffset = -1 },
-                        new ILToNativeMap() { StartAddress = hotColdInfo.ColdStart, EndAddress = hotColdInfo.ColdStart + hotColdInfo.ColdSize, ILOffset = -1 }
+                        new ILToNativeMap()
+                        {
+                            StartAddress = hotColdInfo.HotStart,
+                            EndAddress = hotColdInfo.HotStart + hotColdInfo.HotSize, ILOffset = -1
+                        },
+                        new ILToNativeMap()
+                        {
+                            StartAddress = hotColdInfo.ColdStart,
+                            EndAddress = hotColdInfo.ColdStart + hotColdInfo.ColdSize, ILOffset = -1
+                        }
                     };
             }
 
@@ -211,6 +256,18 @@ namespace DumpMiner.Operations
                 .Where(map => map.StartAddress < map.EndAddress) // some maps have 0 length?
                 .OrderBy(map => map.StartAddress) // we need to print in the machine code order, not IL! #536
                 .ToArray();
+        }
+    }
+
+    class AssemblyCode
+    {
+        public string Address { get; set; }
+        public string OpCode { get; set; }
+        public string Instruction { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Address}: ${OpCode} {Instruction}";
         }
     }
 }

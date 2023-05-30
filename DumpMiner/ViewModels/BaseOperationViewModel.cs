@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Input;
@@ -38,6 +39,7 @@ namespace DumpMiner.ViewModels
                 _defaultTimeout = TimeSpan.FromSeconds(60);
             }
         }
+
         public virtual IDebuggerOperation Operation { get; set; }
 
         private int _count;
@@ -50,6 +52,18 @@ namespace DumpMiner.ViewModels
                 OnPropertyChanged();
             }
         }
+
+        private bool _isGptEnabled;
+        public bool IsGptEnabled
+        {
+            get { return _isGptEnabled; }
+            set
+            {
+                _isGptEnabled = value;
+                OnPropertyChanged();
+            }
+        }
+
         private ObservableCollection<object> _items;
         public ObservableCollection<object> Items
         {
@@ -57,6 +71,37 @@ namespace DumpMiner.ViewModels
             set
             {
                 _items = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ObservableCollection<GptChat> Conversation
+        {
+            get { return Model.Chat; }
+            set
+            {
+                Model.Chat = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _gptQuestion;
+        public string GptQuestion
+        {
+            get { return _gptQuestion; }
+            set
+            {
+                _gptQuestion = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public StringBuilder GptPrompt
+        {
+            get { return Model.GptPrompt; }
+            set
+            {
+                Model.GptPrompt = value;
                 OnPropertyChanged();
             }
         }
@@ -102,7 +147,7 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        public async void ExecuteOperation(object o)
+        public virtual async void ExecuteOperation(object o)
         {
             if (!DebuggerSession.Instance.IsAttached)
             {
@@ -157,6 +202,43 @@ namespace DumpMiner.ViewModels
             //        OnOperationCompleted);
         }
 
+        public async void AskGpt(object o)
+        {
+            if (!DebuggerSession.Instance.IsAttached)
+            {
+                DebuggerSession.Instance.Detach();
+                App.Container.GetExport<IDialogService>().Value.ShowDialog("Process is detached");
+                return;
+            }
+
+            Conversation.Add(new GptChat { Text = GptQuestion, Type = "@user" });
+
+            CancelOperationVisibility = Visibility.Visible;
+            IsLoading = true;
+            CancellationTokenSource = new CancellationTokenSource(_defaultTimeout);
+            GptPrompt.Append(GptQuestion);
+            try
+            {
+                var gptResult = await Operation.AskGpt(Model, Items, CancellationTokenSource.Token, o);
+                Conversation.Add(new GptChat { Text = gptResult, Type = "@gpt" });
+                GptPrompt.Append(gptResult);
+            }
+            catch (OperationCanceledException)
+            {
+                App.Container.GetExport<IDialogService>().Value.ShowDialog("Operation is canceled");
+            }
+            catch (Exception ex)
+            {
+                App.Container.GetExport<IDialogService>().Value.ShowDialog($"Exception{Environment.NewLine}{ex.Message}{Environment.NewLine}{ex.StackTrace.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)[0]}");
+            }
+
+            IsLoading = false;
+            CancelOperationVisibility = Visibility.Collapsed;
+            CancellationTokenSource.Dispose();
+            CancellationTokenSource = null;
+            GptQuestion = null;
+        }
+
         private void OnOperationCompleted()
         {
             IsLoading = false;
@@ -165,6 +247,8 @@ namespace DumpMiner.ViewModels
                 Count = Items.Count;
             if (Count > 0)
                 _resultsCurrentIndex = _results.Count - 1;
+
+            IsGptEnabled = true;
             CancellationTokenSource.Dispose();
             CancellationTokenSource = null;
             ((RelayCommand)GoToNextResultCommand).OnCanExecuteChanged();
@@ -258,11 +342,24 @@ namespace DumpMiner.ViewModels
             }
         }
 
+        private ICommand _askGptCommand;
+        public ICommand AskGptCommand
+        {
+            get
+            {
+                return _askGptCommand ??
+                       (_askGptCommand = new RelayCommand(AskGpt,
+                           o => _results.Count > 0 && Operation != null && DebuggerSession.Instance.IsAttached && !string.IsNullOrEmpty(GptQuestion)));
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
                 Items = null;
+                Conversation = null;
+                GptPrompt = null;
                 Types = null;
                 ObjectAddress = 0;
                 NumOfResults = 0;

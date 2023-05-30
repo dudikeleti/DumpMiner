@@ -15,6 +15,8 @@ namespace DumpMiner
     public partial class App : Application
     {
         public static CompositionContainer Container { get; set; }
+        public static string AttachedTo { get; internal set; }
+
         private static IViewModelLoader _viewModelLoader;
 
         protected override void OnStartup(StartupEventArgs e)

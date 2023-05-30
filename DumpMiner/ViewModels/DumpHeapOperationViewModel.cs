@@ -13,6 +13,7 @@ namespace DumpMiner.ViewModels
         {
             _generation = -1;
         }
+
         private int _generation;
         public int Generation
         {

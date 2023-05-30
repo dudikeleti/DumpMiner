@@ -56,22 +56,34 @@ namespace DumpMiner.Debugger
 
                 if (type.ComponentType == null || type.ComponentType.HasSimpleValue)
                 {
-                    try
+
+                    var typeName = type.ComponentType?.ElementType.ToString();
+                    for (int i = 0; i < len; i++)
                     {
-                        var typeName = type.ComponentType?.ElementType.ToString();
-                        for (int i = 0; i < len; i++)
+                        if (_cancellationToken.IsCancellationRequested)
                         {
-                            if (_cancellationToken.IsCancellationRequested)
-                            {
-                                break;
-                            }
+                            break;
+                        }
 
+                        try
+                        {
                             ulong address = type.GetArrayElementAddress(obj, i);
+                            values.Add(new ClrObjectModel
+                            {
+                                Address = address,
+                                BaseName = baseName,
+                                TypeName = typeName ?? DebuggerSession.Instance.Heap.GetObjectType(address).Name,
+                                Value = type.GetArrayElementValue(obj, i),
+                                Offset = address - obj,
+                                MetadataToken = type.ComponentType.MetadataToken
+                            });
 
-                            values.Add(new ClrObjectModel { Address = address, BaseName = baseName, TypeName = typeName ?? DebuggerSession.Instance.Heap.GetObjectType(address).Name, Value = type.GetArrayElementValue(obj, i), Offset = address - obj, MetadataToken = type.ComponentType.MetadataToken });
+                        }
+                        catch (OutOfMemoryException)
+                        {
+                            break;
                         }
                     }
-                    catch { }
                 }
                 else
                 {
@@ -82,25 +94,32 @@ namespace DumpMiner.Debugger
                             break;
                         }
 
-                        ulong arrAddress = type.GetArrayElementAddress(obj, i);
-
-                        foreach (var field in type.ComponentType.Fields)
+                        try
                         {
-                            if (_cancellationToken.IsCancellationRequested)
+                            ulong arrAddress = type.GetArrayElementAddress(obj, i);
+
+                            foreach (var field in type.ComponentType.Fields)
                             {
-                                break;
+                                if (_cancellationToken.IsCancellationRequested)
+                                {
+                                    break;
+                                }
+
+                                string value;
+                                if (field.HasSimpleValue)
+                                    value = field.GetValue(arrAddress, inner)?.ToString() ?? "null";
+                                else
+                                    value = field.GetAddress(arrAddress, inner).ToString();
+
+                                values.Add(new ClrObjectModel { Address = obj, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = value });
+
+                                if (field.ElementType == ClrElementType.Struct)
+                                    values.AddRange(GetValues(arrAddress, field.Type, baseName + field.Name, offset + (ulong)field.Offset, true, new List<ClrObjectModel>()));
                             }
-
-                            string value;
-                            if (field.HasSimpleValue)
-                                value = field.GetValue(arrAddress, inner).ToString();
-                            else
-                                value = field.GetAddress(arrAddress, inner).ToString();
-
-                            values.Add(new ClrObjectModel { Address = obj, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = value });
-
-                            if (field.ElementType == ClrElementType.Struct)
-                                values.AddRange(GetValues(arrAddress, field.Type, baseName + field.Name, offset + (ulong)field.Offset, true, new List<ClrObjectModel>()));
+                        }
+                        catch (OutOfMemoryException)
+                        {
+                            break;
                         }
                     }
                 }
@@ -111,37 +130,51 @@ namespace DumpMiner.Debugger
 
                 foreach (var field in type.Fields)
                 {
-                    ulong addr = field.GetAddress(obj, inner);
+                    try
+                    {
+                        ulong addr = field.GetAddress(obj, inner);
 
-                    object value;
-                    if (field.HasSimpleValue)
-                        try
-                        {
-                            value = field.GetValue(obj, inner);
-                            if (!field.IsPrimitive && field.Type.Name != "System.String" && field.IsObjectReference)
+                        object value;
+                        if (field.HasSimpleValue)
+                            try
                             {
-                                value = $"0x{(ulong)value:X8}";
+                                value = field.GetValue(obj, inner);
+                                if (!field.IsPrimitive && field.Type.Name != "System.String" && field.IsObjectReference)
+                                {
+                                    value = $"0x{(ulong)value:X8}";
+                                }
                             }
-                        }
-                        catch (Exception e)
-                        {
-                            value = $"Error: {e.Message}";
-                        }
-                    else
-                        value = $"0x{addr:X8}";
+                            catch (Exception e)
+                            {
+                                value = $"Error: {e.Message}";
+                            }
+                        else
+                            value = $"0x{addr:X8}";
 
-                    string sValue = value?.ToString() ?? "{Null}";
-                    values.Add(new ClrObjectModel { Address = addr, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = sValue, MetadataToken = field.Token });
+                        string sValue = value?.ToString() ?? "{Null}";
+                        values.Add(new ClrObjectModel { Address = addr, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = sValue, MetadataToken = field.Token });
 
-                    if (field.ElementType == ClrElementType.Struct)
-                        values.AddRange(GetValues(addr, field.Type, baseName + field.Name, offset + (ulong)field.Offset, true, new List<ClrObjectModel>()));
+                        if (field.ElementType == ClrElementType.Struct)
+                            values.AddRange(GetValues(addr, field.Type, baseName + field.Name, offset + (ulong)field.Offset, true, new List<ClrObjectModel>()));
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                        break;
+                    }
                 }
             }
 
             if (firstAppDomain != null)
             {
-                values.AddRange(type.StaticFields.Select(field => new ClrObjectModel { IsStatic = true, Address = field.GetAddress(firstAppDomain), BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = field.GetValue(firstAppDomain).ToString(), MetadataToken = field.Token }));
-                values.AddRange(type.ThreadStaticFields.Select(field => new ClrObjectModel { IsThreadStatic = true, Address = obj, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = field.GetValue(firstAppDomain, type.Heap.Runtime.Threads.First()).ToString(), MetadataToken = field.Token }));
+                try
+                {
+                    values.AddRange(type.StaticFields.Select(field => new ClrObjectModel { IsStatic = true, Address = field.GetAddress(firstAppDomain), BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type?.Name ?? "n/a", Value = field.GetValue(firstAppDomain)?.ToString() ?? "null", MetadataToken = field.Token }));
+                    values.AddRange(type.ThreadStaticFields.Select(field => new ClrObjectModel { IsThreadStatic = true, Address = obj, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type?.Name ?? "n/a", Value = field.GetValue(firstAppDomain, type.Heap.Runtime.Threads.First())?.ToString() ?? "null", MetadataToken = field.Token }));
+
+                }
+                catch (OutOfMemoryException)
+                {
+                }
             }
 
             return values;

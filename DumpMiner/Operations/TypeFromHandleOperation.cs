@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel.Composition;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
+using DumpMiner.Models;
 
 namespace DumpMiner.Operations
 {
@@ -36,6 +38,11 @@ namespace DumpMiner.Operations
                         }
                 };
             });
+        }
+
+        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

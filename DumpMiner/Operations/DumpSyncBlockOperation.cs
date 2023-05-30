@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
+using DumpMiner.Models;
 
 
 namespace DumpMiner.Operations
@@ -22,6 +24,11 @@ namespace DumpMiner.Operations
         public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() => DebuggerSession.Instance.Heap.EnumerateBlockingObjects());
+        }
+
+        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        {
+            throw new NotImplementedException();
         }
     }
 }

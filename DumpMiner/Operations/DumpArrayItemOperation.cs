@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
+using DumpMiner.Models;
 using Microsoft.Diagnostics.Runtime;
 using static DumpMiner.Debugger.ClrObject;
 
@@ -57,6 +59,11 @@ namespace DumpMiner.Operations
 
                 return null;
             });
+        }
+
+        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        {
+            throw new NotImplementedException();
         }
     }
 }
