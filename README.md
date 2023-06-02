@@ -9,4 +9,8 @@ Libraries in use:
 
 Thanks [@gsuberland](https://github.com/gsuberland) for the object extractor.
 
-# How to use
+
+
+
+https://github.com/dudikeleti/DumpMiner/assets/8845578/0c5bb3f3-0925-46b7-ab69-5d72baad1367
+
