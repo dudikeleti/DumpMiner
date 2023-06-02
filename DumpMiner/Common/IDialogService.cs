@@ -1,7 +1,9 @@
-﻿namespace DumpMiner.Common
+﻿using System.Windows;
+
+namespace DumpMiner.Common
 {
     interface IDialogService
     {
-        void ShowDialog(string text);
+        MessageBoxResult ShowDialog(string text, string title = "", MessageBoxButton button = MessageBoxButton.OK);
     }
 }

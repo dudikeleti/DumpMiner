@@ -169,7 +169,6 @@ namespace DumpMiner.ViewModels
             }
 
             AttachedProcessName = SelectedItem.Name;
-            App.AttachedTo = AttachedProcessName;
             DetachVisibility = Visibility.Visible;
             IsGetProcessesEnabled = false;
             Dispose(true);
@@ -187,6 +186,7 @@ namespace DumpMiner.ViewModels
                 DefaultExt = "dmp",
                 InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyComputer)
             };
+
             var result = file.ShowDialog();
             if (result.HasValue && result.Value && !string.IsNullOrEmpty(file.FileName))
             {
@@ -195,8 +195,8 @@ namespace DumpMiner.ViewModels
                 {
                     App.Container.GetExport<IDialogService>().Value.ShowDialog("Load dump failed");
                 }
+
                 AttachedProcessName = file.FileName;
-                App.AttachedTo = AttachedProcessName;
                 DetachVisibility = Visibility.Visible;
                 IsGetProcessesEnabled = false;
                 DetachProcessesCommand.OnCanExecuteChanged();

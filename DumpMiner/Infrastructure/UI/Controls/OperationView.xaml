@@ -112,7 +112,13 @@
 
                 <ListView Grid.Column="0" Grid.RowSpan="3" Name="ItemsList" SelectionChanged="ItemsList_OnSelectionChanged"
                           ItemsSource="{Binding Items}"
-                          SelectedItem="{Binding SelectedItem}" />
+                          SelectedItem="{Binding SelectedItem}" >
+                    <ListView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Dump to file..." Click="DumpMenuClicked" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}" />
+                        </ContextMenu>
+                    </ListView.ContextMenu>
+                </ListView>
 
                 <ItemsControl HorizontalAlignment="Stretch"
                               Grid.Row="0" Grid.Column="1"

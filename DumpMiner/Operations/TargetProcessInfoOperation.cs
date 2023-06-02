@@ -34,7 +34,7 @@ namespace DumpMiner.Operations
                 infoModel.Architecture = runtime.DataTarget.Architecture.ToString();
                 infoModel.IsGcServer = runtime.ServerGC;
                 infoModel.HeapCount = runtime.HeapCount;
-                infoModel.CreatedTime = DebuggerSession.Instance.AttachedTime.ToUniversalTime().ToString("G");
+                infoModel.CreatedTime = DebuggerSession.Instance.AttachedTime?.ToUniversalTime().ToString("G");
                 infoModel.PointerSize = runtime.PointerSize;
 
                 var enumerable = from prop in infoModel.GetType().GetProperties()
