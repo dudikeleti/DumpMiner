@@ -15,7 +15,7 @@ namespace DumpMiner
     public partial class App : Application
     {
         public static CompositionContainer Container { get; set; }
-        public static string AttachedTo { get; internal set; }
+        internal static IDialogService Dialog { get; private set; }
 
         private static IViewModelLoader _viewModelLoader;
 
@@ -39,6 +39,8 @@ namespace DumpMiner
             _viewModelLoader = Container.GetExport<MefViewModelLoader>().Value;
 
             LoadAppearanceSettings();
+
+            Dialog = App.Container.GetExport<IDialogService>().Value;
 
             DebuggerSession.Instance.OnDetach += OnDetach;
         }

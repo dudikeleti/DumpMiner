@@ -8,6 +8,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
+using DumpMiner.Debugger;
 using DumpMiner.Models;
 using DumpMiner.Reader;
 using ICSharpCode.Decompiler;
@@ -29,12 +30,13 @@ namespace DumpMiner.Operations
 
         private string GetSourceCode(int metadataToken)
         {
-            var dumpData = new Dump(App.AttachedTo);
+            var dumpPath = DebuggerSession.Instance.AttachedTo.name;
+            var dumpData = new Dump(dumpPath);
             var pathToOutputModules = $"{Environment.CurrentDirectory}\\DumpOutputModules";
             Directory.CreateDirectory(pathToOutputModules);
             Console.WriteLine($"Saving all modules to {pathToOutputModules}");
             dumpData.SaveAllModules(pathToOutputModules, true);
-            var dlls = Directory.EnumerateFiles(pathToOutputModules).Where(f => Path.GetFileNameWithoutExtension(f).Equals(Path.GetFileNameWithoutExtension(App.AttachedTo))).Select(f => new FileInfo(f));
+            var dlls = Directory.EnumerateFiles(pathToOutputModules).Where(f => Path.GetFileNameWithoutExtension(f).Equals(Path.GetFileNameWithoutExtension(dumpPath))).Select(f => new FileInfo(f));
             var settings = new DecompilerSettings();
             settings.ThrowOnAssemblyResolveErrors = false;
             var resolver = new UniversalAssemblyResolver(dlls.First().FullName, false, null);

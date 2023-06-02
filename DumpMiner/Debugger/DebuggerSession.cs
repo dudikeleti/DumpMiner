@@ -21,14 +21,17 @@ namespace DumpMiner.Debugger
         #region members and props
         private readonly Task _workerTask;
         private Process _attachedProcess;
+        private string _dumpPath;
         public static readonly IDebuggerSession Instance = new DebuggerSession();
         public bool IsAttached => DataTarget != null && Runtime != null;
-        public DateTime AttachedTime { get; private set; }
+        public DateTime? AttachedTime { get; private set; }
         public Action OnDetach { get; set; }
         public ClrRuntime Runtime { get; private set; }
         public ClrHeap Heap { get; private set; }
         public DataTarget DataTarget { get; private set; }
         public CrashDumpReader DumpReader { get; private set; }
+
+        public (int? id, string name) AttachedTo => _attachedProcess != null ? (_attachedProcess.Id, _attachedProcess.ProcessName) : ((int?)null, _dumpPath);
 
         #endregion
 
@@ -37,7 +40,6 @@ namespace DumpMiner.Debugger
             EnsureProperDebugEngineIsLoaded();
             _workerTask = new Task(() => { });
             _workerTask.Start();
-
         }
 
         /// <summary>
@@ -48,18 +50,30 @@ namespace DumpMiner.Debugger
             var sysdir = Environment.GetFolderPath(Environment.SpecialFolder.System);
             var res = LoadLibraryEx(Path.Combine(sysdir, "dbgeng.dll"), IntPtr.Zero, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
             if (res == IntPtr.Zero)
+            {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
         }
 
         public void SetSymbolPath(string[] path, bool append = true)
         {
             if (append)
+            {
                 foreach (var s in path)
+                {
                     DataTarget.SymbolLocator.SymbolPath += ";" + s;
+                }
+
+            }
             else
+            {
                 DataTarget.SymbolLocator.SymbolPath = path.Single();
+            }
+
             if (string.IsNullOrEmpty(DataTarget.SymbolLocator.SymbolCache))
+            {
                 DataTarget.SymbolLocator.SymbolCache = Properties.Resources.SymbolCache;
+            }
         }
 
         public async Task<IEnumerable<object>> ExecuteOperation(Func<IEnumerable<object>> operation)
@@ -80,7 +94,9 @@ namespace DumpMiner.Debugger
         public async Task<bool> LoadDump(string fileName, CrashDumpReader readerType)
         {
             if (IsAttached)
+            {
                 return true;
+            }
 
             DumpReader = readerType;
             if (readerType == CrashDumpReader.DbgEng)
@@ -94,16 +110,23 @@ namespace DumpMiner.Debugger
         private bool LoadDump(string fileName)
         {
             DataTarget = DataTarget.LoadCrashDump(fileName, DumpReader);
-            var message = CreateRuntime();
-            if (!string.IsNullOrEmpty(message))
+            var result = CreateRuntime();
+            if (!result.succeeded)
+            {
+                App.Container.GetExport<IDialogService>().Value.ShowDialog(result.error);
                 Dispose(true);
-            return string.IsNullOrEmpty(message);
+            }
+
+            _dumpPath = fileName;
+            return result.succeeded;
         }
 
         public void Attach(Process process, uint milliseconds)
         {
             if (IsAttached)
+            {
                 return;
+            }
 
             _attachedProcess = process;
 
@@ -112,12 +135,14 @@ namespace DumpMiner.Debugger
                 try
                 {
                     DataTarget = DataTarget.AttachToProcess(_attachedProcess.Id, milliseconds, AttachFlag.NonInvasive);
-                    var message = CreateRuntime();
-                    if (!string.IsNullOrEmpty(message))
+                    var result = CreateRuntime();
+                    if (!result.succeeded)
                     {
                         Dispose(true);
+                        App.Container.GetExport<IDialogService>().Value.ShowDialog(result.error);
                         return;
                     }
+
                     _attachedProcess.Exited += Process_Exited;
                 }
                 catch (Exception)
@@ -131,42 +156,57 @@ namespace DumpMiner.Debugger
             }).Wait();
         }
 
-        private string CreateRuntime()
+        private (bool succeeded, string error) CreateRuntime()
         {
             GC.ReRegisterForFinalize(this);
             try
             {
                 var clrVersion = DataTarget.ClrVersions.FirstOrDefault();
                 if (clrVersion == null)
-                    return "CLR version not found";
+                {
+                    return (false, "CLR version not found");
+                }
+
                 Runtime = clrVersion.CreateRuntime();
                 Heap = Runtime.Heap;
                 if (Heap == null || !Heap.CanWalkHeap)
-                    return "Can't get heap";
+                {
+                    return (false, "Can't get heap");
+                }
+
                 AttachedTime = GetAttachedTime();
                 SetSymbolPath(new[] { Environment.CurrentDirectory, Properties.Resources.SymbolCache, Properties.Resources.DllsFolder });
                 // Runtime.RuntimeFlushed += runtime => Heap = Runtime.Heap;
-                return string.Empty;
+                return (true, string.Empty);
             }
             catch (Exception e)
             {
-                return e.Message;
+                return (false, e.Message);
             }
         }
 
-        private DateTime GetAttachedTime()
+        private DateTime? GetAttachedTime()
         {
             try
             {
-                uint secondsSinceUnix;
                 var dbgCtrl2 = (IDebugControl2)Runtime.DataTarget.DebuggerInterface;
-                dbgCtrl2.GetCurrentTimeDate(out secondsSinceUnix);
+                if (dbgCtrl2 == null)
+                {
+                    if (_attachedProcess != null)
+                    {
+                        return null;
+                    }
+
+                    return DateTime.MinValue;
+                }
+
+                dbgCtrl2.GetCurrentTimeDate(out var secondsSinceUnix);
                 var origin = new DateTime(1970, 1, 1, 0, 0, 0, 0);
                 return origin.AddSeconds(secondsSinceUnix).ToLocalTime();
             }
             catch (Exception)
             {
-                return DateTime.MinValue;
+                return null;
             }
         }
 
@@ -176,7 +216,7 @@ namespace DumpMiner.Debugger
             {
                 try
                 {
-                    DataTarget.DebuggerInterface.DetachProcesses();
+                    DataTarget.DebuggerInterface?.DetachProcesses();
                 }
                 finally
                 {
@@ -190,7 +230,7 @@ namespace DumpMiner.Debugger
             });
         }
 
-        void Process_Exited(object sender, EventArgs e)
+        private void Process_Exited(object sender, EventArgs e)
         {
             Dispose(true);
         }
@@ -218,6 +258,8 @@ namespace DumpMiner.Debugger
                     _attachedProcess.Dispose();
                     _attachedProcess = null;
                 }
+
+                _dumpPath = null;
                 GC.SuppressFinalize(this);
             }
         }

@@ -1,5 +1,9 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Controls;
+using DumpMiner.Common;
+using System.Threading;
+using DumpMiner.Models;
 
 namespace DumpMiner.Infrastructure.UI.Controls
 {
@@ -134,6 +138,35 @@ namespace DumpMiner.Infrastructure.UI.Controls
         {
             SelectedItem = e.AddedItems != null && e.AddedItems.Count > 0 ? e.AddedItems[0] : null;
             SelectionChange?.Invoke(sender, e);
+        }
+
+        private async void DumpMenuClicked(object sender, RoutedEventArgs e)
+        {
+            if (SelectedItem == null)
+            {
+                return;
+            }
+
+            var addressProperty = SelectedItem.GetType().GetProperty("Address", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            var sizeProperty = SelectedItem.GetType().GetProperty("Size", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            if (addressProperty == null || sizeProperty == null)
+            {
+                App.Dialog.ShowDialog("The object must has address and size", title: "Error");
+                return;
+            }
+
+            ulong address = (ulong)addressProperty.GetValue(SelectedItem);
+            ulong size = (ulong)sizeProperty.GetValue(SelectedItem);
+
+            var typeNameProperty = SelectedItem.GetType().GetProperty("Type", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            string typeName = "[unknown]";
+            if (typeNameProperty != null)
+            {
+                typeName = (string)typeNameProperty.GetValue(SelectedItem);
+            }
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await App.Container.GetExportedValue<IDebuggerOperation>(OperationNames.DumpObjectToDisk).Execute(new OperationModel() { Types = typeName, ObjectAddress = address }, cts.Token, size);
         }
     }
 }

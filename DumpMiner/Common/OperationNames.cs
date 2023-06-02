@@ -24,5 +24,6 @@
         public const string DumpSyncBlock = "DumpSyncBlock";
         public const string TypeFromHandle = "TypeFromHandle";
         public const string DumpSourceCode = "DumpSourceCodeOperation";
+        public const string DumpObjectToDisk = "DumpObjectToDiscOperation";
     }
 }
