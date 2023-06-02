@@ -1,7 +1,0 @@
-- Display inner exceptions in "Dump Exceptions"
-- Display local variables in "Dump CLR Stack"
-- Add tooltips to result columns
-- Add support for hot keys (same as windbg)
-- Make some of controls link to the relevant operation (such as pressing object address go to dump object)
-- Support GPT in all operation (and improve existing)
-
