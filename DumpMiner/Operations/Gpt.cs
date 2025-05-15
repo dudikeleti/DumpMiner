@@ -1,10 +1,10 @@
-﻿using OpenAI.GPT3.Managers;
-using OpenAI.GPT3.ObjectModels.RequestModels;
-using OpenAI.GPT3;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DumpMiner.Common;
+using OpenAI;
+using OpenAI.Managers;
+using OpenAI.ObjectModels.RequestModels;
 
 namespace DumpMiner.Operations
 {
@@ -27,7 +27,7 @@ namespace DumpMiner.Operations
                 ApiKey = "your api key"
             });
 
-            OpenAiService.SetDefaultModelId(OpenAI.GPT3.ObjectModels.Models.Gpt_4_32k);
+            OpenAiService.SetDefaultModelId(OpenAI.ObjectModels.Models.Model.Gpt_4o.ToString());
         }
 
         public static async Task<string> Ask(string[] system, string[] user)
