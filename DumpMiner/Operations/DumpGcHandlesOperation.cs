@@ -24,13 +24,13 @@ namespace DumpMiner.Operations
                                  select new
                                  {
                                      Address = handle.Address,
-                                     Type = handle.Type != null ? handle.Type.Name : "{UNKNOWN}",
+                                     //Type = handle.Type != null ? handle.Type.Name : "{UNKNOWN}",
                                      IsStrong = handle.IsStrong,
                                      IsPinned = handle.IsPinned,
-                                     HandlType = handle.HandleType,
-                                     RefCount = handle.RefCount,
-                                     DependentTarget = handle.DependentTarget,
-                                     DependentType = handle.DependentType != null ? handle.DependentType.Name : "{UNKNOWN}",
+                                     //HandlType = handle.HandleType,
+                                     //RefCount = handle.RefCount,
+                                     //DependentTarget = handle.DependentTarget,
+                                     //DependentType = handle.DependentType != null ? handle.DependentType.Name : "{UNKNOWN}",
                                      AppDomain = handle.AppDomain != null ? handle.AppDomain.Name : "{UNKNOWN}",
                                  };
                 return enumerable.ToList();

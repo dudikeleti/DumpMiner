@@ -33,7 +33,7 @@ namespace DumpMiner.Operations
                     var stackDetails = new ClrStackDump();
                     stackDetails.StackFrames = new List<Frame>();
                     stackDetails.StackObjects = new List<StackObject>();
-                    foreach (var stackFrame in thread.StackTrace)
+                    foreach (var stackFrame in thread.EnumerateStackTrace(true))
                     {
                         stackDetails.StackBase = thread.StackBase;
                         stackDetails.StackLimit = thread.StackLimit;
@@ -45,7 +45,7 @@ namespace DumpMiner.Operations
                         {
                             StackPointer = stackFrame.StackPointer,
                             InstructionPointer = stackFrame.InstructionPointer,
-                            DisplayString = stackFrame.DisplayString,
+                            DisplayString = stackFrame.ToString(),
                             // FileAndLine = source != null ? source.FilePath + ": " + source.LineNumber : "",
                             Method = stackFrame.Method
                         });
@@ -55,7 +55,7 @@ namespace DumpMiner.Operations
                     }
 
                     ClrHeap heap = DebuggerSession.Instance.Heap;
-                    var pointerSize = DebuggerSession.Instance.Runtime.PointerSize;
+                    var pointerSize = DebuggerSession.Instance.Runtime.DataTarget.DataReader.PointerSize;
 
                     // address of TEB (thread execution block) + pointer size
                     ulong start = thread.StackBase;
@@ -76,7 +76,7 @@ namespace DumpMiner.Operations
                         HashSet<ulong> stackObjects = new HashSet<ulong>();
 
                         // fail to read the memory
-                        if (!heap.ReadPointer(ptr, out ulong obj))
+                        if (!heap.Runtime.DataTarget.DataReader.ReadPointer(ptr, out ulong obj))
                             break;
 
                         // the object added already

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
+using Microsoft.Diagnostics.Runtime;
 
 namespace DumpMiner.Operations
 {
@@ -24,21 +25,26 @@ namespace DumpMiner.Operations
                 var generation = (int)customParameter;
                 var heap = DebuggerSession.Instance.Heap;
                 var results = new List<object>();
-                foreach (var obj in heap.EnumerateObjectAddresses().Where(ptr => (generation != -1 && generation == heap.GetGeneration(ptr)) || generation == -1))
+                foreach (var seg in heap.Segments)
                 {
-                    if (token.IsCancellationRequested)
-                        break;
+                    foreach (var clrObject in seg.EnumerateObjects())
+                    {
+                        var type = clrObject.Type;
+                        if (type == null)
+                        {
+                            continue;
+                        }
 
-                    var type = heap.GetObjectType(obj);
-                    if (type == null)
-                        continue;
-
-                    if (types?.Any(t => type.Name.ToLower().Contains(t.ToLower())) ?? true)
-                        results.Add(new { Address = obj, Type = type.Name, MetadataToken = type.MetadataToken, Generation = heap.GetGeneration(obj), Size = type.GetSize(obj) });
+                        var objectGeneration = seg.GetGeneration(clrObject.Address);
+                        if (generation == -1 || (Generation)generation == objectGeneration)
+                        {
+                            if (types?.Any(t => type.Name.ToLower().Contains(t.ToLower())) ?? true)
+                                results.Add(new { Address = clrObject.Address, Type = type.Name, MetadataToken = type.MetadataToken, Generation = objectGeneration.ToString(), Size = clrObject.Size });
+                        }
+                        
+                    }
                 }
 
-                // update to ClrMD V2
-                // DebuggerSession.Instance.Runtime.Flush();
                 return results;
             });
         }

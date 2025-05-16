@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel.Composition;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using DumpMiner.Common;
+﻿using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
 using Microsoft.Diagnostics.Runtime;
-using Microsoft.Diagnostics.Runtime.Interop;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using SharpDisasm;
+using System.ComponentModel.Composition;
 
 namespace DumpMiner.Operations
 {
@@ -47,7 +46,7 @@ namespace DumpMiner.Operations
                             break;
 
                         // add also method name?
-                        if (m.MetadataToken != metadataToken)
+                        if (m.MetadataToken != (int)metadataToken)
                         {
                             continue;
                         }
@@ -66,9 +65,6 @@ namespace DumpMiner.Operations
                     return results;
                 }
 
-                // This is the first instruction of the JIT'ed (or NGEN'ed) machine code.
-                ulong startAddress = method.NativeCode;
-
                 // use the IL to native mapping to get the end address
                 if (method.ILOffsetMap == null)
                 {
@@ -79,54 +75,59 @@ namespace DumpMiner.Operations
                     return results;
                 }
 
-                // ulong endAddress = method.ILOffsetMap.Select(entry => entry.EndAddress).Max();
+                // This is the first instruction of the JIT'ed (or NGEN'ed) machine code.
+                ulong startAddress = method.NativeCode;
+                if (startAddress == 0)
+                {
+                    results.Add(new AssemblyCode
+                    {
+                        Instruction = "Unable to disassemble method"
+                    });
+                    return results;
+                }
 
                 foreach (var map in GetCompleteNativeMap(method))
                 {
-                    var dbgCtrl = (IDebugControl)DebuggerSession.Instance.DataTarget.DebuggerInterface;
-                    int size = Math.Max(1000000, (int)(map.EndAddress + 1 - map.StartAddress));
-                    var sb = new StringBuilder(size);
+                    // Read the entire code block
+                    byte[] codeBytes = new byte[(int)(map.EndAddress - map.StartAddress)];
+                    var bytesRead = DebuggerSession.Instance.Runtime.DataTarget.DataReader.Read(map.StartAddress, codeBytes);
 
-                    ulong nextInstruction = 0;
-                    while (nextInstruction < map.EndAddress)
+                    if (bytesRead != codeBytes.Length)
                     {
-                        var result = dbgCtrl.Disassemble(startAddress, DEBUG_DISASM.EFFECTIVE_ADDRESS, sb, size,
-                            out var disassemblySize, out nextInstruction);
-                        startAddress = nextInstruction;
-                        if (result < 0)
-                        {
-                            continue;
-                        }
-
-                        var disassembly = sb.ToString().Split(' ').ToList();
-                        disassembly.RemoveAll(s => s == "");
-                        var address = disassembly.Count > 1 ? disassembly[0] + "  " + disassembly[1] : string.Empty;
-                        var opcode = disassembly.Count > 2 ? disassembly[2] : string.Empty;
-                        var instruction = disassembly.Count > 5
-                            ? $"{disassembly[3]} {disassembly[4]} {disassembly[5]}"
-                            : disassembly.Count > 4
-                                ? $"{disassembly[3]} {disassembly[4]}"
-                                : disassembly.Count > 3
-                                    ? disassembly[3]
-                                    : string.Empty;
-
-                        var methodName = GetMethodNameFromAddressOrNull(opcode, disassembly);
-                        if (string.IsNullOrEmpty(methodName) == false)
-                        {
-                            instruction = instruction.Replace("\n", string.Empty);
-                            instruction += " --> " + methodName;
-                        }
-
-                        if (opcode.ToLower().Contains("nop"))
-                        {
-                            continue;
-                        }
-
                         results.Add(new AssemblyCode
                         {
-                            Address = address,
-                            OpCode = opcode,
-                            Instruction = instruction
+                            Instruction = $"Failed to read memory for disassembly at address {map.StartAddress:X}"
+                        });
+                        continue;
+                    }
+
+                    var disasm = new Disassembler(
+                        codeBytes,
+                        ArchitectureMode.x86_64,
+                        map.StartAddress,
+                        true
+                    );
+
+                    foreach (var instruction in disasm.Disassemble())
+                    {
+                        string mnemonicStr = instruction.Mnemonic.ToString();
+        
+                        string methodName = GetMethodNameFromAddressOrNull(mnemonicStr, instruction.Operands);
+                        string instructionText = instruction.ToString();
+        
+                        if (!string.IsNullOrEmpty(methodName))
+                        {
+                            instructionText += $" --> {methodName}";
+                        }
+        
+                        if (mnemonicStr.ToLower().Contains("nop"))
+                        {
+                            continue;
+                        }
+        
+                        results.Add(new AssemblyCode
+                        {
+                            Instruction = instructionText
                         });
                     }
                 }
@@ -135,7 +136,7 @@ namespace DumpMiner.Operations
                 {
                     results.Add(new AssemblyCode
                     {
-                        Instruction = $"Can not disassemble method: {method.GetFullSignature()}"
+                        Instruction = $"Can not disassemble method: {method.Signature}"
                     });
                 }
 
@@ -161,18 +162,32 @@ namespace DumpMiner.Operations
             return await Gpt.Ask(new[] { "You are an assembly code and a C# code expert." }, new[] { $"{model.GptPrompt}" });
         }
 
-        private string GetMethodNameFromAddressOrNull(string opCode, List<string> disassembly)
+        private string GetMethodNameFromAddressOrNull(string opCode, Operand[] operands)
         {
             string address = null;
             string address2 = null;
+
+            // Helper function to extract address/immediate from operand
+            string GetAddressFromOperand(Operand operand)
+            {
+                if (operand == null)
+                    return null;
+                // For immediate, memory, or pointer operands, use Value
+                if (operand.Type == SharpDisasm.Udis86.ud_type.UD_OP_IMM ||
+                    operand.Type == SharpDisasm.Udis86.ud_type.UD_OP_MEM ||
+                    operand.Type == SharpDisasm.Udis86.ud_type.UD_OP_PTR)
+                    return operand.Value.ToString("X");
+                return null;
+            }
+
             if (opCode.ToLower().StartsWith("j"))
             {
-                address = disassembly.Count > 3 ? disassembly[3] : null;
+                address = operands.Length > 3 ? GetAddressFromOperand(operands[3]) : null;
             }
             else if (opCode.ToLower() == "call")
             {
-                address = disassembly.Count > 3 ? disassembly[3] : null;
-                address2 = disassembly.Count > 4 ? disassembly[4] : null;
+                address = operands.Length > 3 ? GetAddressFromOperand(operands[3]) : null;
+                address2 = operands.Length > 4 ? GetAddressFromOperand(operands[4]) : null;
             }
             else
             {
@@ -190,7 +205,7 @@ namespace DumpMiner.Operations
                     CultureInfo.CurrentCulture,
                     out var ulongAddress))
             {
-                methodName = DebuggerSession.Instance.Runtime.GetMethodByAddress(ulongAddress)?.GetFullSignature() ??
+                methodName = DebuggerSession.Instance.Runtime.GetMethodByInstructionPointer(ulongAddress)?.Signature ??
                              DebuggerSession.Instance.Runtime.GetJitHelperFunctionName(ulongAddress);
             }
 
@@ -202,7 +217,7 @@ namespace DumpMiner.Operations
                         out ulongAddress))
                 {
                     methodName =
-                        DebuggerSession.Instance.Runtime.GetMethodByAddress(ulongAddress)?.GetFullSignature() ??
+                        DebuggerSession.Instance.Runtime.GetMethodByInstructionPointer(ulongAddress)?.Signature ??
                         DebuggerSession.Instance.Runtime.GetJitHelperFunctionName(ulongAddress);
                 }
             }

@@ -1,4 +1,7 @@
-﻿using System;
+﻿using DumpMiner.Common;
+using Microsoft.Diagnostics.Runtime;
+using Microsoft.Diagnostics.Runtime.Utilities.DbgEng;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -6,9 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using DumpMiner.Common;
-using Microsoft.Diagnostics.Runtime;
-using Microsoft.Diagnostics.Runtime.Interop;
+using System.Windows.Shell;
 
 namespace DumpMiner.Debugger
 {
@@ -57,23 +58,15 @@ namespace DumpMiner.Debugger
 
         public void SetSymbolPath(string[] path, bool append = true)
         {
-            if (append)
-            {
-                foreach (var s in path)
-                {
-                    DataTarget.SymbolLocator.SymbolPath += ";" + s;
-                }
+            string symPath = string.Empty;
+            symPath = append ? path.Aggregate(symPath, (current, s) => current + (s + ";")) : path.Single();
 
-            }
-            else
-            {
-                DataTarget.SymbolLocator.SymbolPath = path.Single();
-            }
+            DataTarget.SetSymbolPath(symPath);
 
-            if (string.IsNullOrEmpty(DataTarget.SymbolLocator.SymbolCache))
-            {
-                DataTarget.SymbolLocator.SymbolCache = Properties.Resources.SymbolCache;
-            }
+            //if (string.IsNullOrEmpty(DataTarget.SymbolLocator.SymbolCache))
+            //{
+            //    DataTarget.SymbolLocator.SymbolCache = Properties.Resources.SymbolCache;
+            //}
         }
 
         public async Task<IEnumerable<object>> ExecuteOperation(Func<IEnumerable<object>> operation)
@@ -109,7 +102,7 @@ namespace DumpMiner.Debugger
 
         private bool LoadDump(string fileName)
         {
-            DataTarget = DataTarget.LoadCrashDump(fileName, DumpReader);
+            DataTarget = DataTarget.LoadDump(fileName);
             var result = CreateRuntime();
             if (!result.succeeded)
             {
@@ -118,6 +111,7 @@ namespace DumpMiner.Debugger
             }
 
             _dumpPath = fileName;
+            AttachedTime = File.GetLastWriteTime(_dumpPath);
             return result.succeeded;
         }
 
@@ -134,7 +128,8 @@ namespace DumpMiner.Debugger
             {
                 try
                 {
-                    DataTarget = DataTarget.AttachToProcess(_attachedProcess.Id, milliseconds, AttachFlag.NonInvasive);
+                    DataTarget = DataTarget.CreateSnapshotAndAttach(_attachedProcess.Id);
+                    // DataTarget = DataTarget.AttachToProcess(_attachedProcess.Id, false, null);
                     var result = CreateRuntime();
                     if (!result.succeeded)
                     {
@@ -143,6 +138,7 @@ namespace DumpMiner.Debugger
                         return;
                     }
 
+                    AttachedTime = DateTime.Now;
                     _attachedProcess.Exited += Process_Exited;
                 }
                 catch (Exception)
@@ -174,39 +170,12 @@ namespace DumpMiner.Debugger
                     return (false, "Can't get heap");
                 }
 
-                AttachedTime = GetAttachedTime();
                 SetSymbolPath(new[] { Environment.CurrentDirectory, Properties.Resources.SymbolCache, Properties.Resources.DllsFolder });
-                // Runtime.RuntimeFlushed += runtime => Heap = Runtime.Heap;
                 return (true, string.Empty);
             }
             catch (Exception e)
             {
                 return (false, e.Message);
-            }
-        }
-
-        private DateTime? GetAttachedTime()
-        {
-            try
-            {
-                var dbgCtrl2 = (IDebugControl2)Runtime.DataTarget.DebuggerInterface;
-                if (dbgCtrl2 == null)
-                {
-                    if (_attachedProcess != null)
-                    {
-                        return null;
-                    }
-
-                    return DateTime.MinValue;
-                }
-
-                dbgCtrl2.GetCurrentTimeDate(out var secondsSinceUnix);
-                var origin = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-                return origin.AddSeconds(secondsSinceUnix).ToLocalTime();
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 
@@ -216,7 +185,6 @@ namespace DumpMiner.Debugger
             {
                 try
                 {
-                    DataTarget.DebuggerInterface?.DetachProcesses();
                 }
                 finally
                 {
@@ -270,5 +238,11 @@ namespace DumpMiner.Debugger
         }
 
         #endregion
+    }
+
+    internal enum CrashDumpReader
+    {
+        ClrMD,
+        DbgEng
     }
 }

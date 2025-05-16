@@ -23,19 +23,19 @@ namespace DumpMiner.Operations
                 var infoModel = new TargetProcessInfoOperationModel();
                 infoModel.AppDomains = string.Concat(runtime.AppDomains.Select(ad => ad.Name + ", ")).TrimEnd();
                 infoModel.AppDomains = infoModel.AppDomains.Remove(infoModel.AppDomains.Length - 1, 1);
-                infoModel.AppDomainsCount = runtime.AppDomains.Count;
-                infoModel.ThreadsCount = runtime.Threads.Count;
-                infoModel.ModulesCount = runtime.AppDomains.Sum(appDomain => appDomain.Modules.Count);
-                infoModel.SymbolPath = runtime.DataTarget.SymbolLocator.SymbolPath;
+                infoModel.AppDomainsCount = runtime.AppDomains.Length;
+                infoModel.ThreadsCount = runtime.Threads.Length;
+                infoModel.ModulesCount = runtime.AppDomains.Sum(appDomain => appDomain.Modules.Length);
+                //infoModel.SymbolPath = runtime.DataTarget.;
                 infoModel.ClrVersions = string.Concat(runtime.DataTarget.ClrVersions.Select(clrVer => clrVer.Version + ", ")).TrimEnd();
                 infoModel.ClrVersions = infoModel.ClrVersions.Remove(infoModel.ClrVersions.Length - 1, 1);
-                infoModel.DacInfo = string.Concat(runtime.DataTarget.ClrVersions.Select(ver => ver.DacInfo.FileName + ", ")).TrimEnd();
+                //infoModel.DacInfo = string.Concat(runtime.DataTarget.ClrVersions.Select(ver => ver.DacInfo.FileName + ", ")).TrimEnd();
                 infoModel.DacInfo = infoModel.DacInfo.Remove(infoModel.DacInfo.Length - 1, 1);
-                infoModel.Architecture = runtime.DataTarget.Architecture.ToString();
-                infoModel.IsGcServer = runtime.ServerGC;
-                infoModel.HeapCount = runtime.HeapCount;
+                infoModel.Architecture = runtime.DataTarget.DataReader.Architecture.ToString();
+                infoModel.IsGcServer = runtime.Heap.IsServer;
+                infoModel.HeapCount = runtime.Heap.Segments.Length;
                 infoModel.CreatedTime = DebuggerSession.Instance.AttachedTime?.ToUniversalTime().ToString("G");
-                infoModel.PointerSize = runtime.PointerSize;
+                infoModel.PointerSize = runtime.DataTarget.DataReader.PointerSize;
 
                 var enumerable = from prop in infoModel.GetType().GetProperties()
                                  select new { Name = prop.Name, Value = prop.GetValue(infoModel) };

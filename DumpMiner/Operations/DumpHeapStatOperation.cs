@@ -23,12 +23,12 @@ namespace DumpMiner.Operations
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 var heap = DebuggerSession.Instance.Heap;
-                var enumerable = from o in heap.EnumerateObjectAddresses()
+                var enumerable = from o in heap.EnumerateObjects()
                                  let type = heap.GetObjectType(o)
                                  where type == null || types == null || types.Any(t => type.Name.ToLower().Contains(t.ToLower()))
                                  group o by type
                                      into g
-                                     let size = g.Sum(o => (uint)g.Key.GetSize(o))
+                                     let size = g.Sum(o => (uint)o.Size)
                                      orderby size
                                      select new
                                      {

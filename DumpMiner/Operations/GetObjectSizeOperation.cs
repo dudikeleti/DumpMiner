@@ -46,9 +46,6 @@ namespace DumpMiner.Operations
         {
             // Evaluation stack
             var eval = new Stack<ulong>();
-
-            // To make sure we don't count the same object twice, we'll keep a set of all objects
-            // we've seen before.
             var considered = new HashSet<ulong>();
 
             count = 0;
@@ -57,26 +54,89 @@ namespace DumpMiner.Operations
 
             while (eval.Count > 0)
             {
-                // Pop an object, ignore it if we've seen it before.
                 obj = eval.Pop();
                 if (!considered.Add(obj))
                     continue;
 
-                // Grab the type. We will only get null here in the case of heap corruption.
                 ClrType type = heap.GetObjectType(obj);
                 if (type == null)
                     continue;
 
                 count++;
-                size += type.GetSize(obj);
+                size += heap.GetObject(obj).Size;
 
-                // Now enumerate all objects that this object points to, add them to the
-                // evaluation stack if we haven't seen them before.
-                type.EnumerateRefsOfObject(obj, (child, offset) =>
+                // Manually enumerate all references from this object
+                EnumerateObjectReferences(heap, obj, type, considered, eval);
+            }
+        }
+
+        // Helper to enumerate all references from an object (fields, arrays, structs)
+        private void EnumerateObjectReferences(ClrHeap heap, ulong obj, ClrType type, HashSet<ulong> considered, Stack<ulong> eval)
+        {
+            if (type == null || type.IsFree)
+                return;
+
+            if (type.IsArray)
+            {
+                var arrayObj = heap.GetObject(obj);
+                int len = arrayObj.AsArray().Length;
+                var compType = type.ComponentType;
+                if (compType != null)
                 {
-                    if (child != 0 && !considered.Contains(child))
-                        eval.Push(child);
-                });
+                    if (compType.IsObjectReference)
+                    {
+                        for (int i = 0; i < len; i++)
+                        {
+                            ulong elementAddress = type.GetArrayElementAddress(obj, i);
+                            if (elementAddress != 0 && considered.Add(elementAddress))
+                                eval.Push(elementAddress);
+                        }
+                    }
+                    else if (compType.ElementType == ClrElementType.Struct)
+                    {
+                        for (int i = 0; i < len; i++)
+                        {
+                            ulong elementAddress = type.GetArrayElementAddress(obj, i);
+                            EnumerateStructReferences(heap, elementAddress, compType, considered, eval);
+                        }
+                    }
+                }
+                return;
+            }
+
+            foreach (var field in type.Fields)
+            {
+                if (field.IsObjectReference)
+                {
+                    ulong address = field.GetAddress(obj, false);
+                    if (address != 0 && considered.Add(address))
+                        eval.Push(address);
+                }
+                else if (field.ElementType == ClrElementType.Struct && field.Type != null)
+                {
+                    ulong structAddress = field.GetAddress(obj, false);
+                    EnumerateStructReferences(heap, structAddress, field.Type, considered, eval);
+                }
+            }
+        }
+
+        // Helper to enumerate references in a struct
+        private void EnumerateStructReferences(ClrHeap heap, ulong structAddress, ClrType structType, HashSet<ulong> considered, Stack<ulong> eval)
+        {
+            if (structType == null) return;
+            foreach (var field in structType.Fields)
+            {
+                if (field.IsObjectReference)
+                {
+                    ulong address = field.GetAddress(structAddress, false);
+                    if (address != 0 && considered.Add(address))
+                        eval.Push(address);
+                }
+                else if (field.ElementType == ClrElementType.Struct && field.Type != null)
+                {
+                    ulong nestedStructAddress = field.GetAddress(structAddress, false);
+                    EnumerateStructReferences(heap, nestedStructAddress, field.Type, considered, eval);
+                }
             }
         }
     }

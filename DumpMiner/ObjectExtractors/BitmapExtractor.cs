@@ -18,12 +18,9 @@ namespace DumpMiner.ObjectExtractors
 
         private ulong? ReadPointer(ulong address)
         {
-            byte[] buffer = new byte[DebuggerSession.Instance.DataTarget.PointerSize];
+            byte[] buffer = new byte[DebuggerSession.Instance.DataTarget.DataReader.PointerSize];
 
-            if (!DebuggerSession.Instance.DataTarget.ReadProcessMemory(address, buffer, buffer.Length, out var br))
-            {
-                return null;
-            }
+            var br = DebuggerSession.Instance.DataTarget.DataReader.Read(address, buffer);
 
             if (br != buffer.Length)
             {
@@ -41,10 +38,7 @@ namespace DumpMiner.ObjectExtractors
         {
             byte[] buffer = new byte[4];
 
-            if (!DebuggerSession.Instance.DataTarget.ReadProcessMemory(address, buffer, buffer.Length, out var br))
-            {
-                return null;
-            }
+            var br = DebuggerSession.Instance.DataTarget.DataReader.Read(address, buffer);
 
             if (br != buffer.Length)
             {
@@ -59,7 +53,7 @@ namespace DumpMiner.ObjectExtractors
             try
             {
                 // only support 32-bit images for now
-                if (DebuggerSession.Instance.DataTarget.PointerSize != 4)
+                if (DebuggerSession.Instance.DataTarget.DataReader.PointerSize != 4)
                 {
                     App.Dialog.ShowDialog("Only 32-bit targets are currently supported for bitmap extraction.", title: "Error");
                     return Task.FromResult(false);
@@ -141,8 +135,7 @@ namespace DumpMiner.ObjectExtractors
                  */
 
                 // read Bitmap->nativeBitmap
-                object nativeBitmapValue = nativeBitmapField.GetValue(address);
-                long nativeBitmapAddrLong = (long)nativeBitmapValue;
+                long nativeBitmapAddrLong = nativeBitmapField.Read<long>(address, false);
                 ulong nativeBitmapAddr = Convert.ToUInt64(nativeBitmapAddrLong);
                 if (nativeBitmapAddr == 0)
                 {
@@ -195,11 +188,8 @@ namespace DumpMiner.ObjectExtractors
 
                     // we got a file path. read it.
                     byte[] filePathBuffer = new byte[1024];
-                    if (!DebuggerSession.Instance.DataTarget.ReadProcessMemory(copyOnWriteBitmap_FilePathAddr.Value,
-                            filePathBuffer, 1024, out var br))
-                    {
-                        return Task.FromResult(false);
-                    }
+
+                    var br = DebuggerSession.Instance.DataTarget.DataReader.Read(copyOnWriteBitmap_FilePathAddr.Value, filePathBuffer);
 
                     if (br < 4)
                     {
@@ -286,7 +276,8 @@ namespace DumpMiner.ObjectExtractors
                         for (uint y = 0; y < gpMemoryBitmap_Height.Value; y++)
                         {
                             ulong lineAddr = pixelDataAddr.Value + (y * gpMemoryBitmap_Stride.Value);
-                            DebuggerSession.Instance.DataTarget.ReadProcessMemory(lineAddr, buffer, (int)gpMemoryBitmap_Stride.Value, out _);
+
+                            DebuggerSession.Instance.DataTarget.DataReader.Read(lineAddr, buffer);
                             Marshal.Copy(buffer, 0, bd.Scan0 + (int)(y * bd.Stride), (int)gpMemoryBitmap_Stride.Value);
                         }
 

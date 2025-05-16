@@ -1,12 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using DumpMiner.Common;
+using DumpMiner.Debugger;
+using DumpMiner.Models;
+using Microsoft.Diagnostics.Runtime;
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DumpMiner.Common;
-using DumpMiner.Debugger;
-using DumpMiner.Models;
+using ClrObject = Microsoft.Diagnostics.Runtime.ClrObject;
 
 namespace DumpMiner.Operations
 {
@@ -32,10 +35,33 @@ namespace DumpMiner.Operations
                 var heap = DebuggerSession.Instance.Heap;
                 var results = new List<object>();
 
-                var heapObjects = (from obj in heap.EnumerateObjectAddresses()
-                                   let type = heap.GetObjectType(obj)
-                                   where types?.Any(t => type != null && type.Name.ToLower().Contains(t.ToLower())) ?? true
-                                   select obj).AsParallel();
+                var segmentsObjectsDictionary = new Dictionary<ClrSegment, IEnumerable<ClrObject>>();
+                foreach (var segment in heap.Segments)
+                {
+                    segmentsObjectsDictionary[segment] = segment.EnumerateObjects().AsParallel();
+                }
+
+                foreach (var kvp in segmentsObjectsDictionary)
+                {
+                    var seg = kvp.Key;
+                    foreach (var obj in kvp.Value)
+                    {
+                        if (token.IsCancellationRequested)
+                            break;
+
+                        var type = heap.GetObjectType(obj);
+                        if (type == null)
+                            continue;
+
+                        if (types?.Any(t => type.Name.ToLower().Contains(t.ToLower())) ?? true)
+                        {
+                            dynamic result = operation.Execute(new OperationModel { ObjectAddress = obj }, token, null).Result.FirstOrDefault();
+                            if (result == null || result.TotalSize < size)
+                                continue;
+                            results.Add(new { Address = obj, Type = type.Name, Generation = seg.GetGeneration(obj), Size = result.TotalSize });
+                        }   
+                    }
+                }
 
                 //It will not work properly because in the end i must be serial because the debugger operation must run on the same thread that attach to dump\process
                 //It will work if we are inspecting a dump file and the dump reader is ClrMD
@@ -69,23 +95,7 @@ namespace DumpMiner.Operations
                 //        }
                 //    });
 
-                foreach (var obj in heapObjects)
-                {
-                    if (token.IsCancellationRequested)
-                        break;
-
-                    var type = heap.GetObjectType(obj);
-                    if (type == null)
-                        continue;
-
-                    if (types?.Any(t => type.Name.ToLower().Contains(t.ToLower())) ?? true)
-                    {
-                        dynamic result = operation.Execute(new OperationModel { ObjectAddress = obj }, token, null).Result.FirstOrDefault();
-                        if (result == null || result.TotalSize < size)
-                            continue;
-                        results.Add(new { Address = obj, Type = type.Name, Generation = heap.GetGeneration(obj), Size = result.TotalSize });
-                    }
-                }
+                
                 return results;
             });
         }

@@ -20,7 +20,7 @@ namespace DumpMiner.Operations
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 var heap = DebuggerSession.Instance.Heap;
-                var enumerable = from finalizer in DebuggerSession.Instance.Runtime.EnumerateFinalizerQueueObjectAddresses()
+                var enumerable = from finalizer in DebuggerSession.Instance.Runtime.Heap.EnumerateFinalizableObjects()
                                  let type = heap.GetObjectType(finalizer)
                                  select new ClrObject(finalizer, type, token).Fields.Value;
                 return enumerable.ToList();

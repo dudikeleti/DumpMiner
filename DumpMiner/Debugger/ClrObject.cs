@@ -33,14 +33,14 @@ namespace DumpMiner.Debugger
                 throw new ArgumentException("type is null");
             }
 
-            var firstAppDomain = type.Heap?.Runtime?.AppDomains?[0];
+            var firstAppDomain = type.Heap?.Runtime?.AppDomains[0];
 
             if (type.Name == "System.String")
             {
                 object value;
                 try
                 {
-                    value = type.GetValue(obj);
+                    value = type.Heap.GetObject(obj).AsString();
                 }
                 catch (Exception ex)
                 {
@@ -48,15 +48,14 @@ namespace DumpMiner.Debugger
                 }
 
                 values.Add(new ClrObjectModel { Address = obj, BaseName = baseName, TypeName = type.Name, Value = value, MetadataToken = type.MetadataToken });
-                values.AddRange(type.Fields.Select(field => new ClrObjectModel { Address = field.GetAddress(obj), BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = field.GetValue(obj, inner).ToString(), MetadataToken = field.Token }));
+                values.AddRange(type.Fields.Select(field => new ClrObjectModel { Address = field.GetAddress(obj), BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = field.ReadObject(obj, inner).ToString(), MetadataToken = field.Token }));
             }
             else if (type.IsArray)
             {
-                int len = type.GetArrayLength(obj);
-
-                if (type.ComponentType == null || type.ComponentType.HasSimpleValue)
+                var array = type.Heap.GetObject(obj).AsArray();
+                int len = array.Length;
+                if (type.ComponentType == null || type.ComponentType.IsPrimitive)
                 {
-
                     var typeName = type.ComponentType?.ElementType.ToString();
                     for (int i = 0; i < len; i++)
                     {
@@ -73,7 +72,7 @@ namespace DumpMiner.Debugger
                                 Address = address,
                                 BaseName = baseName,
                                 TypeName = typeName ?? DebuggerSession.Instance.Heap.GetObjectType(address).Name,
-                                Value = type.GetArrayElementValue(obj, i),
+                                Value = array.GetObjectValue(i),
                                 Offset = address - obj,
                                 MetadataToken = type.ComponentType.MetadataToken
                             });
@@ -106,8 +105,8 @@ namespace DumpMiner.Debugger
                                 }
 
                                 string value;
-                                if (field.HasSimpleValue)
-                                    value = field.GetValue(arrAddress, inner)?.ToString() ?? "null";
+                                if (field.IsPrimitive)
+                                    value = field.ReadObject(arrAddress, inner).ToString() ?? "null";
                                 else
                                     value = field.GetAddress(arrAddress, inner).ToString();
 
@@ -135,10 +134,10 @@ namespace DumpMiner.Debugger
                         ulong addr = field.GetAddress(obj, inner);
 
                         object value;
-                        if (field.HasSimpleValue)
+                        if (field.IsPrimitive)
                             try
                             {
-                                value = field.GetValue(obj, inner);
+                                value = field.ReadObject(obj, inner);
                                 if (!field.IsPrimitive && field.Type.Name != "System.String" && field.IsObjectReference)
                                 {
                                     value = $"0x{(ulong)value:X8}";
@@ -168,8 +167,8 @@ namespace DumpMiner.Debugger
             {
                 try
                 {
-                    values.AddRange(type.StaticFields.Select(field => new ClrObjectModel { IsStatic = true, Address = field.GetAddress(firstAppDomain), BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type?.Name ?? "n/a", Value = field.GetValue(firstAppDomain)?.ToString() ?? "null", MetadataToken = field.Token }));
-                    values.AddRange(type.ThreadStaticFields.Select(field => new ClrObjectModel { IsThreadStatic = true, Address = obj, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type?.Name ?? "n/a", Value = field.GetValue(firstAppDomain, type.Heap.Runtime.Threads.First())?.ToString() ?? "null", MetadataToken = field.Token }));
+                    values.AddRange(type.StaticFields.Select(field => new ClrObjectModel { IsStatic = true, Address = field.GetAddress(firstAppDomain), BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type?.Name ?? "n/a", Value = field.ReadObject(firstAppDomain).ToString() ?? "null", MetadataToken = field.Token }));
+                    values.AddRange(type.ThreadStaticFields.Select(field => new ClrObjectModel { IsThreadStatic = true, Address = obj, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type?.Name ?? "n/a", Value = field.ReadObject(type.Heap.Runtime.Threads.First()).ToString() ?? "null", MetadataToken = field.Token }));
 
                 }
                 catch (OutOfMemoryException)
@@ -194,7 +193,7 @@ namespace DumpMiner.Debugger
 
             public string FieldName { get; set; }
 
-            public uint MetadataToken { get; set; }
+            public int MetadataToken { get; set; }
 
             public bool IsStatic { get; set; }
 
