@@ -48,12 +48,12 @@ namespace DumpMiner.Debugger
                 }
 
                 values.Add(new ClrObjectModel { Address = obj, BaseName = baseName, TypeName = type.Name, Value = value, MetadataToken = type.MetadataToken });
-                values.AddRange(type.Fields.Select(field => new ClrObjectModel { Address = field.GetAddress(obj), BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = field.ReadObject(obj, inner).ToString(), MetadataToken = field.Token }));
+                values.AddRange(type.Fields.Select(field => new ClrObjectModel { Address = field.GetAddress(obj), BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type?.Name ?? "Unknown", Value = field.ReadObject(obj, inner).ToString(), MetadataToken = field.Token }));
             }
             else if (type.IsArray)
             {
                 var array = type.Heap.GetObject(obj).AsArray();
-                int len = array.Length;
+                int len = Math.Min(array.Length, 1000000);
                 if (type.ComponentType == null || type.ComponentType.IsPrimitive)
                 {
                     var typeName = type.ComponentType?.ElementType.ToString();
@@ -110,7 +110,7 @@ namespace DumpMiner.Debugger
                                 else
                                     value = field.GetAddress(arrAddress, inner).ToString();
 
-                                values.Add(new ClrObjectModel { Address = obj, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = value });
+                                values.Add(new ClrObjectModel { Address = obj, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type?.Name ?? "Unknown", Value = value });
 
                                 if (field.ElementType == ClrElementType.Struct)
                                     values.AddRange(GetValues(arrAddress, field.Type, baseName + field.Name, offset + (ulong)field.Offset, true, new List<ClrObjectModel>()));
@@ -138,7 +138,7 @@ namespace DumpMiner.Debugger
                             try
                             {
                                 value = field.ReadObject(obj, inner);
-                                if (!field.IsPrimitive && field.Type.Name != "System.String" && field.IsObjectReference)
+                                if (!field.IsPrimitive && field.Type?.Name != "System.String" && field.IsObjectReference)
                                 {
                                     value = $"0x{(ulong)value:X8}";
                                 }
@@ -151,7 +151,7 @@ namespace DumpMiner.Debugger
                             value = $"0x{addr:X8}";
 
                         string sValue = value?.ToString() ?? "{Null}";
-                        values.Add(new ClrObjectModel { Address = addr, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type.Name, Value = sValue, MetadataToken = field.Token });
+                        values.Add(new ClrObjectModel { Address = addr, BaseName = baseName, FieldName = field.Name, Offset = (ulong)field.Offset + offset, TypeName = field.Type?.Name ?? "Unknown", Value = sValue, MetadataToken = field.Token });
 
                         if (field.ElementType == ClrElementType.Struct)
                             values.AddRange(GetValues(addr, field.Type, baseName + field.Name, offset + (ulong)field.Offset, true, new List<ClrObjectModel>()));

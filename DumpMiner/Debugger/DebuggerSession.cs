@@ -92,6 +92,10 @@ namespace DumpMiner.Debugger
             }
 
             DumpReader = readerType;
+            
+            LoadDump(fileName);
+            return true;
+
             if (readerType == CrashDumpReader.DbgEng)
             {
                 return await _workerTask.ContinueWith(task => LoadDump(fileName));
@@ -128,8 +132,8 @@ namespace DumpMiner.Debugger
             {
                 try
                 {
-                    DataTarget = DataTarget.CreateSnapshotAndAttach(_attachedProcess.Id);
-                    // DataTarget = DataTarget.AttachToProcess(_attachedProcess.Id, false, null);
+                    // DataTarget = DataTarget.CreateSnapshotAndAttach(_attachedProcess.Id);
+                    DataTarget = DataTarget.AttachToProcess(_attachedProcess.Id, true, null);
                     var result = CreateRuntime();
                     if (!result.succeeded)
                     {

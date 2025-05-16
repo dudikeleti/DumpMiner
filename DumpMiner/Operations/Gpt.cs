@@ -24,10 +24,10 @@ namespace DumpMiner.Operations
         {
             OpenAiService = new OpenAIService(new OpenAiOptions
             {
-                ApiKey = "your api key"
+                ApiKey = ""
             });
 
-            OpenAiService.SetDefaultModelId(OpenAI.ObjectModels.Models.Model.Gpt_4o.ToString());
+            OpenAiService.SetDefaultModelId("gpt-4-0613");
         }
 
         public static async Task<string> Ask(string[] system, string[] user)

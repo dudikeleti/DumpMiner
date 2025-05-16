@@ -1,16 +1,23 @@
-﻿using DumpMiner.Common;
+﻿
+
+
+
+
+
+using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
 using Microsoft.Diagnostics.Runtime;
+using SharpDisasm;
+using SharpDisasm.Udis86;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
+using System.ComponentModel.Composition;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using SharpDisasm;
-using System.ComponentModel.Composition;
 
 namespace DumpMiner.Operations
 {
@@ -65,6 +72,11 @@ namespace DumpMiner.Operations
                     return results;
                 }
 
+
+
+
+
+                /*
                 // use the IL to native mapping to get the end address
                 if (method.ILOffsetMap == null)
                 {
@@ -85,51 +97,77 @@ namespace DumpMiner.Operations
                     });
                     return results;
                 }
+                */
 
-                foreach (var map in GetCompleteNativeMap(method))
+
+                //foreach (var map in GetCompleteNativeMap(method))
+
+
+                var hc = method.HotColdInfo;
+                if (hc.HotSize == 0 || hc.HotStart == 0)
                 {
-                    // Read the entire code block
-                    byte[] codeBytes = new byte[(int)(map.EndAddress - map.StartAddress)];
-                    var bytesRead = DebuggerSession.Instance.Runtime.DataTarget.DataReader.Read(map.StartAddress, codeBytes);
-
-                    if (bytesRead != codeBytes.Length)
+                    results.Add(new AssemblyCode
                     {
-                        results.Add(new AssemblyCode
-                        {
-                            Instruction = $"Failed to read memory for disassembly at address {map.StartAddress:X}"
-                        });
+                        Instruction = "The method is not yet jited"
+                    });
+                    return results;
+                }
+
+                var dt = DebuggerSession.Instance.DataTarget;
+                var runtime = DebuggerSession.Instance.Runtime;
+
+                ulong baseAddr = hc.HotStart;
+                int size = checked((int)hc.HotSize);
+                byte[] bytes = new byte[size];
+                var read = dt.DataReader.Read(baseAddr, bytes);
+                if (read != size)
+                {
+                    results.Add(new AssemblyCode
+                    {
+                        Instruction = $"Failed to read memory for disassembly at address {baseAddr:X}"
+                    });
+                    return results;
+                }
+
+                // 4) Disassemble with SharpDisasm
+                var disasm = new Disassembler(
+                    bytes,
+                    dt.DataReader.PointerSize == 8
+                        ? ArchitectureMode.x86_64
+                        : ArchitectureMode.x86_32,
+                    baseAddr,
+                    true);
+
+                Disassembler.Translator.IncludeAddress = true;
+                Disassembler.Translator.IncludeBinary = true;
+                Disassembler.Translator.ResolveRip = true;
+
+                foreach (var instruction in disasm.Disassemble())
+                {
+                    if (instruction.Mnemonic.ToString().EndsWith("nop"))
+                    {
                         continue;
                     }
 
-                    var disasm = new Disassembler(
-                        codeBytes,
-                        ArchitectureMode.x86_64,
-                        map.StartAddress,
-                        true
-                    );
+                    string instructionText = instruction.ToString();
 
-                    foreach (var instruction in disasm.Disassemble())
+                    if (instruction.Mnemonic == ud_mnemonic_code.UD_Icall
+                        && instruction.Operands.Length > 0)
                     {
-                        string mnemonicStr = instruction.Mnemonic.ToString();
-        
-                        string methodName = GetMethodNameFromAddressOrNull(mnemonicStr, instruction.Operands);
-                        string instructionText = instruction.ToString();
-        
+                        string methodName = ResolveMethodFromAddress(instruction, baseAddr, bytes);
                         if (!string.IsNullOrEmpty(methodName))
                         {
-                            instructionText += $" --> {methodName}";
+                            
+                            instructionText += $"    --> {methodName}";
                         }
-        
-                        if (mnemonicStr.ToLower().Contains("nop"))
-                        {
-                            continue;
-                        }
-        
-                        results.Add(new AssemblyCode
-                        {
-                            Instruction = instructionText
-                        });
                     }
+
+                    results.Add(new AssemblyCode
+                    {
+                        OpCode = $"{instruction.Mnemonic,-8}",
+                        Address = $"{instruction.Offset:X8}",
+                        Instruction = instructionText
+                    });
                 }
 
                 if (results.Count == 0)
@@ -142,6 +180,150 @@ namespace DumpMiner.Operations
 
                 return results;
             });
+        }
+
+        public string ResolveMethodFromAddress(
+            Instruction instr,
+            ulong codeBaseAddress,
+            byte[] codeBytes)
+        {
+            var dataTarget = DebuggerSession.Instance.DataTarget;
+            var runtime = DebuggerSession.Instance.Runtime;
+
+            // 1) Find the OS thread whose stack is executing in our code blob:
+            var thread = runtime.Threads
+                .FirstOrDefault(t => t.EnumerateStackTrace()
+                    .Any(f => f.InstructionPointer >= codeBaseAddress
+                              && f.InstructionPointer < codeBaseAddress + (ulong)codeBytes.Length));
+            if (thread == null)
+                return "No thread owns this code region";
+
+            uint osTid = thread.OSThreadId;
+
+            // 2) Grab the raw CONTEXT block via ClrMD v3:
+            int ctxSize = Marshal.SizeOf<AMD64Context>();
+            byte[] ctxBuf = new byte[ctxSize];
+            bool got = dataTarget.DataReader.GetThreadContext(osTid, 0, ctxBuf);
+            if (!got)
+                return $"GetThreadContext failed for TID {osTid}";
+
+            var cpuCtx = MemoryMarshal.Read<AMD64Context>(ctxBuf);
+
+            // 3) Figure out the native call target
+            var op = instr.Operands.First();
+            ulong targetAddress;
+
+            switch (op.Type)
+            {
+                // direct relative/JIMM → absolute VA already in RawValue
+                case ud_type.UD_OP_IMM:
+                case ud_type.UD_OP_JIMM:
+                    targetAddress = Convert.ToUInt64(op.RawValue);
+                    break;
+
+                // register-indirect: call rax, rcx, etc.
+                case ud_type.UD_OP_REG:
+                    targetAddress = op.Base switch
+                    {
+                        ud_type.UD_R_RAX => cpuCtx.Rax,
+                        ud_type.UD_R_RCX => cpuCtx.Rcx,
+                        ud_type.UD_R_RDX => cpuCtx.Rdx,
+                        ud_type.UD_R_RBX => cpuCtx.Rbx,
+                        ud_type.UD_R_RSP => cpuCtx.Rsp,
+                        ud_type.UD_R_RBP => cpuCtx.Rbp,
+                        ud_type.UD_R_RSI => cpuCtx.Rsi,
+                        ud_type.UD_R_RDI => cpuCtx.Rdi,
+                        ud_type.UD_R_R8 => cpuCtx.R8,
+                        ud_type.UD_R_R9 => cpuCtx.R9,
+                        ud_type.UD_R_R10 => cpuCtx.R10,
+                        ud_type.UD_R_R11 => cpuCtx.R11,
+                        ud_type.UD_R_R12 => cpuCtx.R12,
+                        ud_type.UD_R_R13 => cpuCtx.R13,
+                        ud_type.UD_R_R14 => cpuCtx.R14,
+                        ud_type.UD_R_R15 => cpuCtx.R15,
+                        _ => throw new NotSupportedException(
+                            $"Unsupported REG operand {op.Base}")
+                    };
+                    break;
+
+                // memory-indirect: can be [imm], [RIP+disp], [reg+disp], [reg+reg*scale+disp], etc.
+                case ud_type.UD_OP_MEM:
+                    {
+                        // 3a) compute effective address of the *pointer slot*
+                        //    disp = signed RawValue
+                        long disp = Convert.ToInt64(op.RawValue);
+
+                        //    baseVal = (op.Base==NONE ? 0 : register value)
+                        ulong baseVal = op.Base switch
+                        {
+                            ud_type.UD_NONE => 0UL,
+                            ud_type.UD_R_RAX => cpuCtx.Rax,
+                            ud_type.UD_R_RCX => cpuCtx.Rcx,
+                            ud_type.UD_R_RDX => cpuCtx.Rdx,
+                            ud_type.UD_R_RBX => cpuCtx.Rbx,
+                            ud_type.UD_R_RSP => cpuCtx.Rsp,
+                            ud_type.UD_R_RBP => cpuCtx.Rbp,
+                            ud_type.UD_R_RSI => cpuCtx.Rsi,
+                            ud_type.UD_R_RDI => cpuCtx.Rdi,
+                            ud_type.UD_R_R8 => cpuCtx.R8,
+                            ud_type.UD_R_R9 => cpuCtx.R9,
+                            ud_type.UD_R_R10 => cpuCtx.R10,
+                            ud_type.UD_R_R11 => cpuCtx.R11,
+                            ud_type.UD_R_R12 => cpuCtx.R12,
+                            ud_type.UD_R_R13 => cpuCtx.R13,
+                            ud_type.UD_R_R14 => cpuCtx.R14,
+                            ud_type.UD_R_R15 => cpuCtx.R15,
+                            ud_type.UD_R_RIP // Udis86 may call RIP “a register”
+                                => codeBaseAddress + (ulong)instr.Offset + (ulong)instr.Length,
+                            _ => throw new NotSupportedException(
+                                $"Unsupported MEM.Base {op.Base}")
+                        };
+
+                        //    idxVal = (op.Index==NONE ? 0 : register value * scale)
+                        ulong idxVal = op.Index switch
+                        {
+                            ud_type.UD_NONE => 0UL,
+                            ud_type.UD_R_RAX => cpuCtx.Rax * (ulong)op.Scale,
+                            ud_type.UD_R_RCX => cpuCtx.Rcx * (ulong)op.Scale,
+                            ud_type.UD_R_RDX => cpuCtx.Rdx * (ulong)op.Scale,
+                            ud_type.UD_R_RBX => cpuCtx.Rbx * (ulong)op.Scale,
+                            ud_type.UD_R_RSP => cpuCtx.Rsp * (ulong)op.Scale,
+                            ud_type.UD_R_RBP => cpuCtx.Rbp * (ulong)op.Scale,
+                            ud_type.UD_R_RSI => cpuCtx.Rsi * (ulong)op.Scale,
+                            ud_type.UD_R_RDI => cpuCtx.Rdi * (ulong)op.Scale,
+                            ud_type.UD_R_R8 => cpuCtx.R8 * (ulong)op.Scale,
+                            ud_type.UD_R_R9 => cpuCtx.R9 * (ulong)op.Scale,
+                            ud_type.UD_R_R10 => cpuCtx.R10 * (ulong)op.Scale,
+                            ud_type.UD_R_R11 => cpuCtx.R11 * (ulong)op.Scale,
+                            ud_type.UD_R_R12 => cpuCtx.R12 * (ulong)op.Scale,
+                            ud_type.UD_R_R13 => cpuCtx.R13 * (ulong)op.Scale,
+                            ud_type.UD_R_R14 => cpuCtx.R14 * (ulong)op.Scale,
+                            ud_type.UD_R_R15 => cpuCtx.R15 * (ulong)op.Scale,
+                            _ => throw new NotSupportedException(
+                                $"Unsupported MEM.Index {op.Index}")
+                        };
+
+                        ulong ptrSlot = baseVal + idxVal + (ulong)disp;
+
+                        // 3b) read the *pointer* stored at that slot
+                        targetAddress = dataTarget.DataReader.ReadPointer(ptrSlot);
+                    }
+                    break;
+
+                default:
+                    return $"Unsupported CALL operand {op.Type}";
+            }
+
+            // 4) Finally map to ClrMethod
+            // Map back to managed method or JIT helper
+            var m = runtime.GetMethodByInstructionPointer(targetAddress);
+            string name = m != null
+                ? m.Signature
+                : runtime.GetJitHelperFunctionName(targetAddress)
+                  ?? $"<unknown 0x{targetAddress:X}>";
+
+            return name;
+            // return $"0x{instr.Offset:X8}: {instr.Mnemonic} -> 0x{targetAddress:X8}    {sig}";
         }
 
         public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
@@ -162,86 +344,12 @@ namespace DumpMiner.Operations
             return await Gpt.Ask(new[] { "You are an assembly code and a C# code expert." }, new[] { $"{model.GptPrompt}" });
         }
 
-        private string GetMethodNameFromAddressOrNull(string opCode, Operand[] operands)
-        {
-            string address = null;
-            string address2 = null;
-
-            // Helper function to extract address/immediate from operand
-            string GetAddressFromOperand(Operand operand)
-            {
-                if (operand == null)
-                    return null;
-                // For immediate, memory, or pointer operands, use Value
-                if (operand.Type == SharpDisasm.Udis86.ud_type.UD_OP_IMM ||
-                    operand.Type == SharpDisasm.Udis86.ud_type.UD_OP_MEM ||
-                    operand.Type == SharpDisasm.Udis86.ud_type.UD_OP_PTR)
-                    return operand.Value.ToString("X");
-                return null;
-            }
-
-            if (opCode.ToLower().StartsWith("j"))
-            {
-                address = operands.Length > 3 ? GetAddressFromOperand(operands[3]) : null;
-            }
-            else if (opCode.ToLower() == "call")
-            {
-                address = operands.Length > 3 ? GetAddressFromOperand(operands[3]) : null;
-                address2 = operands.Length > 4 ? GetAddressFromOperand(operands[4]) : null;
-            }
-            else
-            {
-                return null;
-            }
-
-            if (address == null)
-            {
-                return null;
-            }
-
-            string methodName = null;
-            if (ulong.TryParse(SanitizeAddress(address),
-                    NumberStyles.HexNumber,
-                    CultureInfo.CurrentCulture,
-                    out var ulongAddress))
-            {
-                methodName = DebuggerSession.Instance.Runtime.GetMethodByInstructionPointer(ulongAddress)?.Signature ??
-                             DebuggerSession.Instance.Runtime.GetJitHelperFunctionName(ulongAddress);
-            }
-
-            if (methodName == null && address2 != null)
-            {
-                if (ulong.TryParse(SanitizeAddress(address2),
-                        NumberStyles.HexNumber,
-                        CultureInfo.CurrentCulture,
-                        out ulongAddress))
-                {
-                    methodName =
-                        DebuggerSession.Instance.Runtime.GetMethodByInstructionPointer(ulongAddress)?.Signature ??
-                        DebuggerSession.Instance.Runtime.GetJitHelperFunctionName(ulongAddress);
-                }
-            }
-
-            return methodName;
-        }
-
-        private string SanitizeAddress(string address)
-        {
-            if (string.IsNullOrEmpty(address))
-            {
-                return address;
-            }
-
-            return address.Replace(Environment.NewLine, string.Empty).Replace("`", string.Empty)
-                .Replace("(", string.Empty).Replace(")", string.Empty);
-        }
-
         private static ILToNativeMap[] GetCompleteNativeMap(ClrMethod method)
         {
             // it's better to use one single map rather than few small ones
             // it's simply easier to get next instruction when decoding ;)
             var hotColdInfo = method.HotColdInfo;
-            if (hotColdInfo.HotSize > 0 && hotColdInfo.HotStart > 0)
+            if (hotColdInfo is { HotSize: > 0, HotStart: > 0 })
             {
                 return hotColdInfo.ColdSize <= 0
                     ? new[]
@@ -284,5 +392,20 @@ namespace DumpMiner.Operations
         {
             return $"{Address}: ${OpCode} {Instruction}";
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct AMD64Context
+    {
+        public fixed byte Omitted[512];
+
+        // integer registers
+        public ulong Rax, Rcx, Rdx, Rbx;
+        public ulong Rsp, Rbp, Rsi, Rdi;
+        public ulong R8, R9, R10, R11;
+        public ulong R12, R13, R14, R15;
+
+        // instruction pointer
+        public ulong Rip;
     }
 }
