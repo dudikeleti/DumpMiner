@@ -29,8 +29,9 @@ namespace DumpMiner.Operations
                 //infoModel.SymbolPath = runtime.DataTarget.;
                 infoModel.ClrVersions = string.Concat(runtime.DataTarget.ClrVersions.Select(clrVer => clrVer.Version + ", ")).TrimEnd();
                 infoModel.ClrVersions = infoModel.ClrVersions.Remove(infoModel.ClrVersions.Length - 1, 1);
-                //infoModel.DacInfo = string.Concat(runtime.DataTarget.ClrVersions.Select(ver => ver.DacInfo.FileName + ", ")).TrimEnd();
-                infoModel.DacInfo = infoModel.DacInfo.Remove(infoModel.DacInfo.Length - 1, 1);
+                //infoModel.DacInfo = string.Concat(runtime.DataTarget.ClrVersions.Select(ver => ver.Dac.FileName + ", ")).TrimEnd();
+                //infoModel.DacInfo = infoModel.DacInfo.Remove(infoModel.DacInfo.Length - 1, 1);
+                infoModel.DacInfo = string.Join(";", runtime.DataTarget.ClrVersions.Select(ver => string.Join(",", ver.DebuggingLibraries.Select(dl => dl.FileName))));
                 infoModel.Architecture = runtime.DataTarget.DataReader.Architecture.ToString();
                 infoModel.IsGcServer = runtime.Heap.IsServer;
                 infoModel.HeapCount = runtime.Heap.Segments.Length;

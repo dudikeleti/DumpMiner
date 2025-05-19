@@ -16,6 +16,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -52,7 +53,6 @@ namespace DumpMiner.Operations
                         if (token.IsCancellationRequested)
                             break;
 
-                        // add also method name?
                         if (m.MetadataToken != (int)metadataToken)
                         {
                             continue;
@@ -138,9 +138,9 @@ namespace DumpMiner.Operations
                     baseAddr,
                     true);
 
-                Disassembler.Translator.IncludeAddress = true;
-                Disassembler.Translator.IncludeBinary = true;
-                Disassembler.Translator.ResolveRip = true;
+                //Disassembler.Translator.IncludeAddress = true;
+                //Disassembler.Translator.IncludeBinary = true;
+                //Disassembler.Translator.ResolveRip = true;
 
                 foreach (var instruction in disasm.Disassemble())
                 {
@@ -195,19 +195,24 @@ namespace DumpMiner.Operations
                 .FirstOrDefault(t => t.EnumerateStackTrace()
                     .Any(f => f.InstructionPointer >= codeBaseAddress
                               && f.InstructionPointer < codeBaseAddress + (ulong)codeBytes.Length));
-            if (thread == null)
-                return "No thread owns this code region";
+            //if (thread == null)
+            //    return "No thread owns this code region";
 
-            uint osTid = thread.OSThreadId;
+            AMD64Context cpuCtx = default;
 
-            // 2) Grab the raw CONTEXT block via ClrMD v3:
-            int ctxSize = Marshal.SizeOf<AMD64Context>();
-            byte[] ctxBuf = new byte[ctxSize];
-            bool got = dataTarget.DataReader.GetThreadContext(osTid, 0, ctxBuf);
-            if (!got)
-                return $"GetThreadContext failed for TID {osTid}";
+            if (thread != null)
+            {
+                uint osTid = thread.OSThreadId;
 
-            var cpuCtx = MemoryMarshal.Read<AMD64Context>(ctxBuf);
+                // 2) Grab the raw CONTEXT block via ClrMD v3:
+                int ctxSize = Marshal.SizeOf<AMD64Context>();
+                byte[] ctxBuf = new byte[ctxSize];
+                bool got = dataTarget.DataReader.GetThreadContext(osTid, 0, ctxBuf);
+                if (!got)
+                    return $"GetThreadContext failed for TID {osTid}";
+
+                cpuCtx = MemoryMarshal.Read<AMD64Context>(ctxBuf);
+            }
 
             // 3) Figure out the native call target
             var op = instr.Operands.First();
@@ -223,6 +228,12 @@ namespace DumpMiner.Operations
 
                 // register-indirect: call rax, rcx, etc.
                 case ud_type.UD_OP_REG:
+                    if (thread == null)
+                    {
+                        targetAddress = 0;
+                        break;
+                    }
+
                     targetAddress = op.Base switch
                     {
                         ud_type.UD_R_RAX => cpuCtx.Rax,
@@ -254,7 +265,7 @@ namespace DumpMiner.Operations
                         long disp = Convert.ToInt64(op.RawValue);
 
                         //    baseVal = (op.Base==NONE ? 0 : register value)
-                        ulong baseVal = op.Base switch
+                        ulong baseVal = thread == null ? 0 :op.Base switch
                         {
                             ud_type.UD_NONE => 0UL,
                             ud_type.UD_R_RAX => cpuCtx.Rax,
@@ -280,7 +291,7 @@ namespace DumpMiner.Operations
                         };
 
                         //    idxVal = (op.Index==NONE ? 0 : register value * scale)
-                        ulong idxVal = op.Index switch
+                        ulong idxVal = thread == null ? 0 : op.Index switch
                         {
                             ud_type.UD_NONE => 0UL,
                             ud_type.UD_R_RAX => cpuCtx.Rax * (ulong)op.Scale,
@@ -394,18 +405,18 @@ namespace DumpMiner.Operations
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct AMD64Context
-    {
-        public fixed byte Omitted[512];
+    //[StructLayout(LayoutKind.Sequential)]
+    //public unsafe struct AMD64Context
+    //{
+    //    public fixed byte Omitted[512];
 
-        // integer registers
-        public ulong Rax, Rcx, Rdx, Rbx;
-        public ulong Rsp, Rbp, Rsi, Rdi;
-        public ulong R8, R9, R10, R11;
-        public ulong R12, R13, R14, R15;
+    //    // integer registers
+    //    public ulong Rax, Rcx, Rdx, Rbx;
+    //    public ulong Rsp, Rbp, Rsi, Rdi;
+    //    public ulong R8, R9, R10, R11;
+    //    public ulong R12, R13, R14, R15;
 
-        // instruction pointer
-        public ulong Rip;
-    }
+    //    // instruction pointer
+    //    public ulong Rip;
+    //}
 }
