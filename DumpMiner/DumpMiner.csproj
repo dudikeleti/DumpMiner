@@ -65,6 +65,7 @@
     <PackageReference Include="Betalgo.OpenAI" Version="8.7.2" />
     <PackageReference Include="ICSharpCode.Decompiler" Version="9.1.0.7988" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.621003" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="4.0.0-beta.24360.3" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime.Utilities" Version="4.0.0-beta.24463.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.5" />

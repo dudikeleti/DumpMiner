@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -16,7 +17,11 @@ using System.Windows.Threading;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Infrastructure.Mef;
+using DumpMiner.Models;
+using DumpMiner.Services;
+using DumpMiner.ViewModels;
 using FirstFloor.ModernUI.Presentation;
+using FirstFloor.ModernUI.Windows.Controls;
 using Microsoft.Diagnostics.Runtime;
 using Microsoft.Win32;
 
@@ -140,6 +145,16 @@ namespace DumpMiner.ViewModels
             get
             {
                 return _detachProcessesCommand ?? (_detachProcessesCommand = new RelayCommand(o => Detach(), o => DebuggerSession.Instance.IsAttached));
+            }
+        }
+
+        private RelayCommand _createDumpCommand;
+        [Command("cmd://home/CreateDumpCommand")]
+        public RelayCommand CreateDumpCommand
+        {
+            get
+            {
+                return _createDumpCommand ?? (_createDumpCommand = new RelayCommand(o => CreateDumpExecute(), o => CanCreateDump()));
             }
         }
         #endregion
@@ -366,6 +381,291 @@ namespace DumpMiner.ViewModels
                 GC.SuppressFinalize(this);
             }
             base.Dispose(dispose);
+        }
+
+        /// <summary>
+        /// Determines whether a dump can be created from the currently selected process.
+        /// </summary>
+        private bool CanCreateDump()
+        {
+            return SelectedItem != null &&
+                   !DebuggerSession.Instance.IsAttached &&
+                   _process != null &&
+                   _process.ContainsKey(SelectedItem.Name) &&
+                   !_process[SelectedItem.Name].HasExited;
+        }
+
+        /// <summary>
+        /// Executes the create dump operation with comprehensive error handling and user feedback.
+        /// </summary>
+        private async void CreateDumpExecute()
+        {
+            if (SelectedItem == null || !_process.ContainsKey(SelectedItem.Name))
+            {
+                ShowErrorDialog("No process selected or process no longer available.");
+                return;
+            }
+
+            var targetProcess = _process[SelectedItem.Name];
+            if (targetProcess.HasExited)
+            {
+                ShowErrorDialog("Selected process has exited.");
+                return;
+            }
+
+            try
+            {
+                IsLoading = true;
+                LastError = null;
+
+                // Get the dump creation service
+                var dumpService = App.Container.GetExportedValueOrDefault<IDumpCreationService>();
+                if (dumpService == null)
+                {
+                    ShowErrorDialog("Dump creation service is not available. Please check your installation.");
+                    return;
+                }
+
+                // Verify process is dumpable
+                var isDumpable = await dumpService.IsProcessDumpableAsync(targetProcess.Id);
+                if (!isDumpable)
+                {
+                    ShowErrorDialog($"Process '{targetProcess.ProcessName}' is not a valid .NET process or cannot be accessed for dump creation.");
+                    return;
+                }
+
+                // Show dump options dialog
+                var dumpOptionsResult = await ShowDumpOptionsDialog(targetProcess, dumpService);
+                if (dumpOptionsResult?.Cancelled != false)
+                {
+                    return; // User cancelled
+                }
+
+                // Show file save dialog
+                var filePath = ShowSaveFileDialog(targetProcess, dumpOptionsResult.DumpType);
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    return; // User cancelled
+                }
+
+                // Create progress tracking (using simple loading indicator)
+                var progress = new Progress<DumpProgress>(p =>
+                {
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        // Update the existing loading state (you could extend this with a progress window later)
+                        // For now, we'll just ensure IsLoading remains true during the operation
+                    });
+                });
+
+                try
+                {
+                    // Create the dump
+                    var result = await dumpService.CreateDumpAsync(
+                        targetProcess.Id,
+                        filePath,
+                        dumpOptionsResult.DumpType,
+                        progress,
+                        CancellationToken.None);
+
+                    if (result.Success)
+                    {
+                        var successMessage = BuildSuccessMessage(result);
+                        var dialogResult = ModernDialog.ShowMessage(
+                            successMessage,
+                            "Dump Created Successfully",
+                            MessageBoxButton.YesNo);
+
+                        if (dialogResult == MessageBoxResult.Yes)
+                        {
+                            // Ask if user wants to load the dump
+                            await LoadCreatedDump(result.FilePath);
+                        }
+                    }
+                    else
+                    {
+                        ShowErrorDialog($"Failed to create dump:\n\n{result.ErrorMessage}");
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    ShowInfoDialog("Dump creation was cancelled by user.");
+                }
+                catch (Exception ex)
+                {
+                    ShowErrorDialog($"Unexpected error creating dump:\n\n{ex.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LastError = ex.Message;
+                ShowErrorDialog($"Error initializing dump creation:\n\n{ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        /// <summary>
+        /// Shows the dump options dialog and returns the user's selection.
+        /// </summary>
+        private async Task<DumpOptionsResult> ShowDumpOptionsDialog(Process process, IDumpCreationService dumpService)
+        {
+            try
+            {
+                // Create the dialog content using MEF
+                var dialogContent = new Contents.DumpOptions();
+
+                // Pass the process via ExtendedData for the ViewModel
+                dialogContent.ExtendedData["TargetProcess"] = process;
+
+                // Load the ViewModel using MEF ViewModelLoader 
+                var viewModelLoader = App.Container.GetExport<MefViewModelLoader>().Value;
+                var viewModel = viewModelLoader.Load(dialogContent) as DumpOptionsViewModel;
+
+                if (viewModel == null)
+                {
+                    throw new InvalidOperationException("Failed to load DumpOptionsViewModel through MEF");
+                }
+
+                // Set the target process after MEF construction
+                viewModel.SetTargetProcess(process);
+
+                // CRITICAL FIX: Set the ViewModel as the DataContext
+                dialogContent.DataContext = viewModel;
+
+                // Create ModernDialog with custom content and no default buttons
+                var dialogWindow = new ModernDialog
+                {
+                    Title = "Create Memory Dump",
+                    Content = dialogContent,
+                    MinWidth = 680,
+                    MinHeight = 860,
+                    Width = 720,
+                    Height = 920,
+                    ResizeMode = ResizeMode.CanResize
+                };
+
+                // Set empty buttons collection so our custom ones in the content are used
+                dialogWindow.Buttons = new System.Windows.Controls.Button[0];
+
+                // Wait for the dialog result using the ViewModel's async method
+                var dialogTask = viewModel.ShowDialogAsync();
+                
+                var dialogResult = dialogWindow.ShowDialog();
+                
+                if (dialogResult == true)
+                {
+                    var result = await dialogTask;
+                    return result ?? new DumpOptionsResult { Cancelled = true };
+                }
+
+                return new DumpOptionsResult { Cancelled = true };
+            }
+            catch (Exception ex)
+            {
+                ShowErrorDialog($"Error showing dump options dialog:\n\n{ex.Message}");
+                return new DumpOptionsResult { Cancelled = true };
+            }
+        }
+
+        /// <summary>
+        /// Shows the file save dialog for dump creation.
+        /// </summary>
+        private string ShowSaveFileDialog(Process process, DumpType dumpType)
+        {
+            try
+            {
+                var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                var suggestedName = $"{process.ProcessName}_{process.Id}_{timestamp}_{dumpType.ToString().ToLower()}.dmp";
+
+                var saveDialog = new SaveFileDialog
+                {
+                    Title = "Save Memory Dump",
+                    Filter = "Memory Dump Files (*.dmp)|*.dmp|All Files (*.*)|*.*",
+                    DefaultExt = "dmp",
+                    FileName = suggestedName,
+                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    OverwritePrompt = true,
+                    ValidateNames = true
+                };
+
+                return saveDialog.ShowDialog() == true ? saveDialog.FileName : null;
+            }
+            catch (Exception ex)
+            {
+                ShowErrorDialog($"Error showing save dialog:\n\n{ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Builds a comprehensive success message for dump creation.
+        /// </summary>
+        private static string BuildSuccessMessage(DumpCreationResult result)
+        {
+            var message = new StringBuilder();
+            message.AppendLine("Memory dump created successfully!");
+            message.AppendLine();
+            message.AppendLine($"📁 File: {Path.GetFileName(result.FilePath)}");
+            message.AppendLine($"📏 Size: {result.FormattedFileSize}");
+            message.AppendLine($"⏱️ Duration: {result.Duration.TotalSeconds:F1} seconds");
+            message.AppendLine($"🔧 Type: {result.DumpType}");
+            message.AppendLine();
+            message.AppendLine("Would you like to load this dump for analysis?");
+
+            return message.ToString();
+        }
+
+        /// <summary>
+        /// Loads a created dump file into the application.
+        /// </summary>
+        private async Task LoadCreatedDump(string filePath)
+        {
+            try
+            {
+                IsLoading = true;
+
+                var success = await DebuggerSession.Instance.LoadDump(filePath, CrashDumpReader.DbgEng);
+                if (success)
+                {
+                    AttachedProcessName = Path.GetFileName(filePath);
+                    DetachVisibility = Visibility.Visible;
+                    IsGetProcessesEnabled = false;
+                    DetachProcessesCommand.OnCanExecuteChanged();
+
+                    ShowInfoDialog("Dump loaded successfully! You can now analyze it using the available operations.");
+                }
+                else
+                {
+                    ShowErrorDialog("Failed to load the created dump file.");
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowErrorDialog($"Error loading dump:\n\n{ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        /// <summary>
+        /// Shows an error dialog with consistent styling.
+        /// </summary>
+        private static void ShowErrorDialog(string message)
+        {
+            ModernDialog.ShowMessage(message, "Error", MessageBoxButton.OK);
+        }
+
+        /// <summary>
+        /// Shows an info dialog with consistent styling.
+        /// </summary>
+        private static void ShowInfoDialog(string message)
+        {
+            ModernDialog.ShowMessage(message, "Information", MessageBoxButton.OK);
         }
 
         ~AttachDetachViewModel()

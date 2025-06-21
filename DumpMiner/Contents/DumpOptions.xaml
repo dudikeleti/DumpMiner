@@ -1,0 +1,163 @@
+<UserControl x:Class="DumpMiner.Contents.DumpOptions"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mui="http://firstfloorsoftware.com/ModernUI"
+             mc:Ignorable="d" 
+             d:DesignHeight="750" d:DesignWidth="700">
+
+    <Grid Style="{StaticResource ContentRoot}" Margin="0,0,0,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{DynamicResource Accent}" Padding="15,10" Margin="0,0,0,15">
+            <StackPanel Orientation="Horizontal">
+                <Path Data="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" 
+                      Fill="White" Width="20" Height="20" Stretch="Uniform" Margin="0,0,10,0"/>
+                <TextBlock Text="Create Memory Dump" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Process Information -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource SeparatorBackground}" BorderThickness="1" 
+                Background="{DynamicResource ItemBackground}" Padding="15" Margin="0,0,0,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Process Name:" FontWeight="SemiBold" 
+                           Foreground="{DynamicResource ItemText}" Margin="0,0,10,5"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ProcessName}" 
+                           Foreground="{DynamicResource ItemText}" Margin="0,0,0,5"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Process ID:" FontWeight="SemiBold" 
+                           Foreground="{DynamicResource ItemText}" Margin="0,0,10,5"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ProcessId}" 
+                           Foreground="{DynamicResource ItemText}" Margin="0,0,0,5"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Memory Usage:" FontWeight="SemiBold" 
+                           Foreground="{DynamicResource ItemText}" Margin="0,0,10,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding FormattedMemoryUsage}" 
+                           Foreground="{DynamicResource ItemText}"/>
+            </Grid>
+        </Border>
+
+        <!-- Dump Type Selection -->
+        <GroupBox Grid.Row="2" Header="Dump Type" Padding="10" Margin="0,0,0,10"
+                  Foreground="{DynamicResource ItemText}">
+            <StackPanel>
+                <RadioButton x:Name="MiniDumpRadio" Content="Mini Dump (Small - Basic crash info)" 
+                             IsChecked="{Binding IsMinDumpSelected}" GroupName="DumpType" Margin="0,5"
+                             Foreground="{DynamicResource ItemText}"/>
+                <TextBlock Text="• Recommended for crash analysis and basic troubleshooting" 
+                           FontSize="11" Foreground="{DynamicResource ItemTextDisabled}" Margin="20,0,0,5"/>
+                <TextBlock Text="• Typically 1-10 MB in size" 
+                           FontSize="11" Foreground="{DynamicResource ItemTextDisabled}" Margin="20,0,0,10"/>
+
+                <RadioButton x:Name="HeapDumpRadio" Content="Heap Dump (Medium - Includes managed heap)" 
+                             IsChecked="{Binding IsHeapDumpSelected}" GroupName="DumpType" Margin="0,5"
+                             Foreground="{DynamicResource ItemText}"/>
+                <TextBlock Text="• Best for memory leak analysis and object inspection" 
+                           FontSize="11" Foreground="{DynamicResource ItemTextDisabled}" Margin="20,0,0,5"/>
+                <TextBlock Text="• Typically 50-500 MB in size" 
+                           FontSize="11" Foreground="{DynamicResource ItemTextDisabled}" Margin="20,0,0,10"/>
+
+                <RadioButton x:Name="TriageDumpRadio" Content="Triage Dump (Smallest - Optimized for automation)" 
+                             IsChecked="{Binding IsTriageDumpSelected}" GroupName="DumpType" Margin="0,5"
+                             Foreground="{DynamicResource ItemText}"/>
+                <TextBlock Text="• Quick initial analysis and automated processing" 
+                           FontSize="11" Foreground="{DynamicResource ItemTextDisabled}" Margin="20,0,0,5"/>
+                <TextBlock Text="• Typically 1-5 MB in size" 
+                           FontSize="11" Foreground="{DynamicResource ItemTextDisabled}" Margin="20,0,0,10"/>
+
+                <RadioButton x:Name="FullDumpRadio" Content="Full Dump (Large - Complete memory contents)" 
+                             IsChecked="{Binding IsFullDumpSelected}" GroupName="DumpType" Margin="0,5"
+                             Foreground="{DynamicResource ItemText}"/>
+                <TextBlock Text="• Comprehensive analysis but requires significant disk space" 
+                           FontSize="11" Foreground="{DynamicResource ItemTextDisabled}" Margin="20,0,0,5"/>
+                <TextBlock Text="• Can be very large (GB+) depending on process memory" 
+                           FontSize="11" Foreground="{DynamicResource ItemTextDisabled}" Margin="20,0,0,5"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Size Estimation -->
+        <Border Grid.Row="3" BorderBrush="{DynamicResource SeparatorBackground}" BorderThickness="1" 
+                Background="{DynamicResource ItemBackgroundHover}" Padding="10" Margin="0,0,0,10"
+                Visibility="{Binding SizeEstimationVisibility}">
+            <StackPanel Orientation="Horizontal">
+                <Path Data="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" 
+                      Fill="{DynamicResource Accent}" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                <TextBlock Text="Estimated dump size: " VerticalAlignment="Center" 
+                           Foreground="{DynamicResource ItemText}"/>
+                <TextBlock Text="{Binding EstimatedDumpSize}" FontWeight="SemiBold" VerticalAlignment="Center"
+                           Foreground="{DynamicResource ItemText}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Advanced Options -->
+        <Expander Grid.Row="4" Header="Advanced Options" Margin="0,0,0,10" IsExpanded="False"
+                  Foreground="{DynamicResource ItemText}">
+            <StackPanel Margin="10">
+                <CheckBox Content="Verify dump after creation" IsChecked="{Binding VerifyAfterCreation}" 
+                          Margin="0,5" Foreground="{DynamicResource ItemText}"/>
+                <CheckBox Content="Show detailed progress" IsChecked="{Binding ShowDetailedProgress}" 
+                          Margin="0,5" Foreground="{DynamicResource ItemText}"/>
+                
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                    <TextBlock Text="Timeout (minutes):" VerticalAlignment="Center" Margin="0,0,10,0"
+                               Foreground="{DynamicResource ItemText}"/>
+                    <TextBox Text="{Binding TimeoutMinutes}" Width="60" VerticalAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+        </Expander>
+
+        <!-- Warnings/Errors -->
+        <ItemsControl Grid.Row="5" ItemsSource="{Binding Warnings}" Margin="0,0,0,10">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{DynamicResource ValidationErrorElement}" BorderBrush="{DynamicResource ValidationErrorElementBorder}" 
+                            BorderThickness="1" Padding="10,5" Margin="0,2">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z" 
+                                  Fill="{DynamicResource ValidationErrorElement}" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                            <TextBlock Text="{Binding}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Action Buttons -->
+        <Grid Grid.Row="6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <mui:ModernButton Grid.Column="1" Content="Create Dump" Command="{Binding CreateDumpCommand}" 
+                              EllipseDiameter="0" IconWidth="0" IconHeight="0" 
+                              Margin="0,0,10,0" MinWidth="100" IsDefault="True"/>
+            
+            <mui:ModernButton Grid.Column="2" Content="Cancel" Command="{Binding CancelCommand}" 
+                              EllipseDiameter="0" IconWidth="0" IconHeight="0" 
+                              MinWidth="100" IsCancel="True"/>
+        </Grid>
+    </Grid>
+</UserControl> 
