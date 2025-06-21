@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using DumpMiner.Debugger;
 using Microsoft.Diagnostics.Runtime;
 
 namespace DumpMiner.Common

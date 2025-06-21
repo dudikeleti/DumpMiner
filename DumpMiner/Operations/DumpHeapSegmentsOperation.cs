@@ -21,17 +21,18 @@ namespace DumpMiner.Operations
             {
                 var heap = DebuggerSession.Instance.Heap;
                 var enumerable = from segment in heap.Segments
-                                 let type = segment.IsEphemeral ? "Ephemeral" : segment.IsLarge ? "Large" : "Ephemeral"
                                  select new
                                  {
                                      Start = segment.Start,
                                      End = segment.End,
-                                     Committed = segment.CommittedEnd,
-                                     Reserved = segment.ReservedEnd,
-                                     ProcessorAffinity = segment.ProcessorAffinity,
-                                     Type = type,
+                                     CommittedStart = segment.CommittedMemory.Start,
+                                     CommittedEnd = segment.CommittedMemory.End,
+                                     ReservedStart = segment.ReservedMemory.Start,
+                                     ReservedEnd = segment.ReservedMemory.End,
+                                     //ProcessorAffinity = segment.ProcessorAffinity,
+                                     Type = segment.Kind,
                                      Length = segment.Length,
-                                     NotInUse = segment.CommittedEnd - segment.End
+                                     NotInUse = segment.CommittedMemory.End - segment.End
                                  };
                 return enumerable.ToList();
             });

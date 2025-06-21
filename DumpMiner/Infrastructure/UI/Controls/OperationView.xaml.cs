@@ -147,7 +147,7 @@ namespace DumpMiner.Infrastructure.UI.Controls
                 return;
             }
 
-            var addressProperty = SelectedItem.GetType().GetProperty("Address", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            var addressProperty = SelectedItem.GetType().GetProperty("MetadataAddress", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             var sizeProperty = SelectedItem.GetType().GetProperty("Size", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             if (addressProperty == null || sizeProperty == null)
             {

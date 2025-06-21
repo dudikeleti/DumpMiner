@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
@@ -34,9 +35,9 @@ namespace DumpMiner.Operations
                                  select new
                                  {
                                      MetadataToken = method.MetadataToken,
-                                     Signature = method.GetFullSignature(),
+                                     Signature = method.Signature,
                                      CompilationType = method.CompilationType,
-                                     IsStatic = method.IsStatic,
+                                     IsStatic = method.Attributes | MethodAttributes.Static,
                                      MethodDesc = method.MethodDesc
                                  };
                 return enumerable.ToList();

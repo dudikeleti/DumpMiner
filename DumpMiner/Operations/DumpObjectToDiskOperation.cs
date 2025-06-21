@@ -50,8 +50,8 @@ namespace DumpMiner.Operations
                 try
                 {
                     byte[] buffer = new byte[size];
-                    bool success = DebuggerSession.Instance.DataTarget.ReadProcessMemory(address, buffer, (int)size, out var bytesRead);
-                    if (!success || bytesRead <= 0)
+                    var bytesRead = DebuggerSession.Instance.DataTarget.DataReader.Read(address, buffer);
+                    if (bytesRead <= 0)
                     {
                         App.Dialog.ShowDialog("Could not read process memory.", title: "Error");
                         return null;
@@ -109,7 +109,7 @@ namespace DumpMiner.Operations
                     }
 
                     string extractFileName = file.FileName + extractor.GetFileNameSuffix();
-                    success = extractor.Extract(extractFileName, address, size, typeName).ConfigureAwait(false).GetAwaiter().GetResult();
+                    var success = extractor.Extract(extractFileName, address, size, typeName).ConfigureAwait(false).GetAwaiter().GetResult();
                     if (success)
                     {
                         App.Dialog.ShowDialog($"Extraction completed successfully to {file.FileName}");

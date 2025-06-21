@@ -66,15 +66,89 @@ namespace DumpMiner.Operations
             }
 
             ClrType type = _heap.GetObjectType(currentObj);
+            if (type == null || type.IsFree)
+                return;
 
-            type?.EnumerateRefsOfObject(currentObj, (innerObj, fieldOffset) =>
+            // Handle strings as leaves
+            if (type.Name == "System.String")
+                return;
+
+            // Handle arrays
+            if (type.IsArray)
             {
-                if (innerObj == 0 || visited.Contains(innerObj)) return;
-                refChain.Push(innerObj);
-                GetRefChainFromRootToObject(objPtr, refChain, visited);
-                if (_found) return;
-                refChain.Pop();
-            });
+                var arrayObj = _heap.GetObject(currentObj);
+                int len = arrayObj.AsArray().Length;
+                var compType = type.ComponentType;
+                if (compType != null)
+                {
+                    if (compType.IsObjectReference)
+                    {
+                        for (int i = 0; i < len; i++)
+                        {
+                            ulong elementAddress = type.GetArrayElementAddress(currentObj, i);
+                            if (elementAddress == 0 || visited.Contains(elementAddress)) continue;
+                            refChain.Push(elementAddress);
+                            GetRefChainFromRootToObject(objPtr, refChain, visited);
+                            if (_found) return;
+                            refChain.Pop();
+                        }
+                    }
+                    else if (compType.ElementType == ClrElementType.Struct)
+                    {
+                        for (int i = 0; i < len; i++)
+                        {
+                            ulong elementAddress = type.GetArrayElementAddress(currentObj, i);
+                            TraverseStructFields(elementAddress, compType, objPtr, refChain, visited);
+                            if (_found) return;
+                        }
+                    }
+                }
+                return;
+            }
+
+            // Handle fields (reference and struct fields)
+            foreach (var field in type.Fields)
+            {
+                if (field.IsObjectReference)
+                {
+                    ulong address = field.GetAddress(currentObj, false);
+                    if (address == 0 || visited.Contains(address)) continue;
+                    refChain.Push(address);
+                    GetRefChainFromRootToObject(objPtr, refChain, visited);
+                    if (_found) return;
+                    refChain.Pop();
+                }
+                else if (field.ElementType == ClrElementType.Struct && field.Type != null)
+                {
+                    ulong structAddress = field.GetAddress(currentObj, false);
+                    TraverseStructFields(structAddress, field.Type, objPtr, refChain, visited);
+                    if (_found) return;
+                }
+            }
+        }
+
+        // Helper to traverse struct fields recursively
+        private void TraverseStructFields(ulong structAddress, ClrType structType, ulong objPtr, Stack<ulong> refChain, HashSet<ulong> visited)
+        {
+            if (structType == null) return;
+            foreach (var field in structType.Fields)
+            {
+                if (field.IsObjectReference)
+                {
+                    ulong address = field.GetAddress(structAddress, false);
+                    if (address == 0 || visited.Contains(address)) continue;
+                    refChain.Push(address);
+                    GetRefChainFromRootToObject(objPtr, refChain, visited);
+                    if (_found) return;
+                    refChain.Pop();
+                }
+                else if (field.ElementType == ClrElementType.Struct && field.Type != null)
+                {
+                    ulong nestedStructAddress = field.GetAddress(structAddress, false);
+                    TraverseStructFields(nestedStructAddress, field.Type, objPtr, refChain, visited);
+                    if (_found) return;
+                }
+            }
         }
     }
 }

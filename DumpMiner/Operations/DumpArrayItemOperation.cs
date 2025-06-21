@@ -33,13 +33,14 @@ namespace DumpMiner.Operations
                     throw new ArgumentException($"Type is not array{Environment.NewLine}Type is {type.Name}");
                 }
 
-                if (type.ComponentType != null && !type.ComponentType.HasSimpleValue)
+                if (type.ComponentType != null && !type.ComponentType.IsPrimitive)
                 {
                     throw new NotImplementedException();
                 }
 
                 var index = int.Parse(model.Types);
-                var itemValue = type.GetArrayElementValue(model.ObjectAddress, index);
+                var array = heap.GetObject(model.ObjectAddress).AsArray();
+                var itemValue = array.GetObjectValue(index);
                 var itemAddress = type.GetArrayElementAddress(model.ObjectAddress, index);
                 if (type.ComponentType == null || type.ComponentType.IsPrimitive)
                 {

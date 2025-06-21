@@ -132,12 +132,12 @@ namespace DumpMiner.ViewModels
             resultBuilder = new StringBuilder();
             var syncBlockCommand = App.Container.GetExportedValue<IDebuggerOperation>(OperationNames.DumpSyncBlock);
             var syncBlocks = (await syncBlockCommand.Execute(new OperationModel(), CancellationTokenSource.Token, null).ConfigureAwait(false)).ToList();
-            foreach (BlockingObject syncBlock in syncBlocks)
+            foreach (SyncBlock syncBlock in syncBlocks)
             {
-                if (syncBlock.Taken && syncBlock.Waiters.Count > 0)
+                if (syncBlock.IsMonitorHeld && syncBlock.WaitingThreadCount > 0)
                 {
                     resultBuilder.AppendLine(
-                        $"Lock object: 0x{((ulong)syncBlock.Object).ToString("X8")}, Waiters id's{syncBlock.Waiters.Count}: {string.Join(", ", syncBlock.Waiters.Select(t => t?.ManagedThreadId))}, Block reason: {syncBlock.Reason}");
+                        $"Lock object: 0x{((ulong)syncBlock.Object).ToString("X8")}, Holding thread: 0x{syncBlock.HoldingThreadAddress.ToString("X8")}, Waiters count: {syncBlock.WaitingThreadCount}");
                 }
             }
 

@@ -34,10 +34,10 @@ namespace DumpMiner.Operations
 
                 //TODO: Add support of inner exceptions
                 //var heap = DebuggerSession.Instance.Heap;
-                var enumerable = from obj in heap.EnumerateObjectAddresses()
+                var enumerable = from obj in heap.EnumerateObjects()
                                  let type = heap.GetObjectType(obj)
                                  where type != null && type.IsException
-                                 let ex = heap.GetExceptionObject(obj)
+                                 let ex = heap.GetObject(obj).AsException()
                                  from frame in ex.StackTrace
                                  let o = new
                                  {
@@ -45,12 +45,12 @@ namespace DumpMiner.Operations
                                      Name = ex.Type.Name,
                                      Message = ex.Message,
                                      HResult = ex.HResult,
-                                     DisplayString = frame.DisplayString,
+                                     DisplayString = frame.ToString(),
                                      InstructionPointer = frame.InstructionPointer,
                                      StackPointer = frame.StackPointer,
                                      Method = frame.Method,
                                      Kind = frame.Kind,
-                                     ModuleName = frame.ModuleName
+                                     ModuleName = frame.Method?.Type.Module.Name
                                  }
                                  group o by o.Address;
 

@@ -19,8 +19,8 @@ namespace DumpMiner.Operations
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
-                var heap = DebuggerSession.Instance.Heap;
-
+                //var heap = DebuggerSession.Instance.Heap;
+                var reader = DebuggerSession.Instance.Runtime.DataTarget.DataReader;
                 // the first 8 bytes is some padding (maybe the first 5 is code stub and the rest some flags)
                 // so we need to read the 7th byte to get the offset to first MethodDesc
                 // and the 6th byte to see the offset inside the MethodDescs slots
@@ -31,18 +31,18 @@ namespace DumpMiner.Operations
                 // so just skip the 8 bytes padding and you will get the correct MethodDesc
 
                 ulong methodHandle;
-                if (DebuggerSession.Instance.Runtime.PointerSize == 4)
+                if (DebuggerSession.Instance.Runtime.DataTarget.DataReader.PointerSize == 4)
                 {
-                    heap.ReadPointer(model.ObjectAddress + 8, out methodHandle);
+                    reader.ReadPointer(model.ObjectAddress + 8, out methodHandle);
                 }
                 else
                 {
                     var offsetToFirstMethodDescByte = new byte[1];
                     var offsetInMethodDescTableByte = new byte[1];
-                    heap.ReadMemory(model.ObjectAddress + 7, offsetToFirstMethodDescByte, 0, 1);
-                    heap.ReadMemory(model.ObjectAddress + 6, offsetInMethodDescTableByte, 0, 1);
+                    reader.Read(model.ObjectAddress + 7, offsetToFirstMethodDescByte);
+                    reader.Read(model.ObjectAddress + 6, offsetInMethodDescTableByte);
                     // Its only for x64 bit so multiply by 8 bytes
-                    heap.ReadPointer(model.ObjectAddress + 8 + offsetToFirstMethodDescByte[0] * 8ul, out var firstMethodDesc);
+                    reader.ReadPointer(model.ObjectAddress + 8 + offsetToFirstMethodDescByte[0] * 8ul, out var firstMethodDesc);
                     methodHandle = firstMethodDesc + offsetInMethodDescTableByte[0] * 8ul;
                 }
 
@@ -68,7 +68,7 @@ namespace DumpMiner.Operations
                 {
                     new
                     {
-                        Signature = method.GetFullSignature(),
+                        Signature = method.Signature,
                         MetadataToken = method.MetadataToken,
                         MethodDesc = method.MethodDesc,
                         CompilationType = method.CompilationType,
