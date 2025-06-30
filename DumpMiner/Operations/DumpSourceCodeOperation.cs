@@ -5,24 +5,29 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
 using DumpMiner.Reader;
+using DumpMiner.Services.AI;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.Metadata;
+using Microsoft.Extensions.Logging;
 
 namespace DumpMiner.Operations
 {
     [Export(OperationNames.DumpSourceCode, typeof(IDebuggerOperation))]
-    internal class DumpSourceCodeOperation : IDebuggerOperation
+    internal class DumpSourceCodeOperation : BaseAIOperation
     {
-        public string Name => OperationNames.DumpSourceCode;
+        private readonly ILogger<DumpSourceCodeOperation> _logger = LoggingExtensions.CreateLogger<DumpSourceCodeOperation>();
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
+        public override string Name => OperationNames.DumpSourceCode;
+
+        public override async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             // todo: support list of methods
             return new object[] { new SourceCode { Code = GetSourceCode((int)model.ObjectAddress) } };
@@ -34,7 +39,7 @@ namespace DumpMiner.Operations
             var dumpData = new Dump(dumpPath);
             var pathToOutputModules = $"{Environment.CurrentDirectory}\\DumpOutputModules";
             Directory.CreateDirectory(pathToOutputModules);
-            Console.WriteLine($"Saving all modules to {pathToOutputModules}");
+            _logger.LogInformation($"Saving all modules to {pathToOutputModules}");
             dumpData.SaveAllModules(pathToOutputModules, true);
             var dlls = Directory.EnumerateFiles(pathToOutputModules).Where(f => Path.GetFileNameWithoutExtension(f).Equals(Path.GetFileNameWithoutExtension(dumpPath))).Select(f => new FileInfo(f));
             var settings = new DecompilerSettings();
@@ -47,16 +52,20 @@ namespace DumpMiner.Operations
         }
 
 
-        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object customParameter)
+        protected override void AddOperationSpecificSuggestions(
+            StringBuilder insights,
+            Collection<object> operationResults,
+            Dictionary<string, int> typeGroups)
         {
-            var prompt = model.GptPrompt.ToString();
-            if (prompt.Contains("{c#}"))
-            {
-                var assemblyCode = string.Join(Environment.NewLine, items.Cast<SourceCode>());
-                model.GptPrompt = model.GptPrompt.Replace("{c#}", assemblyCode);
-            }
+            var sourceCodeItems = operationResults.OfType<SourceCode>().ToList();
 
-            return await Gpt.Ask(new[] { "You are an assembly code and a C# code expert." }, new[] { $"{model.GptPrompt}" });
+            if (sourceCodeItems.Any())
+            {
+                insights.AppendLine($"• Source code analysis: {sourceCodeItems.Count} code blocks available");
+                insights.AppendLine("• Examine decompiled code for memory leaks, performance issues, and threading problems");
+                insights.AppendLine("• Consider DumpMethods for method-level performance analysis");
+                insights.AppendLine("• Use DumpObject to investigate specific object instances referenced in the code");
+            }
         }
 
         internal class SourceCode

@@ -1,0 +1,88 @@
+<UserControl x:Class="DumpMiner.Contents.DeadlockDetection"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             d:DesignWidth="300">
+    <controls:OperationView Header="Deadlock Detection" 
+                            Explanation="Advanced deadlock detection using lock ownership graph analysis and thread state examination"
+                            ObjectAddressVisibility="Collapsed"
+                            ObjectTypeVisibility="Collapsed">
+        <controls:OperationView.ItemsTemplate>
+            <DataTemplate>
+                <Border BorderBrush="DarkRed"
+                        BorderThickness="2"
+                        CornerRadius="5"
+                        Padding="8"
+                        Margin="0,5,0,5">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Header Information -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="{Binding DeadlockType, StringFormat=Type: {0}}"
+                                       FontWeight="Bold"
+                                       FontSize="14"
+                                       Foreground="DarkRed"/>
+                            <TextBlock Text="{Binding SeverityScore, StringFormat=Severity: {0:F2}}"
+                                       FontWeight="Bold"
+                                       FontSize="12"
+                                       Margin="20,0,0,0"
+                                       Foreground="OrangeRed"/>
+                        </StackPanel>
+                        
+                        <!-- Description -->
+                        <TextBlock Grid.Row="1" 
+                                   Text="{Binding Description}"
+                                   FontWeight="Medium"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,5"/>
+                        
+                        <!-- Detection Method -->
+                        <TextBlock Grid.Row="2"
+                                   Text="{Binding DetectionMethod, StringFormat=Detection Method: {0}}"
+                                   FontStyle="Italic"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   Margin="0,0,0,5"/>
+                        
+                        <!-- Threads Involved -->
+                        <TextBlock Grid.Row="3"
+                                   Text="{Binding ThreadsInvolved, StringFormat=Threads Involved: {0}}"
+                                   FontWeight="Medium"
+                                   Margin="0,0,0,10"/>
+                        
+                        <!-- Deadlock Chain Details -->
+                        <Expander Grid.Row="4" Header="Deadlock Chain Details" IsExpanded="False">
+                            <ListView ItemsSource="{Binding DeadlockChain}" MaxHeight="200">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Thread ID" 
+                                                        DisplayMemberBinding="{Binding ThreadId}"/>
+                                        <GridViewColumn Header="Waiting For Lock"
+                                                        DisplayMemberBinding="{Binding WaitingForLock, StringFormat=0x{0:X8}}"/>
+                                        <GridViewColumn Header="Lock Type"
+                                                        DisplayMemberBinding="{Binding LockType}"/>
+                                        <GridViewColumn Header="Lock Owner"
+                                                        DisplayMemberBinding="{Binding LockOwner}"/>
+                                        <GridViewColumn Header="Thread State"
+                                                        DisplayMemberBinding="{Binding ThreadState}"/>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </Expander>
+                    </Grid>
+                </Border>
+            </DataTemplate>
+        </controls:OperationView.ItemsTemplate>
+    </controls:OperationView>
+</UserControl> 

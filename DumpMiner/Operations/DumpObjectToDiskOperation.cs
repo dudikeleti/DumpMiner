@@ -1,10 +1,12 @@
 ﻿using DumpMiner.Common;
+using DumpMiner.Operations.Shared;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Models;
@@ -17,11 +19,11 @@ using System.Windows;
 namespace DumpMiner.Operations
 {
     [Export(OperationNames.DumpObjectToDisk, typeof(IDebuggerOperation))]
-    internal class DumpObjectToDiskOperation : IDebuggerOperation
+    internal class DumpObjectToDiskOperation : BaseAIOperation
     {
-        public string Name => OperationNames.DumpObjectToDisk;
+        public override string Name => OperationNames.DumpObjectToDisk;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
+        public override async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
@@ -99,13 +101,13 @@ namespace DumpMiner.Operations
                     var extractor = ObjectExtraction.FindExtractor(typeName);
                     if (extractor == null)
                     {
-                        return null;
+                        return new[] { new { Status = "Dumped", BytesWritten = bytesRead, FilePath = file.FileName + ".bin" } };
                     }
 
                     if (App.Dialog.ShowDialog($"The type {typeName} can be extracted from memory. Would you like to do this?",
                             "Extract?", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                     {
-                        return null;
+                        return new[] { new { Status = "Dumped", BytesWritten = bytesRead, FilePath = file.FileName + ".bin" } };
                     }
 
                     string extractFileName = file.FileName + extractor.GetFileNameSuffix();
@@ -113,6 +115,7 @@ namespace DumpMiner.Operations
                     if (success)
                     {
                         App.Dialog.ShowDialog($"Extraction completed successfully to {file.FileName}");
+                        return new[] { new { Status = "Dumped and Extracted", BytesWritten = bytesRead, FilePath = file.FileName + ".bin", ExtractedPath = extractFileName } };
                     }
                     else
                     {
@@ -125,21 +128,97 @@ namespace DumpMiner.Operations
                         {
                             // ignored
                         }
+                        return new[] { new { Status = "Dumped (Extraction Failed)", BytesWritten = bytesRead, FilePath = file.FileName + ".bin" } };
                     }
 
                 }
                 catch (Exception ex)
                 {
                     App.Dialog.ShowDialog($"An exception occurred while dumping the object: {ex}", title: "Error");
+                    return new[] { new { Status = "Failed", Error = ex.Message } };
                 }
-
-                return null;
             });
         }
 
-        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object customParameter)
+        public override string GetAIInsights(Collection<object> operationResults)
         {
-            throw new NotImplementedException();
+            var insights = new System.Text.StringBuilder();
+            insights.AppendLine($"Object Dump Analysis: {operationResults.Count} operations");
+
+            if (!operationResults.Any()) 
+            {
+                insights.AppendLine("⚠️ No dump operations completed");
+                return insights.ToString();
+            }
+
+            var result = operationResults.FirstOrDefault();
+            if (result != null)
+            {
+                var status = OperationHelpers.GetPropertyValue<string>(result, "Status", "Unknown");
+                var bytesWritten = OperationHelpers.GetPropertyValue<int>(result, "BytesWritten", 0);
+                var filePath = OperationHelpers.GetPropertyValue<string>(result, "FilePath", "");
+                var extractedPath = OperationHelpers.GetPropertyValue<string>(result, "ExtractedPath", "");
+                var error = OperationHelpers.GetPropertyValue<string>(result, "Error", "");
+
+                insights.AppendLine($"Status: {status}");
+                
+                if (bytesWritten > 0)
+                {
+                    insights.AppendLine($"Bytes written: {OperationHelpers.FormatSize(bytesWritten)}");
+                }
+
+                if (!string.IsNullOrEmpty(filePath))
+                {
+                    insights.AppendLine($"Raw dump file: {Path.GetFileName(filePath)}");
+                }
+
+                if (!string.IsNullOrEmpty(extractedPath))
+                {
+                    insights.AppendLine($"Extracted file: {Path.GetFileName(extractedPath)}");
+                }
+
+                if (!string.IsNullOrEmpty(error))
+                {
+                    insights.AppendLine($"Error: {error}");
+                }
+
+                // Analyze potential issues
+                if (status.Contains("Failed"))
+                {
+                    insights.AppendLine("\nPotential Issues:");
+                    insights.AppendLine("  🚨 Dump operation failed - check memory permissions");
+                }
+                else if (bytesWritten > 100_000_000) // 100MB
+                {
+                    insights.AppendLine("\nNote:");
+                    insights.AppendLine("  ⚠️ Large object dumped - consider memory usage impact");
+                }
+            }
+
+            insights.AppendLine("\nKey Information:");
+            insights.AppendLine("- Raw binary data saved for external analysis");
+            insights.AppendLine("- Object extractors can convert specific types to usable formats");
+            insights.AppendLine("- Use hex editors to examine raw memory layout");
+
+            return insights.ToString();
+        }
+
+        public override string GetSystemPromptAdditions()
+        {
+            return @"
+OBJECT DUMP ANALYSIS SPECIALIZATION:
+- Focus on memory extraction and forensic analysis
+- Analyze dump success/failure patterns
+- Identify extractable object types and formats
+- Look for memory corruption or access issues
+
+When analyzing object dump data, pay attention to:
+1. Dump operation success/failure rates
+2. Object size patterns and memory usage
+3. File format extraction capabilities
+4. Memory access violations or corruption
+5. Opportunities for specialized object extractors
+";
         }
     }
 }

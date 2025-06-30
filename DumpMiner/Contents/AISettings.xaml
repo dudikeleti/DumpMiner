@@ -1,0 +1,148 @@
+<UserControl x:Class="DumpMiner.Contents.AISettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="600"
+             d:DesignWidth="800">
+    <Grid>
+        <ScrollViewer>
+            <StackPanel HorizontalAlignment="Left" MinWidth="600" Margin="10">
+                <TextBlock Text="AI Settings"
+                           Style="{StaticResource Heading2}" />
+                <GridSplitter BorderThickness="1" Height="1" Margin="0,5,0,15"/>
+
+                <!-- General AI Configuration -->
+                <TextBlock Text="General AI Configuration" 
+                           Style="{StaticResource Heading2}" 
+                           FontSize="16" 
+                           Margin="0,0,0,10"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Default AI Provider:" MinWidth="200" VerticalAlignment="Center"/>
+                    <ComboBox ItemsSource="{Binding AvailableProviders}" 
+                              SelectedItem="{Binding SelectedProvider}" 
+                              MinWidth="200" Margin="5,0"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Max Tokens:" MinWidth="200" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding MaxTokens}" MinWidth="200" Margin="5,0"/>
+                    <TextBlock Text="(100-32000)" VerticalAlignment="Center" Margin="5,0" 
+                               Foreground="Gray" FontStyle="Italic"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Timeout (seconds):" MinWidth="200" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding TimeoutSeconds}" MinWidth="200" Margin="5,0"/>
+                    <TextBlock Text="(5-300)" VerticalAlignment="Center" Margin="5,0" 
+                               Foreground="Gray" FontStyle="Italic"/>
+                </StackPanel>
+
+                <CheckBox Content="Enable Response Caching" 
+                          IsChecked="{Binding EnableCaching}" 
+                          Margin="0,5,0,10"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Max Auto Function Calls:" MinWidth="200" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding MaxAutoFunctionCalls}" MinWidth="200" Margin="5,0"/>
+                    <TextBlock Text="(1-20)" VerticalAlignment="Center" Margin="5,0" 
+                               Foreground="Gray" FontStyle="Italic"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                    <TextBlock Text="Max Object Analysis Depth:" MinWidth="200" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding MaxObjectAnalysisDepth}" MinWidth="200" Margin="5,0"/>
+                    <TextBlock Text="(1-10)" VerticalAlignment="Center" Margin="5,0" 
+                               Foreground="Gray" FontStyle="Italic"/>
+                </StackPanel>
+
+                <!-- OpenAI Provider Settings -->
+                <TextBlock Text="OpenAI Provider Settings" 
+                           Style="{StaticResource Heading2}" 
+                           FontSize="16" 
+                           Margin="0,0,0,10"/>
+
+                <CheckBox Content="Enable OpenAI Provider" 
+                          IsChecked="{Binding OpenAIEnabled}" 
+                          Margin="0,0,0,10"/>
+                
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="API Key:" MinWidth="200" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding OpenAIApiKey}" MinWidth="300" Margin="5,0"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Model:" MinWidth="200" VerticalAlignment="Center"/>
+                    <ComboBox ItemsSource="{Binding OpenAIModels}" 
+                              SelectedItem="{Binding SelectedOpenAIModel}" 
+                              MinWidth="200" Margin="5,0"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                    <TextBlock Text="Temperature:" MinWidth="200" VerticalAlignment="Center"/>
+                    <Slider Value="{Binding OpenAITemperature}" 
+                            Minimum="0" Maximum="2" 
+                            TickFrequency="0.1" 
+                            IsSnapToTickEnabled="True"
+                            MinWidth="200" Margin="5,0"/>
+                    <TextBlock Text="{Binding OpenAITemperature, StringFormat=F1}" 
+                               MinWidth="30" VerticalAlignment="Center" Margin="5,0"/>
+                </StackPanel>
+
+                <!-- Anthropic Provider Settings -->
+                <TextBlock Text="Anthropic Provider Settings" 
+                           Style="{StaticResource Heading2}" 
+                           FontSize="16" 
+                           Margin="0,0,0,10"/>
+
+                <CheckBox Content="Enable Anthropic Provider" 
+                          IsChecked="{Binding AnthropicEnabled}" 
+                          Margin="0,0,0,10"/>
+                
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="API Key:" MinWidth="200" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding AnthropicApiKey}" MinWidth="300" Margin="5,0"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                    <TextBlock Text="Model:" MinWidth="200" VerticalAlignment="Center"/>
+                    <ComboBox ItemsSource="{Binding AnthropicModels}" 
+                              SelectedItem="{Binding SelectedAnthropicModel}" 
+                              MinWidth="200" Margin="5,0"/>
+                </StackPanel>
+
+                <!-- Google Provider Settings -->
+                <TextBlock Text="Google Provider Settings" 
+                           Style="{StaticResource Heading2}" 
+                           FontSize="16" 
+                           Margin="0,0,0,10"/>
+
+                <CheckBox Content="Enable Google Provider" 
+                          IsChecked="{Binding GoogleEnabled}" 
+                          Margin="0,0,0,10"/>
+                
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="API Key:" MinWidth="200" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding GoogleApiKey}" MinWidth="300" Margin="5,0"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                    <TextBlock Text="Model:" MinWidth="200" VerticalAlignment="Center"/>
+                    <ComboBox ItemsSource="{Binding GoogleModels}" 
+                              SelectedItem="{Binding SelectedGoogleModel}" 
+                              MinWidth="200" Margin="5,0"/>
+                </StackPanel>
+
+                <!-- Action Buttons -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                    <Button Content="Test Connection" Command="{Binding TestConnectionCommand}" 
+                            MinWidth="120" Margin="5,0"/>
+                    <Button Content="Reset to Defaults" Command="{Binding ResetToDefaultsCommand}" 
+                            MinWidth="120" Margin="5,0"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl> 

@@ -7,15 +7,16 @@ using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
+using DumpMiner.Operations.Shared;
 
 namespace DumpMiner.Operations
 {
     [Export(OperationNames.TargetProcessInfo, typeof(IDebuggerOperation))]
-    class TargetProcessInfoOperation : IDebuggerOperation
+    class TargetProcessInfoOperation : BaseAIOperation
     {
-        public string Name => OperationNames.TargetProcessInfo;
+        public override string Name => OperationNames.TargetProcessInfo;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
+        public override async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
@@ -44,9 +45,75 @@ namespace DumpMiner.Operations
             });
         }
 
-        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        public override string GetAIInsights(Collection<object> operationResults)
         {
-            throw new System.NotImplementedException();
+            var insights = new System.Text.StringBuilder();
+            insights.AppendLine($"Process Information: {operationResults.Count} properties");
+
+            if (!operationResults.Any()) 
+                return insights.ToString();
+
+            // Get key process information
+            var properties = operationResults.Cast<object>().ToDictionary(
+                p => OperationHelpers.GetPropertyValue<string>(p, "Name", "Unknown"),
+                p => OperationHelpers.GetPropertyValue(p, "Value")?.ToString() ?? "null"
+            );
+
+            // Extract key metrics
+            var threadsCount = properties.GetValueOrDefault("ThreadsCount", "0");
+            var appDomainsCount = properties.GetValueOrDefault("AppDomainsCount", "0");
+            var modulesCount = properties.GetValueOrDefault("ModulesCount", "0");
+            var architecture = properties.GetValueOrDefault("Architecture", "Unknown");
+            var isGcServer = properties.GetValueOrDefault("IsGcServer", "false");
+            var heapCount = properties.GetValueOrDefault("HeapCount", "0");
+
+            insights.AppendLine($"Architecture: {architecture}");
+            insights.AppendLine($"Threads: {threadsCount}");
+            insights.AppendLine($"AppDomains: {appDomainsCount}");
+            insights.AppendLine($"Modules: {modulesCount}");
+            insights.AppendLine($"GC Mode: {(isGcServer.ToLower() == "true" ? "Server" : "Workstation")}");
+            insights.AppendLine($"Heap Segments: {heapCount}");
+
+            // Analyze for potential issues
+            var potentialIssues = new List<string>();
+            if (int.TryParse(threadsCount, out var threadCount) && threadCount > 200)
+            {
+                potentialIssues.Add("⚠️ High thread count - may indicate thread pool exhaustion");
+            }
+
+            if (int.TryParse(modulesCount, out var moduleCount) && moduleCount > 500)
+            {
+                potentialIssues.Add("⚠️ High module count - check for assembly loading issues");
+            }
+
+            if (potentialIssues.Any())
+            {
+                insights.AppendLine("\nPotential Issues:");
+                foreach (var issue in potentialIssues)
+                {
+                    insights.AppendLine($"  {issue}");
+                }
+            }
+
+            return insights.ToString();
+        }
+
+        public override string GetSystemPromptAdditions()
+        {
+            return @"
+PROCESS INFORMATION ANALYSIS SPECIALIZATION:
+- Focus on overall process health and configuration
+- Identify resource usage patterns and potential bottlenecks
+- Analyze threading, memory, and module loading patterns
+- Provide high-level process diagnostics
+
+When analyzing process information, pay attention to:
+1. Thread count for potential threading issues
+2. AppDomain count for application architecture
+3. Module count for assembly loading patterns
+4. GC configuration (Server vs Workstation)
+5. Architecture and CLR version compatibility
+";
         }
     }
 }

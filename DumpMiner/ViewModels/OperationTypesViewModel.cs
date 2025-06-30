@@ -13,7 +13,7 @@ namespace DumpMiner.ViewModels
     public class OperationTypesViewModel : BaseViewModel
     {
         [ImportingConstructor]
-        public OperationTypesViewModel([ImportMany]IEnumerable<Lazy<IContent, IViewMetadata>> views)
+        public OperationTypesViewModel([ImportMany] IEnumerable<Lazy<IContent, IViewMetadata>> views)
         {
             var collection = from view in views
                              where !string.IsNullOrEmpty(view.Metadata.DisplayName)

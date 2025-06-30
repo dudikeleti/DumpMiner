@@ -1,0 +1,125 @@
+<UserControl x:Class="DumpMiner.Contents.DumpComparison"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             d:DesignWidth="300">
+    <controls:OperationView Header="Dump Comparison" 
+                            Explanation="Compare multiple memory dumps to identify trends, progressive issues, and performance degradation patterns"
+                            ObjectAddressVisibility="Collapsed"
+                            ObjectTypeVisibility="Collapsed">
+        <controls:OperationView.ItemsTemplate>
+            <DataTemplate>
+                <Border BorderBrush="DarkSlateBlue"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12"
+                        Margin="0,8,0,8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Comparison Type and Time Info -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="{Binding ComparisonType, StringFormat=Type: {0}}"
+                                       FontWeight="Bold"
+                                       FontSize="14"
+                                       Foreground="DarkSlateBlue"/>
+                            <TextBlock Text="{Binding AnalysisTimestamp, StringFormat=Analyzed: {0:HH:mm:ss}}"
+                                       FontSize="11"
+                                       Margin="20,0,0,0"
+                                       Foreground="Gray"/>
+                        </StackPanel>
+                        
+                        <!-- Summary -->
+                        <TextBlock Grid.Row="1" 
+                                   Text="{Binding Summary}"
+                                   FontWeight="Bold"
+                                   FontSize="16"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,8"/>
+                        
+                                                 <!-- Growth Rate and Trend Info (if available) -->
+                         <StackPanel Grid.Row="2" Margin="0,0,0,8">
+                             <StackPanel Orientation="Horizontal">
+                                 <TextBlock Text="Growth Rate: "
+                                            FontWeight="Medium"/>
+                                 <TextBlock Text="{Binding GrowthRate, StringFormat={}{0:F1} MB/hour}"
+                                            FontWeight="Bold"
+                                            Foreground="OrangeRed"/>
+                                 <TextBlock Text="{Binding TimeSpan, StringFormat=over {0:hh\\:mm}}"
+                                            FontSize="11"
+                                            Margin="10,0,0,0"
+                                            Foreground="Gray"/>
+                             </StackPanel>
+                             
+                             <StackPanel Orientation="Horizontal">
+                                 <TextBlock Text="Trend: "
+                                            FontWeight="Medium"/>
+                                 <TextBlock Text="{Binding TrendSlope, StringFormat={}{0:F2} per dump}"
+                                            FontWeight="Bold"
+                                            Foreground="Blue"/>
+                             </StackPanel>
+                         </StackPanel>
+                        
+                                                 <!-- Progressive Issue Info -->
+                         <Border Grid.Row="3" 
+                                 Background="LightYellow" 
+                                 BorderBrush="Orange" 
+                                 BorderThickness="1" 
+                                 CornerRadius="3" 
+                                 Padding="8" 
+                                 Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="Progressive Issue Detected"
+                                           FontWeight="Bold"
+                                           Foreground="DarkOrange"/>
+                                <TextBlock Text="{Binding ProgressiveIssue.TypeName, StringFormat=Type: {0}}"
+                                           FontWeight="Medium"/>
+                                <TextBlock Text="{Binding ProgressiveIssue.GrowthRate, StringFormat=Growth Rate: {0:F1}%}"
+                                           FontWeight="Medium"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding ProgressiveIssue.InitialCount, StringFormat=Initial: {0:N0}}"
+                                               FontSize="11"/>
+                                    <TextBlock Text="{Binding ProgressiveIssue.FinalCount, StringFormat=Final: {0:N0}}"
+                                               FontSize="11"
+                                               Margin="20,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        
+                        <!-- Description -->
+                        <ScrollViewer Grid.Row="4" MaxHeight="200" VerticalScrollBarVisibility="Auto" Margin="0,0,0,8">
+                            <TextBlock Text="{Binding Description}"
+                                       TextWrapping="Wrap"
+                                       FontSize="12"/>
+                        </ScrollViewer>
+                        
+                        <!-- Recommended Actions -->
+                        <Expander Grid.Row="5" Header="Recommended Actions" IsExpanded="True">
+                            <ItemsControl ItemsSource="{Binding RecommendedActions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,2">
+                                            <TextBlock Text="→ " FontWeight="Bold" Foreground="DarkSlateBlue"/>
+                                            <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
+                    </Grid>
+                </Border>
+            </DataTemplate>
+        </controls:OperationView.ItemsTemplate>
+    </controls:OperationView>
+</UserControl> 

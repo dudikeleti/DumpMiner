@@ -447,7 +447,7 @@ namespace DumpMiner.ViewModels
 
         public new event PropertyChangedEventHandler PropertyChanged;
 
-        protected new void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
+        internal new void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

@@ -2,20 +2,22 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
+using DumpMiner.Operations.Shared;
 
 namespace DumpMiner.Operations
 {
     [Export(OperationNames.DumpDelegateMethod, typeof(IDebuggerOperation))]
-    class DumpDelegateMethodOperation : IDebuggerOperation
+    class DumpDelegateMethodOperation : BaseAIOperation
     {
-        public string Name => OperationNames.DumpDelegateMethod;
+        public override string Name => OperationNames.DumpDelegateMethod;
 
-        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
+        public override async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
@@ -78,9 +80,65 @@ namespace DumpMiner.Operations
             });
         }
 
-        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        public override string GetAIInsights(Collection<object> operationResults)
         {
-            throw new NotImplementedException();
+            var insights = new System.Text.StringBuilder();
+            insights.AppendLine($"Delegate Method Analysis: {operationResults.Count} methods");
+
+            if (!operationResults.Any()) 
+            {
+                insights.AppendLine("⚠️ No delegate method found");
+                return insights.ToString();
+            }
+
+            var method = operationResults.FirstOrDefault();
+            if (method != null)
+            {
+                var signature = OperationHelpers.GetPropertyValue<string>(method, "Signature", "Unknown");
+                var compilationType = OperationHelpers.GetPropertyValue(method, "CompilationType");
+                var enclosingType = OperationHelpers.GetPropertyValue(method, "EnclosingType");
+                
+                insights.AppendLine($"Method signature: {signature}");
+                insights.AppendLine($"Compilation type: {compilationType}");
+                
+                if (enclosingType != null)
+                {
+                    var typeName = OperationHelpers.GetPropertyValue<string>(enclosingType, "Name", "Unknown");
+                    insights.AppendLine($"Enclosing type: {typeName}");
+                }
+
+                // Analyze compilation type for performance insights
+                if (compilationType?.ToString() == "None")
+                {
+                    insights.AppendLine("\nPotential Issues:");
+                    insights.AppendLine("  ⚠️ Method not JIT compiled - may affect performance");
+                }
+            }
+
+            insights.AppendLine("\nKey Information:");
+            insights.AppendLine("- Delegate methods can affect performance if not properly compiled");
+            insights.AppendLine("- Use DumpDisassemblyMethod for detailed assembly analysis");
+            insights.AppendLine("- Check if method is being called frequently for optimization");
+
+            return insights.ToString();
+        }
+
+        public override string GetSystemPromptAdditions()
+        {
+            return @"
+DELEGATE METHOD ANALYSIS SPECIALIZATION:
+- Focus on delegate method signatures and compilation status
+- Analyze performance implications of delegate usage
+- Identify potential memory leaks from uncollected delegates
+- Look for event handler patterns and subscription issues
+
+When analyzing delegate method data, pay attention to:
+1. Method compilation status (JIT vs not compiled)
+2. Method signature complexity and performance impact
+3. Enclosing type patterns for event handling
+4. Potential memory leaks from long-lived delegates
+5. Multicast delegate chains that might affect performance
+";
         }
     }
 }

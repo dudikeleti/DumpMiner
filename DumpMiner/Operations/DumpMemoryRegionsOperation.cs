@@ -7,17 +7,18 @@ using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
+using DumpMiner.Operations.Shared;
 using Microsoft.Diagnostics.Runtime;
 
 namespace DumpMiner.Operations
 {
     // !EEHeap
     [Export(OperationNames.DumpMemoryRegions, typeof(IDebuggerOperation))]
-    class DumpMemoryRegionsOperation : IDebuggerOperation
+    class DumpMemoryRegionsOperation : BaseAIOperation
     {
-        public string Name => OperationNames.DumpMemoryRegions;
+        public override string Name => OperationNames.DumpMemoryRegions;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
+        public override async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             //return await DebuggerSession.Instance.ExecuteOperation(() =>
             //{
@@ -45,9 +46,36 @@ namespace DumpMiner.Operations
             return null;
         }
 
-        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        public override string GetAIInsights(Collection<object> operationResults)
         {
-            throw new System.NotImplementedException();
+            var insights = new System.Text.StringBuilder();
+            insights.AppendLine("Memory Regions Analysis: Currently not implemented");
+            insights.AppendLine("⚠️ This operation returns null - may need implementation updates");
+            
+            insights.AppendLine("\nKey Information:");
+            insights.AppendLine("- Memory regions show different areas of process memory");
+            insights.AppendLine("- Useful for understanding memory layout and usage patterns");
+            insights.AppendLine("- Can help identify memory pressure and allocation issues");
+
+            return insights.ToString();
+        }
+
+        public override string GetSystemPromptAdditions()
+        {
+            return @"
+MEMORY REGIONS ANALYSIS SPECIALIZATION:
+- Focus on process memory layout and usage
+- Identify different memory region types and purposes
+- Analyze memory pressure and allocation patterns
+- Look for unusual memory usage patterns
+
+Note: This operation is currently not fully implemented.
+When analyzing memory region data (when available), pay attention to:
+1. Different memory region types and their sizes
+2. Fragmentation across memory regions
+3. Unusual memory allocation patterns
+4. Memory pressure indicators
+";
         }
     }
 }

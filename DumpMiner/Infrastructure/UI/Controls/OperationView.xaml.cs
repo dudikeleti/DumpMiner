@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using DumpMiner.Common;
 using System.Threading;
 using DumpMiner.Models;
@@ -167,6 +168,25 @@ namespace DumpMiner.Infrastructure.UI.Controls
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await App.Container.GetExportedValue<IDebuggerOperation>(OperationNames.DumpObjectToDisk).Execute(new OperationModel() { Types = typeName, ObjectAddress = address }, cts.Token, size);
+        }
+
+        private void AiQuestionTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Handle Enter key press in AI question textbox
+            if (e.Key == Key.Enter)
+            {
+                // Execute the AskAi command if it can be executed
+                var viewModel = this.DataContext;
+                if (viewModel != null)
+                {
+                    var askAiCommand = viewModel.GetType().GetProperty("AskAiCommand")?.GetValue(viewModel) as ICommand;
+                    if (askAiCommand != null && askAiCommand.CanExecute(null))
+                    {
+                        askAiCommand.Execute(null);
+                        e.Handled = true; // Prevent the Enter key from being processed further
+                    }
+                }
+            }
         }
     }
 }

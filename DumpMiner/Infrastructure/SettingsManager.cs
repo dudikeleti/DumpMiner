@@ -5,6 +5,12 @@ using System.Runtime.CompilerServices;
 
 namespace DumpMiner.Infrastructure
 {
+    /// <summary>
+    /// Legacy settings manager - DEPRECATED
+    /// Use ConfigurationService instead for new development
+    /// This class is kept only for migration purposes
+    /// </summary>
+    [System.Obsolete("Use ConfigurationService instead. This class is deprecated and will be removed in a future version.")]
     public class SettingsManager
     {
         public const string SymbolCache = "SymbolCache";

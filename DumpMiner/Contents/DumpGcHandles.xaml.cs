@@ -11,7 +11,7 @@ namespace DumpMiner.Contents
         public DumpGcHandles()
         {
             InitializeComponent();
-            ExtendedData = new Dictionary<string, object> {["OperationName"] = OperationNames.DumpGcHnadles};
+            ExtendedData = new Dictionary<string, object> {["OperationName"] = OperationNames.DumpGcHandles};
         }
 
         public void OnFragmentNavigation(FirstFloor.ModernUI.Windows.Navigation.FragmentNavigationEventArgs e)

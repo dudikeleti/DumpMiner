@@ -57,6 +57,7 @@ namespace DumpMiner.Debugger
                 if (type.ComponentType == null || type.ComponentType.IsPrimitive)
                 {
                     var typeName = type.ComponentType?.ElementType.ToString();
+                    var isValueType = array.Type.ComponentType.IsValueType;
                     for (int i = 0; i < len; i++)
                     {
                         if (_cancellationToken.IsCancellationRequested)
@@ -72,7 +73,7 @@ namespace DumpMiner.Debugger
                                 Address = address,
                                 BaseName = baseName,
                                 TypeName = typeName ?? DebuggerSession.Instance.Heap.GetObjectType(address).Name,
-                                Value = array.GetObjectValue(i),
+                                Value = isValueType ? array.GetStructValue(i) : array.GetObjectValue(i),
                                 Offset = address - obj,
                                 MetadataToken = type.ComponentType.MetadataToken
                             });

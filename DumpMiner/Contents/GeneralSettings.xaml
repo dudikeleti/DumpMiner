@@ -20,8 +20,79 @@
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
-                    <TextBlock Margin="4" MinWidth="200">Default timeout</TextBlock>
-                    <TextBox Text="{Binding DefaultTimeout}" MinWidth="250" Margin="4"/>
+                    <TextBlock Margin="4" MinWidth="200">Default timeout (ms)</TextBlock>
+                    <TextBox Text="{Binding DefaultTimeoutMs}" MinWidth="250" Margin="4"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                    <CheckBox Content="Auto check for updates" IsChecked="{Binding AutoCheckUpdates}" Margin="4"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                    <TextBlock Margin="4" MinWidth="200">Max recent files</TextBlock>
+                    <TextBox Text="{Binding MaxRecentFiles}" MinWidth="250" Margin="4"/>
+                </StackPanel>
+
+                <!-- Logging Configuration Section -->
+                <TextBlock Text="Logging Settings"
+                           Style="{StaticResource Heading2}" 
+                           Margin="0,20,0,10"/>
+                <GridSplitter BorderThickness="1"
+                              Height="1"></GridSplitter>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                    <TextBlock Margin="4" MinWidth="200">Log Level</TextBlock>
+                    <ComboBox SelectedValue="{Binding LogLevel}" MinWidth="150" Margin="4">
+                        <ComboBoxItem Content="Debug" Tag="Debug"/>
+                        <ComboBoxItem Content="Information" Tag="Information"/>
+                        <ComboBoxItem Content="Warning" Tag="Warning"/>
+                        <ComboBoxItem Content="Error" Tag="Error"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                    <CheckBox Content="Enable file logging" IsChecked="{Binding EnableFileLogging}" Margin="4"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                    <CheckBox Content="Enable console logging" IsChecked="{Binding EnableConsoleLogging}" Margin="4"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                    <TextBlock Margin="4" MinWidth="200">Log file retention (days)</TextBlock>
+                    <TextBox Text="{Binding LogFileRetentionDays}" MinWidth="100" Margin="4"/>
+                    <TextBlock Text="(1-365 days)" Margin="4" Foreground="Gray" FontSize="10"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                    <TextBlock Margin="4" MinWidth="200">Memory warning threshold (MB)</TextBlock>
+                    <TextBox Text="{Binding MemoryWarningThresholdMB}" MinWidth="100" Margin="4"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                    <CheckBox Content="Enable performance profiling" IsChecked="{Binding EnableProfiling}" Margin="4"/>
+                </StackPanel>
+
+                <!-- Log File Information -->
+                <TextBlock Text="Log Information" 
+                           Style="{StaticResource Heading2}" 
+                           Margin="0,15,0,5"/>
+                
+                <TextBlock Text="{Binding LogFileLocation}" 
+                           Margin="4" 
+                           FontSize="10" 
+                           Foreground="Gray"
+                           TextWrapping="Wrap"/>
+                
+                <StackPanel Orientation="Horizontal" Margin="0,5,0,7">
+                    <Button Content="Open Log Directory" 
+                            Command="{Binding OpenLogDirectoryCommand}" 
+                            Margin="4" 
+                            Padding="8,4"/>
+                    <Button Content="Clear Old Logs" 
+                            Command="{Binding ClearOldLogsCommand}" 
+                            Margin="4" 
+                            Padding="8,4"/>
                 </StackPanel>
 
             </StackPanel>

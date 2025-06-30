@@ -1,6 +1,6 @@
 ﻿using DumpMiner.Common;
 using Microsoft.Diagnostics.Runtime;
-using Microsoft.Diagnostics.Runtime.Utilities.DbgEng;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,7 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using System.Windows.Shell;
+using System.Threading;
 
 namespace DumpMiner.Debugger
 {
@@ -20,7 +20,8 @@ namespace DumpMiner.Debugger
         private const int LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100;
 
         #region members and props
-        private readonly Task _workerTask;
+        private readonly ILogger<DebuggerSession> _logger = LoggingExtensions.CreateLogger<DebuggerSession>();
+        private static readonly TaskScheduler _singleThreadScheduler = new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler;
         private Process _attachedProcess;
         private string _dumpPath;
         public static readonly IDebuggerSession Instance = new DebuggerSession();
@@ -39,8 +40,6 @@ namespace DumpMiner.Debugger
         private DebuggerSession()
         {
             EnsureProperDebugEngineIsLoaded();
-            _workerTask = new Task(() => { });
-            _workerTask.Start();
         }
 
         /// <summary>
@@ -69,18 +68,30 @@ namespace DumpMiner.Debugger
             //}
         }
 
-        public async Task<IEnumerable<object>> ExecuteOperation(Func<IEnumerable<object>> operation)
+        public async Task<IEnumerable<object>?> ExecuteOperation(Func<IEnumerable<object>> operation)
         {
-            IEnumerable<object> result = null;
-            if (DumpReader == CrashDumpReader.ClrMD)
+            using var debuggerOperation = _logger.LogOperation("Execute debugger operation", operation.Method.Name);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            try
             {
-                await Task.Run(() => { result = operation(); });
+                // All operations must be serialized since they access shared DebuggerSession state
+                // (Runtime, Heap, DataTarget instances) which could have race conditions even if
+                // the underlying ClrMD library is thread-safe
+                var result = await Task.Factory.StartNew(operation, CancellationToken.None, TaskCreationOptions.None, _singleThreadScheduler);
+
+                return result;
             }
-            else
+            catch (Exception e)
             {
-                await _workerTask.ContinueWith(t => { result = operation(); });
+                _logger.LogError(e, "Operation {Name} failed", operation.Method.Name);
+                throw;
             }
-            return result;
+            finally
+            {
+                stopwatch.Stop();
+                _logger.LogMemoryUsage($"AfterDebuggerOperation: {operation.Method.Name}");
+                _logger.LogPerformance(operation.Method.Name, stopwatch.Elapsed);
+            }
         }
 
         #region Attach\Detach
@@ -92,16 +103,10 @@ namespace DumpMiner.Debugger
             }
 
             DumpReader = readerType;
-            
-            LoadDump(fileName);
-            return true;
 
-            if (readerType == CrashDumpReader.DbgEng)
-            {
-                return await _workerTask.ContinueWith(task => LoadDump(fileName));
-            }
-
-            return await Task.Run(() => LoadDump(fileName)).ConfigureAwait(false);
+            // Use the single thread scheduler for all dump loading operations
+            return await Task.Factory.StartNew(() => LoadDump(fileName), 
+                CancellationToken.None, TaskCreationOptions.None, _singleThreadScheduler);
         }
 
         private bool LoadDump(string fileName)
@@ -128,7 +133,7 @@ namespace DumpMiner.Debugger
 
             _attachedProcess = process;
 
-            _workerTask.ContinueWith(task =>
+            Task.Factory.StartNew(() =>
             {
                 try
                 {
@@ -153,7 +158,7 @@ namespace DumpMiner.Debugger
                     }
                     catch { }
                 }
-            }).Wait();
+            }, CancellationToken.None, TaskCreationOptions.None, _singleThreadScheduler).Wait();
         }
 
         private (bool succeeded, string error) CreateRuntime()
@@ -185,7 +190,7 @@ namespace DumpMiner.Debugger
 
         public void Detach()
         {
-            _workerTask.ContinueWith(t =>
+            Task.Factory.StartNew(() =>
             {
                 try
                 {
@@ -199,7 +204,7 @@ namespace DumpMiner.Debugger
                     }
                     catch { }
                 }
-            });
+            }, CancellationToken.None, TaskCreationOptions.None, _singleThreadScheduler);
         }
 
         private void Process_Exited(object sender, EventArgs e)

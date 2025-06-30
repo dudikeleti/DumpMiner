@@ -17,7 +17,9 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <ApplicationVersion>2.0.0.%2a</ApplicationVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
@@ -25,6 +27,7 @@
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <ApplicationIcon>digg.ico</ApplicationIcon>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
@@ -62,7 +65,6 @@
       <HintPath>..\..\..\..\External Libraries\MahApps.Metro\net45\System.Windows.Interactivity.dll</HintPath>
     </Reference>
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
-    <PackageReference Include="Betalgo.OpenAI" Version="8.7.2" />
     <PackageReference Include="ICSharpCode.Decompiler" Version="9.1.0.7988" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.5" />
     <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.621003" />
@@ -78,7 +80,25 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.5" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.5" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="9.0.5" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.57.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.57.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.57.0-alpha" />
+    <PackageReference Include="Anthropic.SDK" Version="5.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.5" />
     <PackageReference Include="ModernUI.WPF" Version="1.0.9" />
+    <PackageReference Include="Serilog" Version="4.3.0" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.Datadog.Logs" Version="0.5.6" />
+    <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="SharpDisasm" Version="1.1.11" />
     <PackageReference Include="System.Collections.Immutable" Version="9.0.5" />
     <PackageReference Include="System.ComponentModel.Composition" Version="9.0.5" />
@@ -93,6 +113,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="digg.ico" />
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5.1">

@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
@@ -15,11 +15,11 @@ namespace DumpMiner.Operations
 {
     // !ClrStack
     [Export(OperationNames.DumpClrStack, typeof(IDebuggerOperation))]
-    class DumpClrStackOperation : IDebuggerOperation
+    class DumpClrStackOperation : BaseAIOperation
     {
-        public string Name => OperationNames.DumpClrStack;
+        public override string Name => OperationNames.DumpClrStack;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
+        public override async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
             //TODO: support local variables 
             return await DebuggerSession.Instance.ExecuteOperation(() =>
@@ -84,7 +84,7 @@ namespace DumpMiner.Operations
                             continue;
 
                         // not an object
-                        ClrType type = heap.GetObjectType(obj);
+                        var type = heap.GetObjectType(obj);
                         if (type == null)
                             continue;
 
@@ -111,37 +111,25 @@ namespace DumpMiner.Operations
             });
         }
 
-        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        protected override void AddOperationSpecificSuggestions(
+            StringBuilder insights,
+            Collection<object> operationResults,
+            Dictionary<string, int> typeGroups)
         {
-            var prompt = model.GptPrompt.ToString();
-            if (prompt.Contains(Gpt.Variables.callstack))
+            // Stack-specific suggestions
+            insights.AppendLine("• Stack frames available - recommend DumpSourceCode for code analysis");
+            insights.AppendLine("• Consider DumpMethods for detailed method information");
+
+            var stackDumps = operationResults.OfType<ClrStackDump>().ToList();
+            if (stackDumps.Any(s => s.Exception != null))
             {
-                var callstack = GetCallstack(items.Cast<ClrStackDump>());
-                model.GptPrompt = model.GptPrompt.Replace(Gpt.Variables.callstack, callstack);
+                insights.AppendLine("• Exceptions detected in stack traces - recommend DumpExceptions for detailed analysis");
             }
 
-            if (prompt.Contains(Gpt.Variables.values))
+            if (stackDumps.Any(s => s.StackFrames?.Count > 100))
             {
-                var values = GetFrameValues(items.Cast<ClrStackDump>());
-                model.GptPrompt = model.GptPrompt.Replace(Gpt.Variables.values, values);
+                insights.AppendLine("• Deep call stacks detected - potential recursion or performance issues");
             }
-
-            return await Gpt.Ask(new[] { "You are an assembly code and a C# code expert." }, new[] { $"{model.GptPrompt}" });
-        }
-
-        private string GetFrameValues(IEnumerable<ClrStackDump> callstack)
-        {
-            // todo: format values in a sensible json
-            return string.Join(Environment.NewLine,
-                callstack.SelectMany(frame =>
-                    frame.StackObjects.Select(so =>
-                        $"{so.Name}: {string.Join(Environment.NewLine, so.Value.Select(v => $"{v.FieldName} = {v.Value}"))}")));
-        }
-
-        private string GetCallstack(IEnumerable<ClrStackDump> callstack)
-        {
-            return string.Join(Environment.NewLine,
-                callstack.SelectMany(frame => frame.StackFrames.Select(frame2 => frame2.DisplayString)));
         }
 
         private class ClrStackDump

@@ -4,55 +4,196 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:mui="http://firstfloorsoftware.com/ModernUI"
-             xmlns:contents="clr-namespace:DumpMiner.Contents"
+             xmlns:ui="clr-namespace:DumpMiner.Infrastructure.UI"
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300">
-    <Grid Style="{StaticResource ContentRoot}" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+             d:DesignHeight="800" d:DesignWidth="1200">
+
+    <UserControl.Resources>
+        <ui:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+    </UserControl.Resources>
+    
+    <Grid Style="{StaticResource ContentRoot}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition Width="0.1*"></ColumnDefinition>
-            <ColumnDefinition></ColumnDefinition>
-        </Grid.ColumnDefinitions>
-        <Grid.Resources>
-            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-                <EventSetter Event="MouseEnter" Handler="UIElement_OnMouseEnter"></EventSetter>
-            </Style>
-        </Grid.Resources>
 
-        <mui:ModernProgressRing  Grid.Row="0" Grid.RowSpan="3" IsActive="{Binding IsLoading}" Panel.ZIndex="1" Width="80" Height="80"/>
-        <StackPanel  Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
-            <TextBlock>This screen will give you a look inside the dump or the process to see some useful information for common scenarios like a memory leak or dead locks. In the future I plan to support a predefined scripts to run custom analyze commands</TextBlock>
-            <mui:ModernButton Content="Run auto analysis" Command="{Binding ExecuteOperationCommand}" Padding="7"
-                              IconData="M17.12,10L16.04,8.18L15.31,11.05L17.8,15.59V22H16V17L13.67,13.89L12.07,18.4L7.25,20.5L6.2,19L10.39,16.53L12.91,6.67L10.8,7.33V11H9V5.8L14.42,4.11L14.92,4.03C15.54,4.03 16.08,4.37 16.38,4.87L18.38,8.2H22V10H17.12M17,3.8C16,3.8 15.2,3 15.2,2C15.2,1 16,0.2 17,0.2C18,0.2 18.8,1 18.8,2C18.8,3 18,3.8 17,3.8M7,9V11H4A1,1 0 0,1 3,10A1,1 0 0,1 4,9H7M9.25,13L8.75,15H5A1,1 0 0,1 4,14A1,1 0 0,1 5,13H9.25M7,5V7H3A1,1 0 0,1 2,6A1,1 0 0,1 3,5H7Z"/>
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="🔍 Professional Dump Analysis" Style="{StaticResource Heading1}"/>
+            <TextBlock Text="AI-powered comprehensive crash dump analysis with automated root cause identification and actionable recommendations" 
+                       Style="{StaticResource Fixed}" Margin="0,4,0,16"/>
+            
+            <DockPanel>
+                <mui:ModernButton Content="Start Analysis" Command="{Binding StartAnalysisCommand}" 
+                                  DockPanel.Dock="Left" Margin="0,0,8,0"
+                                  IconData="M17.12,10L16.04,8.18L15.31,11.05L17.8,15.59V22H16V17L13.67,13.89L12.07,18.4L7.25,20.5L6.2,19L10.39,16.53L12.91,6.67L10.8,7.33V11H9V5.8L14.42,4.11L14.92,4.03C15.54,4.03 16.08,4.37 16.38,4.87L18.38,8.2H22V10H17.12M17,3.8C16,3.8 15.2,3 15.2,2C15.2,1 16,0.2 17,0.2C18,0.2 18.8,1 18.8,2C18.8,3 18,3.8 17,3.8M7,9V11H4A1,1 0 0,1 3,10A1,1 0 0,1 4,9H7M9.25,13L8.75,15H5A1,1 0 0,1 4,14A1,1 0 0,1 5,13H9.25M7,5V7H3A1,1 0 0,1 2,6A1,1 0 0,1 3,5H7Z"/>
+                <mui:ModernButton Content="Cancel" Command="{Binding CancelAnalysisCommand}" 
+                                  DockPanel.Dock="Left" Margin="0,0,8,0"
+                                  IconData="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                <mui:ModernButton Content="Diagnostics" Command="{Binding ShowDiagnosticsCommand}" 
+                                  DockPanel.Dock="Left" Margin="0,0,16,0"
+                                  IconData="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10M10,22C9.75,22 9.54,21.82 9.5,21.58L9.13,18.93C8.5,18.68 7.96,18.34 7.44,17.94L4.95,18.95C4.73,19.03 4.46,18.95 4.34,18.73L2.34,15.27C2.21,15.05 2.27,14.78 2.46,14.63L4.57,12.97L4.5,12L4.57,11L2.46,9.37C2.27,9.22 2.21,8.95 2.34,8.73L4.34,5.27C4.46,5.05 4.73,4.96 4.95,5.05L7.44,6.05C7.96,5.66 8.5,5.32 9.13,5.07L9.5,2.42C9.54,2.18 9.75,2 10,2H14C14.25,2 14.46,2.18 14.5,2.42L14.87,5.07C15.5,5.32 16.04,5.66 16.56,6.05L19.05,5.05C19.27,4.96 19.54,5.05 19.66,5.27L21.66,8.73C21.79,8.95 21.73,9.22 21.54,9.37L19.43,11L19.5,12L19.43,13L21.54,14.63C21.73,14.78 21.79,15.05 21.66,15.27L19.66,18.73C19.54,18.95 19.27,19.04 19.05,18.95L16.56,17.95C16.04,18.34 15.5,18.68 14.87,18.93L14.5,21.58C14.46,21.82 14.25,22 14,22H10M11.25,4L10.88,6.61C9.68,6.86 8.62,7.5 7.85,8.39L5.44,7.35L4.69,8.65L6.8,10.2C6.4,11.37 6.4,12.64 6.8,13.8L4.68,15.36L5.43,16.66L7.86,15.62C8.63,16.5 9.68,17.14 10.87,17.38L11.24,20H12.76L13.13,17.39C14.32,17.14 15.37,16.5 16.14,15.62L18.57,16.66L19.32,15.36L17.2,13.81C17.6,12.64 17.6,11.37 17.2,10.2L19.31,8.65L18.56,7.35L16.15,8.39C15.38,7.5 14.32,6.86 13.12,6.62L12.75,4H11.25Z"/>
+                <TextBlock Text="{Binding AnalysisStatus}" DockPanel.Dock="Right" VerticalAlignment="Center" FontWeight="SemiBold"/>
+            </DockPanel>
         </StackPanel>
 
-        <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Height="3" BorderBrush="GhostWhite" Margin="0, 4, 0, 7" ></GridSplitter>
-
-        <StackPanel Grid.Row="2" Grid.Column="0">
-            <TextBlock Text="Large Objects (gen 2)" Style="{StaticResource Heading2}" Background="{StaticResource ButtonBackgroundHover}" Padding="3, 3, 0, 5" ></TextBlock>
-            <TextBox Text="{Binding HeapStats}" Margin="0,0,0,10"/>
-
-            <TextBlock Text="Large object roots" Style="{StaticResource Heading2}" Background="{StaticResource ButtonBackgroundHover}" Padding="3, 3, 0, 5"></TextBlock>
-            <TextBox Name="txt_roots" Text="{Binding Roots}" />
-        </StackPanel>
-
-        <StackPanel Grid.Row="2" Grid.Column="2">
-            <TextBlock Text="Sync block" Style="{StaticResource Heading2}" Background="{StaticResource ButtonBackgroundHover}" Padding="3, 3, 0, 5"></TextBlock>
-            <TextBox Text="{Binding SyncBlock}" Margin="0,0,0,10"/>
-
-            <WrapPanel HorizontalAlignment="Stretch" Background="{StaticResource ButtonBackgroundHover}">
-                <TextBlock Text="Exceptions" Style="{StaticResource Heading2}"  Padding="3, 3, 0, 5"></TextBlock>
-                <TextBlock VerticalAlignment="Bottom" FontSize="12" FontStyle="Italic" Padding="10, 3, 0, 5">(OOM, StackOverflow, InvalidProgram, BadImage, AccessViolation, ExecutionEngine)</TextBlock>
-            </WrapPanel>
-            <TextBox Text="{Binding Exceptions}" />
-        </StackPanel>
-
-
-
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel>
+                <!-- Progress Indicator -->
+                <mui:ModernProgressRing IsActive="{Binding IsAnalysisRunning}" 
+                                        Visibility="{Binding IsAnalysisRunning, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                        Width="100" Height="100" HorizontalAlignment="Center" Margin="0,50,0,50"/>
+                
+                <!-- Results Container -->
+                <StackPanel Visibility="{Binding HasAnalysisResults, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    
+                    <!-- Summary Cards -->
+                    <UniformGrid Columns="3" Margin="0,0,0,16">
+                        <Border Background="{StaticResource ButtonBackground}" Margin="4" Padding="16" BorderBrush="{StaticResource ButtonBorder}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="📊 Memory Analysis" Style="{StaticResource Heading2}" Foreground="#2196F3"/>
+                                <TextBlock Text="{Binding TotalObjects}" FontSize="28" FontWeight="Bold" Margin="0,4,0,2"/>
+                                <TextBlock Text="Objects Analyzed" FontSize="12" Opacity="0.7"/>
+                                <TextBlock Text="{Binding TotalMemoryUsage}" FontSize="14" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <Border Background="{StaticResource ButtonBackground}" Margin="4" Padding="16" BorderBrush="{StaticResource ButtonBorder}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="🧵 Threading Health" Style="{StaticResource Heading2}" Foreground="#4CAF50"/>
+                                <TextBlock Text="{Binding ThreadCount}" FontSize="28" FontWeight="Bold" Margin="0,4,0,2"/>
+                                <TextBlock Text="Active Threads" FontSize="12" Opacity="0.7"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <Border Background="{StaticResource ButtonBackground}" Margin="4" Padding="16" BorderBrush="{StaticResource ButtonBorder}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="⚠️ Exception Status" Style="{StaticResource Heading2}" Foreground="#FF9800"/>
+                                <TextBlock Text="{Binding ExceptionCount}" FontSize="28" FontWeight="Bold" Margin="0,4,0,2"/>
+                                <TextBlock Text="Exceptions Found" FontSize="12" Opacity="0.7"/>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                    
+                    <!-- Critical Issues -->
+                    <Border Background="{StaticResource ButtonBackgroundHover}" Margin="0,0,0,16" Padding="16" BorderBrush="#FF6B4B" BorderThickness="2">
+                        <StackPanel>
+                            <TextBlock Text="🚨 Critical Issues &amp; Immediate Actions" Style="{StaticResource Heading2}" Foreground="#FF6B4B"/>
+                            <ItemsControl ItemsSource="{Binding CriticalIssues}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4">
+                                            <TextBlock Text="⚠️" FontSize="16" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+                                        Visibility="{Binding CriticalIssues.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=0}">
+                                <TextBlock Text="✅" FontSize="16" Margin="0,0,8,0"/>
+                                <TextBlock Text="No critical issues detected - dump appears stable" 
+                                           Foreground="#4CAF50" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Root Cause Analysis -->
+                    <Border Background="{StaticResource ButtonBackground}" Margin="0,0,0,16" Padding="16" BorderBrush="{StaticResource ButtonBorder}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="🎯 AI-Powered Root Cause Analysis" Style="{StaticResource Heading2}" Foreground="#9C27B0"/>
+                            <TextBlock Text="{Binding RootCauseSummary}" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,8" TextWrapping="Wrap"/>
+                            <Expander Header="📋 Detailed Analysis Report" IsExpanded="False" Margin="0,8,0,0">
+                                <TextBox Text="{Binding AIAnalysis}" IsReadOnly="True" TextWrapping="Wrap" 
+                                         BorderThickness="0" Background="Transparent" MaxHeight="300"
+                                         VerticalScrollBarVisibility="Auto" FontFamily="Consolas"/>
+                            </Expander>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Analysis Tabs -->
+                    <TabControl Margin="0,8,0,0">
+                        <TabItem Header="💾 Memory Deep Dive">
+                            <ScrollViewer Padding="16">
+                                <StackPanel>
+                                    <TextBlock Text="Memory Usage Patterns &amp; Optimization Opportunities" 
+                                               Style="{StaticResource Heading2}" Margin="0,0,0,8"/>
+                                    <TextBox Text="{Binding MemoryAnalysis}" IsReadOnly="True" TextWrapping="Wrap"
+                                             BorderThickness="0" Background="Transparent" FontFamily="Consolas" MinHeight="200"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+                        
+                        <TabItem Header="🧵 Threading Analysis">
+                            <ScrollViewer Padding="16">
+                                <StackPanel>
+                                    <TextBlock Text="Thread State Analysis &amp; Concurrency Issues" 
+                                               Style="{StaticResource Heading2}" Margin="0,0,0,8"/>
+                                    <TextBox Text="{Binding ThreadingAnalysis}" IsReadOnly="True" TextWrapping="Wrap"
+                                             BorderThickness="0" Background="Transparent" FontFamily="Consolas" MinHeight="200"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+                        
+                        <TabItem Header="⚠️ Exception Forensics">
+                            <ScrollViewer Padding="16">
+                                <StackPanel>
+                                    <TextBlock Text="Exception Chain Analysis &amp; Root Cause Identification" 
+                                               Style="{StaticResource Heading2}" Margin="0,0,0,8"/>
+                                    <TextBox Text="{Binding ExceptionAnalysis}" IsReadOnly="True" TextWrapping="Wrap"
+                                             BorderThickness="0" Background="Transparent" FontFamily="Consolas" MinHeight="200"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+                        
+                        <TabItem Header="💡 Action Plan">
+                            <ScrollViewer Padding="16">
+                                <StackPanel>
+                                    <TextBlock Text="Prioritized Recommendations &amp; Fix Strategies" 
+                                               Style="{StaticResource Heading2}" Margin="0,0,0,16"/>
+                                    <ItemsControl ItemsSource="{Binding Recommendations}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{StaticResource ButtonBackgroundHover}" 
+                                                        BorderBrush="{StaticResource ButtonBorder}" 
+                                                        BorderThickness="1" Margin="0,0,0,12" Padding="16">
+                                                    <StackPanel>
+                                                        <DockPanel Margin="0,0,0,8">
+                                                            <Border Background="#FF6B4B" CornerRadius="12" Padding="6,2" DockPanel.Dock="Left" Margin="0,0,8,0">
+                                                                <TextBlock Text="{Binding Priority}" Foreground="White" FontSize="10" FontWeight="Bold"/>
+                                                            </Border>
+                                                            <Border Background="#2196F3" CornerRadius="12" Padding="6,2" DockPanel.Dock="Left">
+                                                                <TextBlock Text="{Binding Category}" Foreground="White" FontSize="10" FontWeight="SemiBold"/>
+                                                            </Border>
+                                                        </DockPanel>
+                                                        <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="0,0,0,8" Opacity="0.8"/>
+                                                        <ItemsControl ItemsSource="{Binding ActionItems}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                                        <TextBlock Text="▶" FontSize="10" Margin="0,0,6,0" Foreground="#4CAF50"/>
+                                                                        <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12"/>
+                                                                    </StackPanel>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="🎉 No specific recommendations at this time. Your application appears to be performing well!" 
+                                               FontStyle="Italic" HorizontalAlignment="Center" Margin="0,20"
+                                               Visibility="{Binding Recommendations.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=0}"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+                    </TabControl>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>

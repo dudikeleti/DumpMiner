@@ -7,19 +7,20 @@ using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
+using DumpMiner.Operations.Shared;
 using Microsoft.Diagnostics.Runtime;
 
 namespace DumpMiner.Operations
 {
     [Export(OperationNames.GetObjectRoot, typeof(IDebuggerOperation))]
-    class GetObjectRootOperation : IDebuggerOperation
+    class GetObjectRootOperation : BaseAIOperation
     {
         private ClrHeap _heap;
         private bool _found;
         private CancellationToken _token;
-        public string Name => OperationNames.GetObjectRoot;
+        public override string Name => OperationNames.GetObjectRoot;
 
-        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
+        public override async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
@@ -44,9 +45,88 @@ namespace DumpMiner.Operations
             });
         }
 
-        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        public override string GetAIInsights(Collection<object> operationResults)
         {
-            throw new System.NotImplementedException();
+            var insights = new System.Text.StringBuilder();
+            insights.AppendLine($"Object Root Analysis: {operationResults.Count} objects in reference chain");
+
+            if (!operationResults.Any()) 
+            {
+                insights.AppendLine("⚠️ No root path found - object may be unreachable or already collected");
+                return insights.ToString();
+            }
+
+            // Analyze the reference chain
+            var chain = operationResults.Select(r => new 
+            { 
+                Address = OperationHelpers.GetPropertyValue<ulong>(r, "Address", 0),
+                Type = OperationHelpers.GetPropertyValue<string>(r, "Type", "Unknown")
+            }).ToList();
+
+            insights.AppendLine("Reference chain (root to target):");
+            for (int i = 0; i < chain.Count; i++)
+            {
+                var obj = chain[i];
+                var indent = new string(' ', i * 2);
+                insights.AppendLine($"{indent}{i + 1}. {obj.Type} ({OperationHelpers.FormatAddress(obj.Address)})");
+            }
+
+            // Analyze root types
+            var rootTypes = OperationHelpers.GetTopGroups(chain, obj => obj.Type);
+            if (rootTypes.Any())
+            {
+                insights.AppendLine("\nTypes in reference chain:");
+                foreach (var typeGroup in rootTypes.Take(5))
+                {
+                    insights.AppendLine($"  {typeGroup.Key}: {typeGroup.Value} instances");
+                }
+            }
+
+            // Analyze potential retention issues
+            var potentialIssues = new List<string>();
+            
+            if (chain.Count > 10)
+                potentialIssues.Add("⚠️ Long reference chain - complex object relationships");
+                
+            if (chain.Any(obj => obj.Type.Contains("EventHandler") || obj.Type.Contains("Delegate")))
+                potentialIssues.Add("⚠️ Event handlers/delegates in chain - potential subscription leak");
+                
+            if (chain.Any(obj => obj.Type.Contains("Cache") || obj.Type.Contains("Dictionary")))
+                potentialIssues.Add("⚠️ Cache/collection in chain - may need cleanup");
+
+            if (potentialIssues.Any())
+            {
+                insights.AppendLine("\nPotential Issues:");
+                foreach (var issue in potentialIssues)
+                {
+                    insights.AppendLine($"  {issue}");
+                }
+            }
+
+            insights.AppendLine("\nKey Information:");
+            insights.AppendLine("- Reference chain shows why object is kept alive");
+            insights.AppendLine("- Break references at any point to allow collection");
+            insights.AppendLine("- Focus on root objects for memory management");
+
+            return insights.ToString();
+        }
+
+        public override string GetSystemPromptAdditions()
+        {
+            return @"
+OBJECT ROOT ANALYSIS SPECIALIZATION:
+- Focus on memory retention and reference chain analysis
+- Identify root causes preventing garbage collection
+- Analyze reference patterns and potential memory leaks
+- Look for event subscription issues and circular references
+
+When analyzing object root data, pay attention to:
+1. Length of reference chains (complexity indicator)
+2. Event handlers and delegates keeping objects alive
+3. Static references preventing collection
+4. Collections and caches that might need pruning
+5. Circular reference patterns that block GC
+";
         }
 
         private void GetRefChainFromRootToObject(ulong objPtr, Stack<ulong> refChain, HashSet<ulong> visited)

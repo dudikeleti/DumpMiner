@@ -30,7 +30,7 @@ namespace DumpMiner.Contents
         {
         }
 
-        public string ViewModelName => ViewModelNames.DumpHeapOperationViewModel;
+        public string ViewModelName => ViewModelNames.DumpLargeObjectsViewModel;
 
         public bool IsViewModelLoaded { get; set; }
 

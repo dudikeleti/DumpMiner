@@ -2,22 +2,24 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
+using DumpMiner.Operations.Shared;
 using Microsoft.Diagnostics.Runtime;
 using static DumpMiner.Debugger.ClrObject;
 
 namespace DumpMiner.Operations
 {
     [Export(OperationNames.DumpArrayItem, typeof(IDebuggerOperation))]
-    class DumpArrayItemOperation : IDebuggerOperation
+    class DumpArrayItemOperation : BaseAIOperation
     {
-        public string Name => OperationNames.DumpArrayItem;
+        public override string Name => OperationNames.DumpArrayItem;
 
-        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
+        public override async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
@@ -62,9 +64,60 @@ namespace DumpMiner.Operations
             });
         }
 
-        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        public override string GetAIInsights(Collection<object> operationResults)
         {
-            throw new NotImplementedException();
+            var insights = new System.Text.StringBuilder();
+            insights.AppendLine($"Array Item Analysis: {operationResults.Count} fields");
+
+            if (!operationResults.Any()) 
+            {
+                insights.AppendLine("⚠️ No array item data found");
+                return insights.ToString();
+            }
+
+            // Analyze the array item's fields
+            var fieldTypes = OperationHelpers.GetTopGroups(operationResults, 
+                field => OperationHelpers.GetPropertyValue<string>(field, "TypeName", "Unknown"));
+
+            insights.AppendLine("Field types:");
+            foreach (var fieldType in fieldTypes.Take(5))
+            {
+                insights.AppendLine($"  {fieldType.Key}: {fieldType.Value} fields");
+            }
+
+            // Check for potential issues
+            var totalSize = operationResults.Sum(field => 
+                (long)OperationHelpers.GetPropertyValue<ulong>(field, "Size", 0));
+
+            if (totalSize > 10_000_000) // 10MB
+            {
+                insights.AppendLine("\nPotential Issues:");
+                insights.AppendLine("  ⚠️ Large array element - may indicate memory bloat");
+            }
+
+            insights.AppendLine("\nKey Information:");
+            insights.AppendLine("- Array element structure shows memory layout");
+            insights.AppendLine("- Use DumpObject on individual fields for deeper analysis");
+
+            return insights.ToString();
+        }
+
+        public override string GetSystemPromptAdditions()
+        {
+            return @"
+ARRAY ITEM ANALYSIS SPECIALIZATION:
+- Focus on array element structure and field analysis
+- Identify primitive vs reference type patterns
+- Analyze memory layout and potential optimization opportunities
+- Look for unexpected field values or types
+
+When analyzing array item data, pay attention to:
+1. Field types distribution and memory usage
+2. Large elements that might indicate bloated objects
+3. Reference patterns that might affect GC
+4. Primitive field values for data validation
+5. Nested object references that might need investigation
+";
         }
     }
 }

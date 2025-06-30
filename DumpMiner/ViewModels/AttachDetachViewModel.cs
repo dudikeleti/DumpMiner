@@ -19,10 +19,8 @@ using DumpMiner.Debugger;
 using DumpMiner.Infrastructure.Mef;
 using DumpMiner.Models;
 using DumpMiner.Services;
-using DumpMiner.ViewModels;
-using FirstFloor.ModernUI.Presentation;
 using FirstFloor.ModernUI.Windows.Controls;
-using Microsoft.Diagnostics.Runtime;
+using FirstFloor.ModernUI.Presentation;
 using Microsoft.Win32;
 
 namespace DumpMiner.ViewModels
@@ -552,9 +550,9 @@ namespace DumpMiner.ViewModels
 
                 // Wait for the dialog result using the ViewModel's async method
                 var dialogTask = viewModel.ShowDialogAsync();
-                
+
                 var dialogResult = dialogWindow.ShowDialog();
-                
+
                 if (dialogResult == true)
                 {
                     var result = await dialogTask;

@@ -8,7 +8,7 @@ using System.Windows;
 using System.Windows.Input;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
-using DumpMiner.Infrastructure;
+using DumpMiner.Services.Configuration;
 using DumpMiner.Infrastructure.Mef;
 using DumpMiner.Models;
 using FirstFloor.ModernUI.Presentation;
@@ -29,15 +29,10 @@ namespace DumpMiner.ViewModels
             CancelOperationVisibility = Visibility.Collapsed;
             Model = new OperationModel();
             _results = new List<object[]>();
-            var setting = SettingsManager.Instance.ReadSettingValue(SettingsManager.DefaultTimeout);
-            if (int.TryParse(setting, out var timeout))
-            {
-                _defaultTimeout = TimeSpan.FromSeconds(timeout);
-            }
-            else
-            {
-                _defaultTimeout = TimeSpan.FromSeconds(60);
-            }
+
+            var configService = ConfigurationService.Instance;
+            var timeoutMs = configService.Configuration.General.DefaultTimeoutMs;
+            _defaultTimeout = TimeSpan.FromMilliseconds(timeoutMs);
         }
 
         public virtual IDebuggerOperation Operation { get; set; }
@@ -53,13 +48,13 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        private bool _isGptEnabled;
-        public bool IsGptEnabled
+        private bool _isAiEnabled;
+        public bool IsAiEnabled
         {
-            get { return _isGptEnabled; }
+            get { return _isAiEnabled; }
             set
             {
-                _isGptEnabled = value;
+                _isAiEnabled = value;
                 OnPropertyChanged();
             }
         }
@@ -75,7 +70,18 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        public ObservableCollection<GptChat> Conversation
+        private object _selectedItem;
+        public object SelectedItem
+        {
+            get { return _selectedItem; }
+            set
+            {
+                _selectedItem = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ObservableCollection<ConversationMessage> Conversation
         {
             get { return Model.Chat; }
             set
@@ -85,23 +91,23 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        private string _gptQuestion;
-        public string GptQuestion
+        private string _aiQuestion;
+        public string AiQuestion
         {
-            get { return _gptQuestion; }
+            get { return _aiQuestion; }
             set
             {
-                _gptQuestion = value;
+                _aiQuestion = value;
                 OnPropertyChanged();
             }
         }
 
-        public StringBuilder GptPrompt
+        public StringBuilder UserPrompt
         {
-            get { return Model.GptPrompt; }
+            get { return Model.UserPrompt; }
             set
             {
-                Model.GptPrompt = value;
+                Model.UserPrompt = value;
                 OnPropertyChanged();
             }
         }
@@ -155,6 +161,16 @@ namespace DumpMiner.ViewModels
                 App.Container.GetExport<IDialogService>().Value.ShowDialog("Process is detached");
                 return;
             }
+
+            // Store the custom parameter in the model for AI context
+            Model.CustomParameter = o;
+
+            // Set the custom parameter description if the operation supports AI
+            if (Operation is IAIEnabledOperation aiOperation)
+            {
+                Model.CustomParameterDescription = aiOperation.GetCustomParameterDescription(o);
+            }
+
             CancelOperationVisibility = Visibility.Visible;
             Items = null;
             Count = 0;
@@ -182,27 +198,9 @@ namespace DumpMiner.ViewModels
             }
 
             OnOperationCompleted();
-            //Observe(result, _cancellationToken.Token).SubscribeOn(Scheduler.Default).Buffer(TimeSpan.FromMilliseconds(100))
-            //    .ObserveOn(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher, DispatcherPriority.Normal))
-            //    .Subscribe(
-            //        onNext =>
-            //        {
-            //            if (onNext == null) return;
-            //            foreach (var value in onNext)
-            //                Items.Add(value);
-            //            Count = Items.Count;
-            //            OnPropertyChanged("Count");
-            //        },
-            //        ex =>
-            //        {
-            //            OnOperationCompleted();
-            //            if (ex is OperationCanceledException)
-            //                App.Container.GetExport<IDialogService>().Value.ShowDialog("Operation is canceled");
-            //        },
-            //        OnOperationCompleted);
         }
 
-        public async void AskGpt(object o)
+        public async void AskAi(object o)
         {
             if (!DebuggerSession.Instance.IsAttached)
             {
@@ -211,17 +209,20 @@ namespace DumpMiner.ViewModels
                 return;
             }
 
-            Conversation.Add(new GptChat { Text = GptQuestion, Type = "@user" });
+            // Ensure we preserve the original operation context for AI analysis
+            // If no parameter is passed (like from UI button), use null but preserve existing CustomParameter
+            var parameterToPass = o;
 
+            // Don't add messages here - let the operation handle conversation management
             CancelOperationVisibility = Visibility.Visible;
             IsLoading = true;
             CancellationTokenSource = new CancellationTokenSource(_defaultTimeout);
-            GptPrompt.Append(GptQuestion);
+            UserPrompt.Append(AiQuestion);
             try
             {
-                var gptResult = await Operation.AskGpt(Model, Items, CancellationTokenSource.Token, o);
-                Conversation.Add(new GptChat { Text = gptResult, Type = "@gpt" });
-                GptPrompt.Append(gptResult);
+                var aiResult = await Operation.AskAi(Model, Items, CancellationTokenSource.Token, parameterToPass);
+                // Messages are now handled internally in the operation
+                // Note: UserPrompt is now handled internally in operations
             }
             catch (OperationCanceledException)
             {
@@ -236,7 +237,9 @@ namespace DumpMiner.ViewModels
             CancelOperationVisibility = Visibility.Collapsed;
             CancellationTokenSource.Dispose();
             CancellationTokenSource = null;
-            GptQuestion = null;
+            AiQuestion = null;
+            // Clear the user prompt for next interaction
+            UserPrompt.Clear();
         }
 
         private void OnOperationCompleted()
@@ -248,44 +251,12 @@ namespace DumpMiner.ViewModels
             if (Count > 0)
                 _resultsCurrentIndex = _results.Count - 1;
 
-            IsGptEnabled = true;
+            IsAiEnabled = true;
             CancellationTokenSource.Dispose();
             CancellationTokenSource = null;
             ((RelayCommand)GoToNextResultCommand).OnCanExecuteChanged();
             ((RelayCommand)GoToPreResultCommand).OnCanExecuteChanged();
         }
-
-        //private IObservable<object> Observe(IEnumerable<object> enumerable, CancellationToken token)
-        //{
-        //return Observable.Create<object>(observer =>
-        // {
-        //     try
-        //     {
-        //         var items = new List<object>();
-        //         int count = 0;
-        //         foreach (var item in enumerable)
-        //         {
-        //             token.ThrowIfCancellationRequested();
-        //             items.Add(item);
-        //             observer.OnNext(item);
-        //             if (++count > 500)
-        //             {
-        //                 Thread.Sleep(8);
-        //                 count = 0;
-        //             }
-        //         }
-        //         if (items.Count > 0)
-        //             _results.Add(items.ToArray());
-        //         observer.OnCompleted();
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         observer.OnError(ex);
-        //     }
-
-        //     return Disposable.Empty;
-        // });
-        //}
 
         private RelayCommand _cancelOperationCommand;
         [Command("cmd://OperationCommands/CancelOperationCommand")]
@@ -342,14 +313,14 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        private ICommand _askGptCommand;
-        public ICommand AskGptCommand
+        private ICommand _askAiCommand;
+        public ICommand AskAiCommand
         {
             get
             {
-                return _askGptCommand ??
-                       (_askGptCommand = new RelayCommand(AskGpt,
-                           o => _results.Count > 0 && Operation != null && DebuggerSession.Instance.IsAttached && !string.IsNullOrEmpty(GptQuestion)));
+                return _askAiCommand ??
+                       (_askAiCommand = new RelayCommand(AskAi,
+                           o => _results.Count > 0 && Operation != null && DebuggerSession.Instance.IsAttached && !string.IsNullOrEmpty(AiQuestion)));
             }
         }
 
@@ -359,7 +330,7 @@ namespace DumpMiner.ViewModels
             {
                 Items = null;
                 Conversation = null;
-                GptPrompt = null;
+                UserPrompt = null;
                 Types = null;
                 ObjectAddress = 0;
                 NumOfResults = 0;

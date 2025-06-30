@@ -1,14 +1,20 @@
-﻿using System.ComponentModel.Composition.Hosting;
-using System.Globalization;
+﻿using System;
+using System.ComponentModel.Composition.Hosting;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Media;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
-using DumpMiner.Infrastructure;
+using DumpMiner.Services.Configuration;
 using DumpMiner.Infrastructure.Mef;
 using DumpMiner.ViewModels;
+using DumpMiner.Services.AI;
+using DumpMiner.Services.AI.Bootstrap;
 using FirstFloor.ModernUI.Presentation;
+using Microsoft.Extensions.Configuration;
+using Serilog;
+using Serilog.Extensions.Logging;
 
 namespace DumpMiner
 {
@@ -16,6 +22,7 @@ namespace DumpMiner
     {
         public static CompositionContainer Container { get; set; }
         internal static IDialogService Dialog { get; private set; }
+        public static AIHelper AIHelper { get; private set; }
 
         private static IViewModelLoader _viewModelLoader;
 
@@ -42,34 +49,116 @@ namespace DumpMiner
 
             Dialog = App.Container.GetExport<IDialogService>().Value;
 
+            // Initialize AI Services
+            InitializeAIServices();
+
             DebuggerSession.Instance.OnDetach += OnDetach;
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
-            DebuggerSession.Instance.Detach();
-            base.OnExit(e);
+            var logger = Log.ForContext<App>();
+
+            try
+            {
+                logger.Information("Application shutting down");
+                DebuggerSession.Instance.Detach();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error during application shutdown");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+                base.OnExit(e);
+            }
         }
 
         private void LoadAppearanceSettings()
         {
-            var color = SettingsManager.Instance.ReadSettingValue(SettingsManager.AccentColor);
-            var rgb = color.Split(',');
-            AppearanceManager.Current.AccentColor = Color.FromRgb(
-                byte.Parse(rgb[0], NumberStyles.HexNumber),
-                byte.Parse(rgb[1], NumberStyles.HexNumber),
-                byte.Parse(rgb[2], NumberStyles.HexNumber));
-            // AppearanceManager.Current.AccentColor = Color.FromRgb(0xf0, 0x96, 0x09);
-            var theme = SettingsManager.Instance.ReadSettingValue(SettingsManager.Theme);
-            var themeValue = theme.Substring(theme.IndexOf(",") + 1);
+            var configService = ConfigurationService.Instance;
+            var appearance = configService.Configuration.Appearance;
 
-            if (themeValue.ToLower() == "dark")
+            // Set accent color
+            if (System.Windows.Media.ColorConverter.ConvertFromString(appearance.AccentColor) is Color accentColor)
+            {
+                AppearanceManager.Current.AccentColor = accentColor;
+            }
+
+            // Set theme
+            if (appearance.Theme == ThemeType.Dark)
             {
                 AppearanceManager.Current.ThemeSource = AppearanceManager.DarkThemeSource;
             }
             else
             {
                 AppearanceManager.Current.ThemeSource = AppearanceManager.LightThemeSource;
+            }
+
+            // Set font size
+            AppearanceManager.Current.FontSize = appearance.FontSize == FontSizeType.Large
+                ? FontSize.Large
+                : FontSize.Small;
+        }
+
+        private async void InitializeAIServices()
+        {
+            var logger = Log.ForContext<App>();
+
+            try
+            {
+                // Initialize Serilog first
+                InitializeLogging();
+
+                logger.Information("Initializing AI Services...");
+
+                // Initialize AI services for DI
+                AIHelper = await ServiceRegistration.CreateAIHelperAsync();
+
+                // Bootstrap AI services in MEF container with Serilog
+                var msLogger = new SerilogLoggerFactory(Log.Logger).CreateLogger("AIBootstrap");
+                AIBootstrap.Initialize(Container, msLogger);
+
+                // Run verification to check registration
+                AIBootstrap.VerifyRegistration(Container, msLogger);
+
+                logger.Information("AI Services initialized successfully!");
+            }
+            catch (Exception ex)
+            {
+                logger.Fatal(ex, "Failed to initialize AI services");
+                // Don't crash the application if AI services fail to initialize
+            }
+        }
+
+        private void InitializeLogging()
+        {
+            try
+            {
+                var configuration = new ConfigurationBuilder()
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                    .Build();
+
+                Log.Logger = new LoggerConfiguration()
+                    .ReadFrom.Configuration(configuration)
+                    .CreateLogger();
+
+                var logger = Log.ForContext<App>();
+                logger.Information("Logging initialized for {Application} v{Version}",
+                    "DumpMiner", Assembly.GetExecutingAssembly().GetName().Version);
+            }
+            catch (Exception ex)
+            {
+                // Fallback to basic console logging if Serilog fails
+                Log.Logger = new LoggerConfiguration()
+                    .WriteTo.Console()
+                    .WriteTo.Debug()
+                    .CreateLogger();
+
+                var logger = Log.ForContext<App>();
+                logger.Error(ex, "Failed to initialize logging from configuration, using fallback");
             }
         }
 
@@ -149,4 +238,6 @@ namespace DumpMiner
         }
         #endregion Initialized
     }
+
+
 }

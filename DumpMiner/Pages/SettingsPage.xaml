@@ -11,6 +11,7 @@
             <mui:ModernTab.Links>
                 <mui:Link DisplayName="general" Source="/Settings/General" />
                 <mui:Link DisplayName="appearance" Source="/Settings/Appearance" />
+                <mui:Link DisplayName="ai settings" Source="/Settings/AI" />
                 <mui:Link DisplayName="about" Source="/Settings/About" />
             </mui:ModernTab.Links>
         </mui:ModernTab>

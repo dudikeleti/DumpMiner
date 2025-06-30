@@ -19,7 +19,7 @@ namespace DumpMiner.Common
         ClrRuntime Runtime { get; }
         ClrHeap Heap { get; }
         DateTime? AttachedTime { get; }
-        Task<IEnumerable<object>> ExecuteOperation(Func<IEnumerable<object>> operation);
+        Task<IEnumerable<object>?> ExecuteOperation(Func<IEnumerable<object>> operation);
         (int? id, string name) AttachedTo { get; }
     }
 }

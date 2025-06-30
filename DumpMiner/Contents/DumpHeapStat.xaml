@@ -4,9 +4,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             xmlns:ui="clr-namespace:DumpMiner.Infrastructure.UI"
              mc:Ignorable="d"
              d:DesignHeight="300"
              d:DesignWidth="300">
+    <UserControl.Resources>
+        <ui:StringToIntConverter x:Key="StringToIntConverter"/>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -15,7 +19,7 @@
         <StackPanel Orientation="Horizontal">
             <TextBlock Margin="3">Heap generation</TextBlock>
             <TextBox Margin="3"
-                     Text="{Binding Generation, Mode=OneWayToSource, FallbackValue=0}"
+                     Text="{Binding Generation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource StringToIntConverter}}"
                      Width="60" />
         </StackPanel>
         <controls:OperationView Grid.Row="1"

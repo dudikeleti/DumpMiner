@@ -7,17 +7,18 @@ using System.Threading.Tasks;
 using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
+using DumpMiner.Operations.Shared;
 using Microsoft.Diagnostics.Runtime;
 
 namespace DumpMiner.Operations
 {
     [Export(OperationNames.GetObjectSize, typeof(IDebuggerOperation))]
-    class GetObjectSizeOperation : IDebuggerOperation
+    class GetObjectSizeOperation : BaseAIOperation
     {
         private CancellationToken _token;
-        public string Name => OperationNames.GetObjectSize;
+        public override string Name => OperationNames.GetObjectSize;
 
-        public async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
+        public override async Task<IEnumerable<object>> Execute(Models.OperationModel model, CancellationToken token, object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
@@ -37,9 +38,81 @@ namespace DumpMiner.Operations
             });
         }
 
-        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        public override string GetAIInsights(Collection<object> operationResults)
         {
-            throw new System.NotImplementedException();
+            var insights = new System.Text.StringBuilder();
+            insights.AppendLine($"Object Size Analysis: {operationResults.Count} objects analyzed");
+
+            if (!operationResults.Any()) 
+            {
+                insights.AppendLine("⚠️ No object size data found");
+                return insights.ToString();
+            }
+
+            var result = operationResults.FirstOrDefault();
+            if (result != null)
+            {
+                var referencedCount = OperationHelpers.GetPropertyValue<uint>(result, "ReferencedCount", 0);
+                var totalSize = OperationHelpers.GetPropertyValue<ulong>(result, "TotalSize", 0);
+
+                insights.AppendLine($"Referenced objects: {referencedCount:N0}");
+                insights.AppendLine($"Total size: {OperationHelpers.FormatSize((long)totalSize)}");
+
+                // Analyze potential issues
+                var potentialIssues = new List<string>();
+                
+                if (referencedCount > 10000)
+                    potentialIssues.Add("⚠️ High number of referenced objects - potential memory retention");
+                    
+                if (totalSize > 100_000_000) // 100MB
+                    potentialIssues.Add("⚠️ Large object graph - significant memory usage");
+                    
+                if (referencedCount > 0 && totalSize / referencedCount > 50000) // Average >50KB per object
+                    potentialIssues.Add("⚠️ Large average object size - potential bloated objects");
+
+                if (potentialIssues.Any())
+                {
+                    insights.AppendLine("\nPotential Issues:");
+                    foreach (var issue in potentialIssues)
+                    {
+                        insights.AppendLine($"  {issue}");
+                    }
+                }
+
+                // Calculate retention metrics
+                if (referencedCount > 1)
+                {
+                    var avgObjectSize = totalSize / referencedCount;
+                    insights.AppendLine($"\nObject Graph Metrics:");
+                    insights.AppendLine($"  Average object size: {OperationHelpers.FormatSize((long)avgObjectSize)}");
+                    insights.AppendLine($"  Reference density: {referencedCount} objects in {OperationHelpers.FormatSize((long)totalSize)}");
+                }
+            }
+
+            insights.AppendLine("\nKey Information:");
+            insights.AppendLine("- Total size includes all reachable objects from the root");
+            insights.AppendLine("- High reference counts may indicate memory retention issues");
+            insights.AppendLine("- Use GetObjectRoot to find what keeps objects alive");
+
+            return insights.ToString();
+        }
+
+        public override string GetSystemPromptAdditions()
+        {
+            return @"
+OBJECT SIZE ANALYSIS SPECIALIZATION:
+- Focus on memory retention and object graph analysis
+- Identify objects with unexpectedly large memory footprints
+- Analyze reference patterns that affect garbage collection
+- Look for memory leaks through retained object graphs
+
+When analyzing object size data, pay attention to:
+1. Disproportionately large object graphs
+2. High reference counts that might indicate retention issues
+3. Objects that should be collected but aren't
+4. Memory usage patterns that affect GC performance
+5. Opportunities to break reference cycles
+";
         }
 
         private void GetObjSize(ClrHeap heap, ulong obj, out uint count, out ulong size)

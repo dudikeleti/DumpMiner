@@ -1,12 +1,7 @@
-﻿
-
-
-
-
-
-using DumpMiner.Common;
+﻿using DumpMiner.Common;
 using DumpMiner.Debugger;
 using DumpMiner.Models;
+using DumpMiner.Services.AI;
 using Microsoft.Diagnostics.Runtime;
 using SharpDisasm;
 using SharpDisasm.Udis86;
@@ -23,11 +18,11 @@ using System.Threading.Tasks;
 namespace DumpMiner.Operations
 {
     [Export(OperationNames.DumpDisassemblyMethod, typeof(IDebuggerOperation))]
-    class DumpDisassemblyMethodOperation : IDebuggerOperation
+    class DumpDisassemblyMethodOperation : BaseAIOperation
     {
-        public string Name => OperationNames.DumpDisassemblyMethod;
+        public override string Name => OperationNames.DumpDisassemblyMethod;
 
-        public async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token,
+        public override async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token,
             object customParameter)
         {
             return await DebuggerSession.Instance.ExecuteOperation(() =>
@@ -284,7 +279,7 @@ namespace DumpMiner.Operations
                             ud_type.UD_R_R13 => cpuCtx.R13,
                             ud_type.UD_R_R14 => cpuCtx.R14,
                             ud_type.UD_R_R15 => cpuCtx.R15,
-                            ud_type.UD_R_RIP // Udis86 may call RIP “a register”
+                            ud_type.UD_R_RIP // Udis86 may call RIP "a register"
                                 => codeBaseAddress + (ulong)instr.Offset + (ulong)instr.Length,
                             _ => throw new NotSupportedException(
                                 $"Unsupported MEM.Base {op.Base}")
@@ -337,22 +332,32 @@ namespace DumpMiner.Operations
             // return $"0x{instr.Offset:X8}: {instr.Mnemonic} -> 0x{targetAddress:X8}    {sig}";
         }
 
-        public async Task<string> AskGpt(OperationModel model, Collection<object> items, CancellationToken token, object parameter)
+        protected override void AddOperationSpecificSuggestions(
+            StringBuilder insights, 
+            Collection<object> operationResults, 
+            Dictionary<string, int> typeGroups)
         {
-            var prompt = model.GptPrompt.ToString();
-            if (prompt.Contains(Gpt.Variables.csharp))
+            var assemblyItems = operationResults.OfType<AssemblyCode>().ToList();
+            
+            if (assemblyItems.Any())
             {
-                var sourceCodes = (await App.Container.GetExportedValue<IDebuggerOperation>(OperationNames.DumpSourceCode).Execute(model, token, null)).Cast<DumpSourceCodeOperation.SourceCode>();
-                model.GptPrompt = model.GptPrompt.Replace(Gpt.Variables.csharp, sourceCodes.First().Code); // todo: support list of methods
+                var callInstructions = assemblyItems.Count(a => a.OpCode?.Contains("call") == true);
+                var jumpInstructions = assemblyItems.Count(a => a.OpCode?.Contains("jmp") == true || a.OpCode?.Contains("j") == true);
+                
+                insights.AppendLine($"• Assembly analysis: {assemblyItems.Count} instructions, {callInstructions} calls, {jumpInstructions} jumps");
+                
+                if (callInstructions > 10)
+                {
+                    insights.AppendLine("• High number of call instructions - consider DumpMethods for performance analysis");
+                }
+                
+                if (jumpInstructions > 20)
+                {
+                    insights.AppendLine("• Complex branching pattern detected - potential performance implications");
+                }
+                
+                insights.AppendLine("• Consider DumpSourceCode to examine high-level code corresponding to this assembly");
             }
-
-            if (prompt.Contains(Gpt.Variables.assembly))
-            {
-                var assemblyCode = string.Join(Environment.NewLine, items.Cast<AssemblyCode>());
-                model.GptPrompt = model.GptPrompt.Replace(Gpt.Variables.assembly, assemblyCode);
-            }
-
-            return await Gpt.Ask(new[] { "You are an assembly code and a C# code expert." }, new[] { $"{model.GptPrompt}" });
         }
 
         private static ILToNativeMap[] GetCompleteNativeMap(ClrMethod method)

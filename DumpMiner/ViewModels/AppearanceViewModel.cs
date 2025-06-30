@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Media;
 using DumpMiner.Common;
-using DumpMiner.Infrastructure;
+using DumpMiner.Services.Configuration;
 using FirstFloor.ModernUI.Presentation;
 
 namespace DumpMiner.ViewModels
@@ -13,6 +13,9 @@ namespace DumpMiner.ViewModels
     /// </summary>
     public class AppearanceViewModel : BaseViewModel
     {
+        private readonly ConfigurationService _configService;
+        private AppearanceSettings _settings;
+        
         private const string FontSmall = "small";
         private const string FontLarge = "large";
 
@@ -69,32 +72,48 @@ namespace DumpMiner.ViewModels
 
         public AppearanceViewModel()
         {
+            _configService = ConfigurationService.Instance;
+            _settings = _configService.Configuration.Appearance;
+
             // add the default themes
             this.themes.Add(new Link { DisplayName = "dark", Source = AppearanceManager.DarkThemeSource });
             this.themes.Add(new Link { DisplayName = "light", Source = AppearanceManager.LightThemeSource });
 
-            this.SelectedFontSize = AppearanceManager.Current.FontSize == FontSize.Large ? FontLarge : FontSmall;
+            // Initialize from configuration
+            LoadFromConfiguration();
 
-            var savedTheme = SettingsManager.Instance.ReadSettingValue(SettingsManager.Theme).ToLower();
-            var theme = themes.FirstOrDefault(t => t.DisplayName.ToLower() == savedTheme);
+            AppearanceManager.Current.PropertyChanged += OnAppearanceManagerPropertyChanged;
+        }
+
+        private void LoadFromConfiguration()
+        {
+            // Set font size from configuration
+            this.SelectedFontSize = _settings.FontSize == FontSizeType.Large ? FontLarge : FontSmall;
+
+            // Set theme from configuration
+            var themeName = _settings.Theme.ToString().ToLower();
+            var theme = themes.FirstOrDefault(t => t.DisplayName.ToLower() == themeName);
             SelectedTheme = theme ?? themes.First();
 
-            var savedColor = SettingsManager.Instance.ReadSettingValue(SettingsManager.AccentColor)?.Split(',');
-            if (savedColor == null || savedColor.Length != 3)
+            // Set accent color from configuration
+            if (System.Windows.Media.ColorConverter.ConvertFromString(_settings.AccentColor) is Color configColor)
             {
-                SelectedAccentColor = AppearanceManager.Current.AccentColor;
+                SelectedAccentColor = configColor;
             }
             else
             {
-                SelectedAccentColor = Color.FromRgb(
-                    byte.Parse(savedColor[0], NumberStyles.HexNumber),
-                    byte.Parse(savedColor[1], NumberStyles.HexNumber),
-                    byte.Parse(savedColor[2], NumberStyles.HexNumber));
-
+                SelectedAccentColor = AppearanceManager.Current.AccentColor;
             }
 
-            // SyncThemeAndColor();
-            AppearanceManager.Current.PropertyChanged += OnAppearanceManagerPropertyChanged;
+            // Apply to appearance manager
+            ApplyToAppearanceManager();
+        }
+
+        private void ApplyToAppearanceManager()
+        {
+            AppearanceManager.Current.ThemeSource = SelectedTheme.Source;
+            AppearanceManager.Current.AccentColor = SelectedAccentColor;
+            AppearanceManager.Current.FontSize = SelectedFontSize == FontLarge ? FontSize.Large : FontSize.Small;
         }
 
         private void SyncThemeAndColor()
@@ -138,7 +157,10 @@ namespace DumpMiner.ViewModels
                 {
                     this.selectedTheme = value;
                     OnPropertyChanged("SelectedTheme");
-                    SettingsManager.Instance.SaveSettings(nameof(SettingsManager.Theme), value.DisplayName);
+                    
+                    // Update configuration
+                    _settings.Theme = value.DisplayName.ToLower() == "dark" ? ThemeType.Dark : ThemeType.Light;
+                    _configService.SaveConfiguration();
 
                     // and update the actual theme
                     AppearanceManager.Current.ThemeSource = value.Source;
@@ -156,6 +178,10 @@ namespace DumpMiner.ViewModels
                     this.selectedFontSize = value;
                     OnPropertyChanged("SelectedFontSize");
 
+                    // Update configuration
+                    _settings.FontSize = value == FontLarge ? FontSizeType.Large : FontSizeType.Normal;
+                    _configService.SaveConfiguration();
+
                     AppearanceManager.Current.FontSize = value == FontLarge ? FontSize.Large : FontSize.Small;
                 }
             }
@@ -170,7 +196,10 @@ namespace DumpMiner.ViewModels
                 {
                     this.selectedAccentColor = value;
                     OnPropertyChanged("SelectedAccentColor");
-                    SettingsManager.Instance.SaveSettings(nameof(SettingsManager.AccentColor), $"{value.R:X},{value.G:X},{value.B:X}");
+                    
+                    // Update configuration
+                    _settings.AccentColor = value.ToString();
+                    _configService.SaveConfiguration();
 
                     AppearanceManager.Current.AccentColor = value;
                 }
