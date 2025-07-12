@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DumpMiner.Models;
 using DumpMiner.Services.AI.Configuration;
 using DumpMiner.Services.AI.Interfaces;
 using DumpMiner.Services.AI.Models;

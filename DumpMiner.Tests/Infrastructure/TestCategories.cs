@@ -277,193 +277,218 @@ namespace DumpMiner.Tests.Infrastructure
     /// <summary>
     /// Attribute for marking unit tests
     /// </summary>
-    public class UnitTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Unit)]
+    public class UnitTestAttribute : Attribute
     {
-        public UnitTestAttribute() : base(TestTraits.Category, TestCategories.Unit) { }
     }
 
     /// <summary>
     /// Attribute for marking integration tests
     /// </summary>
-    public class IntegrationTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Integration)]
+    public class IntegrationTestAttribute : Attribute
     {
-        public IntegrationTestAttribute() : base(TestTraits.Category, TestCategories.Integration) { }
     }
 
     /// <summary>
     /// Attribute for marking AI tests
     /// </summary>
-    public class AITestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.AI)]
+    public class AITestAttribute : Attribute
     {
-        public AITestAttribute() : base(TestTraits.Category, TestCategories.AI) { }
     }
 
     /// <summary>
     /// Attribute for marking configuration tests
     /// </summary>
-    public class ConfigurationTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Configuration)]
+    public class ConfigurationTestAttribute : Attribute
     {
-        public ConfigurationTestAttribute() : base(TestTraits.Category, TestCategories.Configuration) { }
     }
 
     /// <summary>
     /// Attribute for marking operation tests
     /// </summary>
-    public class OperationTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Operations)]
+    public class OperationTestAttribute : Attribute
     {
-        public OperationTestAttribute() : base(TestTraits.Category, TestCategories.Operations) { }
     }
 
     /// <summary>
     /// Attribute for marking ViewModel tests
     /// </summary>
-    public class ViewModelTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.ViewModels)]
+    public class ViewModelTestAttribute : Attribute
     {
-        public ViewModelTestAttribute() : base(TestTraits.Category, TestCategories.ViewModels) { }
     }
 
     /// <summary>
     /// Attribute for marking service tests
     /// </summary>
-    public class ServiceTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Services)]
+    public class ServiceTestAttribute : Attribute
     {
-        public ServiceTestAttribute() : base(TestTraits.Category, TestCategories.Services) { }
     }
 
     /// <summary>
     /// Attribute for marking performance tests
     /// </summary>
-    public class PerformanceTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Performance)]
+    public class PerformanceTestAttribute : Attribute
     {
-        public PerformanceTestAttribute() : base(TestTraits.Category, TestCategories.Performance) { }
     }
 
     /// <summary>
     /// Attribute for marking slow tests
     /// </summary>
-    public class SlowTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Slow)]
+    public class SlowTestAttribute : Attribute
     {
-        public SlowTestAttribute() : base(TestTraits.Category, TestCategories.Slow) { }
     }
 
     /// <summary>
     /// Attribute for marking memory tests
     /// </summary>
-    public class MemoryTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Memory)]
+    public class MemoryTestAttribute : Attribute
     {
-        public MemoryTestAttribute() : base(TestTraits.Category, TestCategories.Memory) { }
     }
 
     /// <summary>
     /// Attribute for marking threading tests
     /// </summary>
-    public class ThreadingTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Threading)]
+    public class ThreadingTestAttribute : Attribute
     {
-        public ThreadingTestAttribute() : base(TestTraits.Category, TestCategories.Threading) { }
     }
 
     /// <summary>
     /// Attribute for marking security tests
     /// </summary>
-    public class SecurityTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Security)]
+    public class SecurityTestAttribute : Attribute
     {
-        public SecurityTestAttribute() : base(TestTraits.Category, TestCategories.Security) { }
     }
 
     /// <summary>
     /// Attribute for marking external dependency tests
     /// </summary>
-    public class ExternalTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.External)]
+    public class ExternalTestAttribute : Attribute
     {
-        public ExternalTestAttribute() : base(TestTraits.Category, TestCategories.External) { }
     }
 
     /// <summary>
     /// Attribute for marking file system tests
     /// </summary>
-    public class FileSystemTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.FileSystem)]
+    public class FileSystemTestAttribute : Attribute
     {
-        public FileSystemTestAttribute() : base(TestTraits.Category, TestCategories.FileSystem) { }
     }
 
     /// <summary>
     /// Attribute for marking network tests
     /// </summary>
-    public class NetworkTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Network)]
+    public class NetworkTestAttribute : Attribute
     {
-        public NetworkTestAttribute() : base(TestTraits.Category, TestCategories.Network) { }
     }
 
     /// <summary>
     /// Attribute for marking regression tests
     /// </summary>
-    public class RegressionTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Regression)]
+    public class RegressionTestAttribute : Attribute
     {
-        public RegressionTestAttribute() : base(TestTraits.Category, TestCategories.Regression) { }
     }
 
     /// <summary>
     /// Attribute for marking smoke tests
     /// </summary>
-    public class SmokeTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Smoke)]
+    public class SmokeTestAttribute : Attribute
     {
-        public SmokeTestAttribute() : base(TestTraits.Category, TestCategories.Smoke) { }
     }
 
     /// <summary>
     /// Attribute for marking critical tests
     /// </summary>
-    public class CriticalTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Critical)]
+    public class CriticalTestAttribute : Attribute
     {
-        public CriticalTestAttribute() : base(TestTraits.Category, TestCategories.Critical) { }
     }
 
     /// <summary>
     /// Attribute for marking experimental tests
     /// </summary>
-    public class ExperimentalTestAttribute : TraitAttribute
+    [TraitAttribute(TestTraits.Category, TestCategories.Experimental)]
+    public class ExperimentalTestAttribute : Attribute
     {
-        public ExperimentalTestAttribute() : base(TestTraits.Category, TestCategories.Experimental) { }
     }
 
     /// <summary>
     /// Attribute for setting test priority
     /// </summary>
-    public class TestPriorityAttribute : TraitAttribute
+    public class TestPriorityAttribute : Attribute
     {
-        public TestPriorityAttribute(string priority) : base(TestTraits.Priority, priority) { }
+        public TestPriorityAttribute(string priority) 
+        {
+            Priority = priority;
+        }
+
+        public string Priority { get; }
     }
 
     /// <summary>
     /// Attribute for setting test execution time
     /// </summary>
-    public class TestExecutionTimeAttribute : TraitAttribute
+    public class TestExecutionTimeAttribute : Attribute
     {
-        public TestExecutionTimeAttribute(string executionTime) : base(TestTraits.ExecutionTime, executionTime) { }
+        public TestExecutionTimeAttribute(string executionTime) 
+        {
+            ExecutionTime = executionTime;
+        }
+
+        public string ExecutionTime { get; }
     }
 
     /// <summary>
     /// Attribute for setting test complexity
     /// </summary>
-    public class TestComplexityAttribute : TraitAttribute
+    public class TestComplexityAttribute : Attribute
     {
-        public TestComplexityAttribute(string complexity) : base(TestTraits.Complexity, complexity) { }
+        public TestComplexityAttribute(string complexity) 
+        {
+            Complexity = complexity;
+        }
+
+        public string Complexity { get; }
     }
 
     /// <summary>
     /// Attribute for setting test environment requirements
     /// </summary>
-    public class TestEnvironmentAttribute : TraitAttribute
+    public class TestEnvironmentAttribute : Attribute
     {
-        public TestEnvironmentAttribute(string environment) : base(TestTraits.Environment, environment) { }
+        public TestEnvironmentAttribute(string environment) 
+        {
+            Environment = environment;
+        }
+
+        public string Environment { get; }
     }
 
     /// <summary>
     /// Attribute for setting test owner
     /// </summary>
-    public class TestOwnerAttribute : TraitAttribute
+    public class TestOwnerAttribute : Attribute
     {
-        public TestOwnerAttribute(string owner) : base(TestTraits.Owner, owner) { }
+        public TestOwnerAttribute(string owner) 
+        {
+            Owner = owner;
+        }
+
+        public string Owner { get; }
     }
 
     /// <summary>

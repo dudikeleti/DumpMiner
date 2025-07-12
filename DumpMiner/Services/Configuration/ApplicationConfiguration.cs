@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using DumpMiner.Services.AI.Configuration;
 
 namespace DumpMiner.Services.Configuration
 {
@@ -23,7 +24,7 @@ namespace DumpMiner.Services.Configuration
         /// <summary>
         /// AI service configuration
         /// </summary>
-        public AISettings AI { get; set; } = new();
+        public AIConfiguration AI { get; set; } = new();
 
         /// <summary>
         /// Advanced configuration settings
@@ -95,86 +96,6 @@ namespace DumpMiner.Services.Configuration
     }
 
     /// <summary>
-    /// AI service configuration
-    /// </summary>
-    public sealed class AISettings
-    {
-        /// <summary>
-        /// Default AI provider to use
-        /// </summary>
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        public AIProviderType DefaultProvider { get; set; } = AIProviderType.OpenAI;
-
-        /// <summary>
-        /// Maximum tokens for AI responses
-        /// </summary>
-        [Range(100, 32000)]
-        public int MaxTokens { get; set; } = 4000;
-
-        /// <summary>
-        /// Request timeout in seconds
-        /// </summary>
-        [Range(5, 300)]
-        public int TimeoutSeconds { get; set; } = 60;
-
-        /// <summary>
-        /// Enable response caching
-        /// </summary>
-        public bool EnableCaching { get; set; } = true;
-
-        /// <summary>
-        /// Cache expiration in minutes
-        /// </summary>
-        [Range(1, 1440)]
-        public int CacheExpirationMinutes { get; set; } = 60;
-
-        /// <summary>
-        /// Maximum conversation history to maintain
-        /// </summary>
-        [Range(1, 100)]
-        public int MaxConversationHistory { get; set; } = 20;
-
-        /// <summary>
-        /// Maximum automatic function calls per request
-        /// </summary>
-        [Range(1, 20)]
-        public int MaxAutoFunctionCalls { get; set; } = 5;
-
-        /// <summary>
-        /// Maximum object nesting depth for AI analysis
-        /// </summary>
-        [Range(1, 10)]
-        public int MaxObjectAnalysisDepth { get; set; } = 3;
-
-        /// <summary>
-        /// Stack analysis specific settings
-        /// </summary>
-        public StackAnalysisSettings StackAnalysis { get; set; } = new();
-
-        /// <summary>
-        /// Provider-specific configurations
-        /// </summary>
-        public AIProviderConfigurations Providers { get; set; } = new();
-    }
-
-    /// <summary>
-    /// Stack analysis configuration
-    /// </summary>
-    public sealed class StackAnalysisSettings
-    {
-        [Range(1, 50)]
-        public int MaxDetailedThreads { get; set; } = 10;
-
-        [Range(5, 100)]
-        public int MaxFramesPerThread { get; set; } = 30;
-
-        [Range(10000, 100000)]
-        public int MaxTotalPayloadChars { get; set; } = 40000;
-
-        public bool FilterSystemCode { get; set; } = true;
-    }
-
-    /// <summary>
     /// Advanced configuration for power users
     /// </summary>
     public sealed class AdvancedSettings
@@ -207,59 +128,7 @@ namespace DumpMiner.Services.Configuration
         public int MemoryWarningThresholdMB { get; set; } = 1024;
     }
 
-    /// <summary>
-    /// AI provider configurations
-    /// </summary>
-    public sealed class AIProviderConfigurations
-    {
-        public OpenAIConfiguration OpenAI { get; set; } = new();
-        public AnthropicConfiguration Anthropic { get; set; } = new();
-        public GoogleConfiguration Google { get; set; } = new();
-    }
-
-    /// <summary>
-    /// OpenAI provider configuration
-    /// </summary>
-    public sealed class OpenAIConfiguration
-    {
-        public string ApiKey { get; set; } = string.Empty;
-        public string Model { get; set; } = "o3";
-        public string BaseUrl { get; set; } = "https://api.openai.com/v1";
-        public double Temperature { get; set; } = 0.2;
-        public bool IsEnabled { get; set; } = true;
-        
-        [Range(100, 32000)]
-        public int MaxTokens { get; set; } = 4000;
-        
-        [Range(5, 300)]
-        public int TimeoutSeconds { get; set; } = 60;
-    }
-
-    /// <summary>
-    /// Anthropic Claude provider configuration
-    /// </summary>
-    public sealed class AnthropicConfiguration
-    {
-        public string ApiKey { get; set; } = string.Empty;
-        public string Model { get; set; } = "claude-sonnet-4";
-        public string BaseUrl { get; set; } = "https://api.anthropic.com";
-        public double Temperature { get; set; } = 0.2;
-        public bool IsEnabled { get; set; } = true;
-    }
-
-    /// <summary>
-    /// Google Gemini provider configuration
-    /// </summary>
-    public sealed class GoogleConfiguration
-    {
-        public string ApiKey { get; set; } = string.Empty;
-        public string Model { get; set; } = "gemini-2.5-pro";
-        public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com";
-        public double Temperature { get; set; } = 0.2;
-        public bool IsEnabled { get; set; } = true;
-    }
-
-    // Enums
+    // UI-specific enums (not AI-related)
     public enum ThemeType
     {
         Light,
@@ -272,13 +141,4 @@ namespace DumpMiner.Services.Configuration
         Normal,
         Large
     }
-
-    public enum AIProviderType
-    {
-        OpenAI,
-        Anthropic,
-        Google
-    }
-
-
 } 

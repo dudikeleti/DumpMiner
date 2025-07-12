@@ -337,8 +337,7 @@ namespace DumpMiner.Tests.ViewModels
 
             // Act & Assert
             await TestUtilities.Async.AssertDoesNotThrowAsync(
-                async () => await _viewModel.AskAiAsync(),
-                "AskAi should handle non-AI operations gracefully");
+                async () => await _viewModel.AskAiAsync());
         }
 
         #endregion

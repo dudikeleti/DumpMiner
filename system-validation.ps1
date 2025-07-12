@@ -30,7 +30,7 @@ if (Test-Path $configPath) {
             Write-Host "✅ OpenAI configuration found" -ForegroundColor Green
             
             if ($content -match '"ApiKey":\s*"([^"]+)"' -and $matches[1] -ne "") {
-                $keyPreview = $matches[1].Substring(0, [Math]::Min(10, $matches[1].Length))
+                $keyPreview = $matches[1].Substring(0, [System.Math]::Min(10, $matches[1].Length))
                 Write-Host "✅ API key present: $keyPreview..." -ForegroundColor Green
             } else {
                 Write-Host "❌ API key is empty" -ForegroundColor Red
@@ -271,4 +271,4 @@ Write-Host "1. Edit DumpMiner/appsettings.json" -ForegroundColor White
 Write-Host "2. Add your OpenAI API key" -ForegroundColor White
 Write-Host "3. Run '.\system-validation.ps1' to validate system" -ForegroundColor White
 Write-Host "4. Run DumpMiner and load a dump file" -ForegroundColor White
-Write-Host "5. Try CLR Stack or Heap analysis with AI" -ForegroundColor White 
+Write-Host "5. Try CLR Stack or Heap analysis with AI" -ForegroundColor White

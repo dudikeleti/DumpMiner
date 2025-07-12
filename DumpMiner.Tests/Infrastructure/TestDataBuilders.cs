@@ -59,76 +59,82 @@ namespace DumpMiner.Tests.Infrastructure
     /// </summary>
     public class AIRequestBuilder
     {
-        private readonly AIRequest _request;
-
-        public AIRequestBuilder()
-        {
-            _request = new AIRequest
-            {
-                RequestId = Guid.NewGuid().ToString(),
-                SystemPrompt = "You are a helpful assistant",
-                UserPrompt = "Test prompt",
-                MaxTokens = 1000,
-                Temperature = 0.7,
-                ConversationHistory = new List<ConversationMessage>()
-            };
-        }
+        private string _requestId = Guid.NewGuid().ToString();
+        private string _systemPrompt = "You are a helpful assistant";
+        private string _userPrompt = "Test prompt";
+        private int? _maxTokens = 1000;
+        private double? _temperature = 0.7;
+        private AIProviderType? _preferredProvider;
+        private List<ConversationMessage> _conversationHistory = new();
+        private DumpContext? _dumpContext;
+        private OperationContext? _operationContext;
 
         public AIRequestBuilder WithRequestId(string requestId)
         {
-            _request.RequestId = requestId;
+            _requestId = requestId;
             return this;
         }
 
         public AIRequestBuilder WithSystemPrompt(string systemPrompt)
         {
-            _request.SystemPrompt = systemPrompt;
+            _systemPrompt = systemPrompt;
             return this;
         }
 
         public AIRequestBuilder WithUserPrompt(string userPrompt)
         {
-            _request.UserPrompt = userPrompt;
+            _userPrompt = userPrompt;
             return this;
         }
 
         public AIRequestBuilder WithMaxTokens(int maxTokens)
         {
-            _request.MaxTokens = maxTokens;
+            _maxTokens = maxTokens;
             return this;
         }
 
         public AIRequestBuilder WithTemperature(double temperature)
         {
-            _request.Temperature = temperature;
+            _temperature = temperature;
             return this;
         }
 
         public AIRequestBuilder WithProvider(AIProviderType provider)
         {
-            _request.PreferredProvider = provider;
+            _preferredProvider = provider;
             return this;
         }
 
         public AIRequestBuilder WithConversationHistory(params ConversationMessage[] messages)
         {
-            _request.ConversationHistory = messages.ToList();
+            _conversationHistory = messages.ToList();
             return this;
         }
 
         public AIRequestBuilder WithDumpContext(DumpContext context)
         {
-            _request.DumpContext = context;
+            _dumpContext = context;
             return this;
         }
 
         public AIRequestBuilder WithOperationContext(OperationContext context)
         {
-            _request.OperationContext = context;
+            _operationContext = context;
             return this;
         }
 
-        public AIRequest Build() => _request;
+        public AIRequest Build() => new AIRequest
+        {
+            RequestId = _requestId,
+            SystemPrompt = _systemPrompt,
+            UserPrompt = _userPrompt,
+            MaxTokens = _maxTokens,
+            Temperature = _temperature,
+            PreferredProvider = _preferredProvider,
+            ConversationHistory = _conversationHistory,
+            DumpContext = _dumpContext,
+            OperationContext = _operationContext
+        };
     }
 
     /// <summary>
@@ -136,87 +142,92 @@ namespace DumpMiner.Tests.Infrastructure
     /// </summary>
     public class AIResponseBuilder
     {
-        private readonly AIResponse _response;
-
-        public AIResponseBuilder()
-        {
-            _response = new AIResponse
-            {
-                RequestId = Guid.NewGuid().ToString(),
-                Content = "Test response content",
-                Provider = AIProviderType.OpenAI,
-                Model = "gpt-4",
-                IsSuccess = true,
-                Timestamp = DateTimeOffset.UtcNow,
-                Metadata = new ResponseMetadata
-                {
-                    PromptTokens = 100,
-                    CompletionTokens = 200,
-                    TotalTokens = 300,
-                    ProcessingTimeMs = 1500,
-                    EstimatedCost = 0.01m
-                }
-            };
-        }
+        private string _requestId = Guid.NewGuid().ToString();
+        private string _content = "Test response content";
+        private AIProviderType _provider = AIProviderType.OpenAI;
+        private string _model = "gpt-4";
+        private bool _isSuccess = true;
+        private string? _errorMessage;
+        private int _promptTokens = 100;
+        private int _completionTokens = 200;
+        private int _totalTokens = 300;
+        private long _processingTimeMs = 1500;
+        private decimal? _estimatedCost = 0.01m;
 
         public AIResponseBuilder WithRequestId(string requestId)
         {
-            _response.RequestId = requestId;
+            _requestId = requestId;
             return this;
         }
 
         public AIResponseBuilder WithContent(string content)
         {
-            _response.Content = content;
+            _content = content;
             return this;
         }
 
         public AIResponseBuilder WithProvider(AIProviderType provider)
         {
-            _response.Provider = provider;
+            _provider = provider;
             return this;
         }
 
         public AIResponseBuilder WithModel(string model)
         {
-            _response.Model = model;
+            _model = model;
             return this;
         }
 
         public AIResponseBuilder WithSuccess(bool isSuccess)
         {
-            _response.IsSuccess = isSuccess;
+            _isSuccess = isSuccess;
             return this;
         }
 
         public AIResponseBuilder WithError(string errorMessage)
         {
-            _response.IsSuccess = false;
-            _response.ErrorMessage = errorMessage;
+            _isSuccess = false;
+            _errorMessage = errorMessage;
             return this;
         }
 
         public AIResponseBuilder WithTokens(int promptTokens, int completionTokens)
         {
-            _response.Metadata.PromptTokens = promptTokens;
-            _response.Metadata.CompletionTokens = completionTokens;
-            _response.Metadata.TotalTokens = promptTokens + completionTokens;
+            _promptTokens = promptTokens;
+            _completionTokens = completionTokens;
+            _totalTokens = promptTokens + completionTokens;
             return this;
         }
 
         public AIResponseBuilder WithProcessingTime(int milliseconds)
         {
-            _response.Metadata.ProcessingTimeMs = milliseconds;
+            _processingTimeMs = milliseconds;
             return this;
         }
 
         public AIResponseBuilder WithCost(decimal cost)
         {
-            _response.Metadata.EstimatedCost = cost;
+            _estimatedCost = cost;
             return this;
         }
 
-        public AIResponse Build() => _response;
+        public AIResponse Build() => new AIResponse
+        {
+            RequestId = _requestId,
+            Content = _content,
+            Provider = _provider,
+            Model = _model,
+            IsSuccess = _isSuccess,
+            ErrorMessage = _errorMessage,
+            Metadata = new ResponseMetadata
+            {
+                PromptTokens = _promptTokens,
+                CompletionTokens = _completionTokens,
+                TotalTokens = _totalTokens,
+                ProcessingTimeMs = _processingTimeMs,
+                EstimatedCost = _estimatedCost
+            }
+        };
     }
 
     /// <summary>
@@ -224,16 +235,13 @@ namespace DumpMiner.Tests.Infrastructure
     /// </summary>
     public class DumpContextBuilder
     {
-        private readonly DumpContext _context;
-
-        public DumpContextBuilder()
-        {
-            _context = new DumpContext();
-        }
+        private ProcessInfo? _processInfo;
+        private HeapStatistics? _heapStats;
+        private List<ExceptionInfo> _exceptions = new();
 
         public DumpContextBuilder WithProcessInfo(string processName, int processId, string clrVersion = "8.0.0")
         {
-            _context.ProcessInfo = new ProcessInfo
+            _processInfo = new ProcessInfo
             {
                 ProcessName = processName,
                 ProcessId = processId,
@@ -245,7 +253,7 @@ namespace DumpMiner.Tests.Infrastructure
 
         public DumpContextBuilder WithHeapStats(long totalSize, int objectCount)
         {
-            _context.HeapStats = new HeapStatistics
+            _heapStats = new HeapStatistics
             {
                 TotalSize = totalSize,
                 ObjectCount = objectCount,
@@ -259,14 +267,13 @@ namespace DumpMiner.Tests.Infrastructure
 
         public DumpContextBuilder WithExceptions(params ExceptionInfo[] exceptions)
         {
-            _context.Exceptions = exceptions.ToList();
+            _exceptions = exceptions.ToList();
             return this;
         }
 
         public DumpContextBuilder WithException(string type, string message, ulong address = 0x12345678)
         {
-            _context.Exceptions = _context.Exceptions ?? new List<ExceptionInfo>();
-            _context.Exceptions.Add(new ExceptionInfo
+            _exceptions.Add(new ExceptionInfo
             {
                 Type = type,
                 Message = message,
@@ -275,7 +282,12 @@ namespace DumpMiner.Tests.Infrastructure
             return this;
         }
 
-        public DumpContext Build() => _context;
+        public DumpContext Build() => new DumpContext
+        {
+            ProcessInfo = _processInfo,
+            HeapStats = _heapStats,
+            Exceptions = _exceptions
+        };
     }
 
     /// <summary>

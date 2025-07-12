@@ -16,7 +16,7 @@ namespace DumpMiner.Operations
 {
     // !DumpHeap
     [Export(OperationNames.DumpHeap, typeof(IDebuggerOperation))]
-    class DumpHeapOperation : BaseAIOperation
+    public class DumpHeapOperation : BaseAIOperation
     {
         public override string Name => OperationNames.DumpHeap;
 

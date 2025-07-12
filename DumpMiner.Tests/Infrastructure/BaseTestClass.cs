@@ -80,19 +80,19 @@ namespace DumpMiner.Tests.Infrastructure
         {
             TestOutput = testOutput ?? throw new ArgumentNullException(nameof(testOutput));
             TestStartTime = DateTime.UtcNow;
-            
+
             // Initialize test infrastructure
             MockRepository = new MockRepository(MockBehavior.Strict);
             CreatedMocks = new List<Mock>();
             CancellationTokenSource = new CancellationTokenSource();
             Random = new Random(42); // Fixed seed for reproducible tests
-            
+
             // Set up logging
             Logger = CreateTestLogger();
-            
+
             // Set up service provider
             ServiceProvider = CreateServiceProvider();
-            
+
             Logger.LogInformation("Test initialized: {TestName}", GetType().Name);
         }
 
@@ -104,13 +104,13 @@ namespace DumpMiner.Tests.Infrastructure
         protected virtual IServiceProvider CreateServiceProvider()
         {
             var services = new ServiceCollection();
-            
+
             // Add logging
             services.AddLogging(builder => builder.AddProvider(new TestLoggerProvider(TestOutput)));
-            
+
             // Add common test services
             ConfigureTestServices(services);
-            
+
             return services.BuildServiceProvider();
         }
 
@@ -193,14 +193,13 @@ namespace DumpMiner.Tests.Infrastructure
         }
 
         /// <summary>
-        /// Verifies no additional calls were made on any mock
+        /// Verifies no additional calls were made on a specific mock
         /// </summary>
-        protected void VerifyNoOtherCalls()
+        /// <typeparam name="T">Mock type</typeparam>
+        /// <param name="mock">Mock to verify</param>
+        protected void VerifyNoOtherCalls<T>(Mock<T> mock) where T : class
         {
-            foreach (var mock in CreatedMocks)
-            {
-                mock.VerifyNoOtherCalls();
-            }
+            mock.VerifyNoOtherCalls();
         }
 
         #endregion
@@ -283,12 +282,12 @@ namespace DumpMiner.Tests.Infrastructure
             where TException : Exception
         {
             var exception = Assert.Throws<TException>(action);
-            
+
             if (!string.IsNullOrEmpty(expectedMessage))
             {
                 exception.Message.Should().Contain(expectedMessage);
             }
-            
+
             return exception;
         }
 
@@ -303,12 +302,12 @@ namespace DumpMiner.Tests.Infrastructure
             where TException : Exception
         {
             var exception = await Assert.ThrowsAsync<TException>(action);
-            
+
             if (!string.IsNullOrEmpty(expectedMessage))
             {
                 exception.Message.Should().Contain(expectedMessage);
             }
-            
+
             return exception;
         }
 
@@ -371,11 +370,11 @@ namespace DumpMiner.Tests.Infrastructure
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             action();
             stopwatch.Stop();
-            
+
             var elapsed = stopwatch.Elapsed;
-            Logger.LogInformation("Execution time for {Description}: {Elapsed}ms", 
+            Logger.LogInformation("Execution time for {Description}: {Elapsed}ms",
                 description ?? "action", elapsed.TotalMilliseconds);
-            
+
             return elapsed;
         }
 
@@ -390,11 +389,11 @@ namespace DumpMiner.Tests.Infrastructure
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             await action();
             stopwatch.Stop();
-            
+
             var elapsed = stopwatch.Elapsed;
-            Logger.LogInformation("Execution time for {Description}: {Elapsed}ms", 
+            Logger.LogInformation("Execution time for {Description}: {Elapsed}ms",
                 description ?? "action", elapsed.TotalMilliseconds);
-            
+
             return elapsed;
         }
 
@@ -407,7 +406,7 @@ namespace DumpMiner.Tests.Infrastructure
         protected void AssertExecutionTime(Action action, TimeSpan timeout, string description = null)
         {
             var elapsed = MeasureExecutionTime(action, description);
-            elapsed.Should().BeLessOrEqualTo(timeout, 
+            elapsed.Should().BeLessThanOrEqualTo(timeout,
                 $"because {description ?? "action"} should complete within {timeout.TotalMilliseconds}ms");
         }
 
@@ -420,7 +419,7 @@ namespace DumpMiner.Tests.Infrastructure
         protected async Task AssertExecutionTimeAsync(Func<Task> action, TimeSpan timeout, string description = null)
         {
             var elapsed = await MeasureExecutionTimeAsync(action, description);
-            elapsed.Should().BeLessOrEqualTo(timeout, 
+            elapsed.Should().BeLessThanOrEqualTo(timeout,
                 $"because {description ?? "action"} should complete within {timeout.TotalMilliseconds}ms");
         }
 
@@ -500,9 +499,9 @@ namespace DumpMiner.Tests.Infrastructure
                 try
                 {
                     TearDown();
-                    
+
                     var stats = GetTestStats();
-                    Logger.LogInformation("Test completed: {TestName} in {ExecutionTime}ms", 
+                    Logger.LogInformation("Test completed: {TestName} in {ExecutionTime}ms",
                         stats.TestName, stats.ExecutionTime.TotalMilliseconds);
                 }
                 catch (Exception ex)
@@ -512,9 +511,7 @@ namespace DumpMiner.Tests.Infrastructure
                 finally
                 {
                     CancellationTokenSource?.Dispose();
-                    ServiceProvider?.Dispose();
-                    MockRepository?.Dispose();
-                    
+
                     _disposed = true;
                 }
             }
@@ -558,7 +555,7 @@ namespace DumpMiner.Tests.Infrastructure
         {
             var message = formatter(state, exception);
             _testOutput.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [{logLevel}] [{_categoryName}] {message}");
-            
+
             if (exception != null)
             {
                 _testOutput.WriteLine($"Exception: {exception}");
@@ -588,4 +585,4 @@ namespace DumpMiner.Tests.Infrastructure
             // No resources to dispose
         }
     }
-} 
+}

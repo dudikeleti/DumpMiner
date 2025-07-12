@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DumpMiner.Models;
 using DumpMiner.Services.AI.Configuration;
 using DumpMiner.Services.AI.Models;
 using DumpMiner.Services.AI.Providers;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -33,10 +33,13 @@ namespace DumpMiner.Tests.Services.AI.Providers
         }
 
         [Fact]
-        public void Constructor_WithValidConfiguration_ShouldInitializeCorrectly()
+        public async Task Constructor_WithValidConfiguration_ShouldInitializeCorrectly()
         {
+            // Arrange
+            var provider = new AnthropicProvider(_mockLogger.Object);
+
             // Act
-            var provider = new AnthropicProvider(_options, _mockLogger.Object);
+            await provider.InitializeAsync(_config, CancellationToken.None);
 
             // Assert
             provider.ProviderType.Should().Be(AIProviderType.Anthropic);
@@ -45,34 +48,29 @@ namespace DumpMiner.Tests.Services.AI.Providers
         }
 
         [Fact]
-        public void Constructor_WithEmptyApiKey_ShouldThrowException()
+        public async Task Constructor_WithEmptyApiKey_ShouldThrowException()
         {
             // Arrange
-            var emptyKeyConfig = new AIConfiguration
+            var emptyKeyConfig = new AnthropicConfiguration
             {
-                Providers = new ProviderConfigurations
-                {
-                    Anthropic = new AnthropicConfiguration
-                    {
-                        ApiKey = "",
-                        IsEnabled = true
-                    }
-                }
+                ApiKey = "",
+                IsEnabled = true
             };
-            var emptyKeyOptions = Options.Create(emptyKeyConfig);
+            var provider = new AnthropicProvider(_mockLogger.Object);
 
             // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(
-                () => new AnthropicProvider(emptyKeyOptions, _mockLogger.Object));
-            
-            exception.Message.Should().Contain("Anthropic API key is not configured");
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await provider.InitializeAsync(emptyKeyConfig, CancellationToken.None));
+
+            exception.Message.Should().Contain("Anthropic API key is required");
         }
 
         [Fact]
-        public void IsConfigured_WithValidApiKey_ShouldReturnTrue()
+        public async Task IsConfigured_WithValidApiKey_ShouldReturnTrue()
         {
             // Arrange
-            var provider = new AnthropicProvider(_options, _mockLogger.Object);
+            var provider = new AnthropicProvider(_mockLogger.Object);
+            await provider.InitializeAsync(_config, CancellationToken.None);
 
             // Act & Assert
             provider.IsConfigured.Should().BeTrue();
@@ -82,29 +80,20 @@ namespace DumpMiner.Tests.Services.AI.Providers
         public void IsConfigured_WithDisabledProvider_ShouldReturnFalse()
         {
             // Arrange
-            var disabledConfig = new AIConfiguration
-            {
-                Providers = new ProviderConfigurations
-                {
-                    Anthropic = new AnthropicConfiguration
-                    {
-                        ApiKey = "test-key",
-                        IsEnabled = false
-                    }
-                }
-            };
-            var disabledOptions = Options.Create(disabledConfig);
-            var provider = new AnthropicProvider(disabledOptions, _mockLogger.Object);
+            var provider = new AnthropicProvider(_mockLogger.Object);
+            // Not initialized - should return false
 
             // Act & Assert
             provider.IsConfigured.Should().BeFalse();
         }
 
         [Fact]
-        public void EstimateCost_WithBasicRequest_ShouldReturnPositiveValue()
+        public async Task EstimateCost_WithBasicRequest_ShouldReturnPositiveValue()
         {
             // Arrange
-            var provider = new AnthropicProvider(_options, _mockLogger.Object);
+            var provider = new AnthropicProvider(_mockLogger.Object);
+            await provider.InitializeAsync(_config, CancellationToken.None);
+            
             var request = new AIRequest
             {
                 RequestId = Guid.NewGuid().ToString(),
@@ -125,26 +114,20 @@ namespace DumpMiner.Tests.Services.AI.Providers
         }
 
         [Fact]
-        public void EstimateCost_WithOpusModel_ShouldReturnHigherCost()
+        public async Task EstimateCost_WithOpusModel_ShouldReturnHigherCost()
         {
             // Arrange
-            var opusConfig = new AIConfiguration
+            var opusConfig = new AnthropicConfiguration
             {
-                Providers = new ProviderConfigurations
-                {
-                    Anthropic = new AnthropicConfiguration
-                    {
-                        ApiKey = "test-key",
-                        Model = "claude-opus-4",
-                        IsEnabled = true,
-                        MaxTokens = 4000,
-                        TimeoutSeconds = 60
-                    }
-                }
+                ApiKey = "test-key",
+                Model = "claude-opus-4",
+                IsEnabled = true,
+                MaxTokens = 4000,
+                TimeoutSeconds = 60
             };
-            var opusOptions = Options.Create(opusConfig);
-            var provider = new AnthropicProvider(opusOptions, _mockLogger.Object);
-            
+            var provider = new AnthropicProvider(_mockLogger.Object);
+            await provider.InitializeAsync(opusConfig, CancellationToken.None);
+
             var request = new AIRequest
             {
                 RequestId = Guid.NewGuid().ToString(),
@@ -159,16 +142,18 @@ namespace DumpMiner.Tests.Services.AI.Providers
         }
 
         [Fact]
-        public void EstimateCost_WithLargePrompt_ShouldReturnHigherCost()
+        public async Task EstimateCost_WithLargePrompt_ShouldReturnHigherCost()
         {
             // Arrange
-            var provider = new AnthropicProvider(_options, _mockLogger.Object);
+            var provider = new AnthropicProvider(_mockLogger.Object);
+            await provider.InitializeAsync(_config, CancellationToken.None);
+            
             var smallRequest = new AIRequest
             {
                 RequestId = Guid.NewGuid().ToString(),
                 UserPrompt = "Short prompt"
             };
-            
+
             var largeRequest = new AIRequest
             {
                 RequestId = Guid.NewGuid().ToString(),
@@ -185,36 +170,38 @@ namespace DumpMiner.Tests.Services.AI.Providers
             var largeCost = provider.EstimateCost(largeRequest);
 
             // Assert
-            largeCost.Should().BeGreaterThan(smallCost);
+            smallCost.Should().NotBeNull();
+            largeCost.Should().NotBeNull();
+            largeCost.Should().BeGreaterThan(smallCost!.Value);
         }
 
         [Fact]
         public async Task SendAsync_WithUnconfiguredProvider_ShouldThrowException()
         {
             // Arrange
-            var unconfiguredConfig = new AIConfiguration
-            {
-                Providers = new ProviderConfigurations
-                {
-                    Anthropic = new AnthropicConfiguration
-                    {
-                        ApiKey = "",
-                        IsEnabled = false
-                    }
-                }
-            };
-            var unconfiguredOptions = Options.Create(unconfiguredConfig);
+            var provider = new AnthropicProvider(_mockLogger.Object);
+            // Not initialized
 
-            // Act & Assert - Constructor should throw, but if it didn't, SendAsync would fail
-            Assert.Throws<InvalidOperationException>(
-                () => new AnthropicProvider(unconfiguredOptions, _mockLogger.Object));
+            var request = new AIRequest
+            {
+                RequestId = Guid.NewGuid().ToString(),
+                UserPrompt = "Test prompt"
+            };
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await provider.CompleteAsync(request, CancellationToken.None));
+
+            exception.Message.Should().Contain("Provider not initialized");
         }
 
         [Fact]
-        public void EstimateCost_WithDumpContext_ShouldIncludeContextInCalculation()
+        public async Task EstimateCost_WithDumpContext_ShouldIncludeContextInCalculation()
         {
             // Arrange
-            var provider = new AnthropicProvider(_options, _mockLogger.Object);
+            var provider = new AnthropicProvider(_mockLogger.Object);
+            await provider.InitializeAsync(_config, CancellationToken.None);
+            
             var requestWithContext = new AIRequest
             {
                 RequestId = Guid.NewGuid().ToString(),
@@ -259,7 +246,9 @@ namespace DumpMiner.Tests.Services.AI.Providers
             var costWithoutContext = provider.EstimateCost(requestWithoutContext);
 
             // Assert
-            costWithContext.Should().BeGreaterThan(costWithoutContext);
+            costWithContext.Should().NotBeNull();
+            costWithoutContext.Should().NotBeNull();
+            costWithContext.Should().BeGreaterThan(costWithoutContext!.Value);
         }
 
         [Theory]
@@ -267,23 +256,20 @@ namespace DumpMiner.Tests.Services.AI.Providers
         [InlineData("claude-sonnet-4")]
         [InlineData("claude-opus-4")]
         [InlineData("claude-sonnet-3.5")]
-        public void EstimateCost_WithDifferentModels_ShouldReturnAppropriateValues(string modelName)
+        public async Task EstimateCost_WithDifferentModels_ShouldReturnAppropriateValues(string modelName)
         {
             // Arrange
-            var modelConfig = new AIConfiguration
+            var modelConfig = new AnthropicConfiguration
             {
-                Anthropic = new AnthropicConfiguration
-                {
-                    ApiKey = "test-key",
-                    Model = modelName,
-                    IsEnabled = true,
-                    MaxTokens = 1000,
-                    TimeoutSeconds = 60
-                }
+                ApiKey = "test-key",
+                Model = modelName,
+                IsEnabled = true,
+                MaxTokens = 1000,
+                TimeoutSeconds = 60
             };
-            var modelOptions = Options.Create(modelConfig);
-            var provider = new AnthropicProvider(modelOptions, _mockLogger.Object);
-            
+            var provider = new AnthropicProvider(_mockLogger.Object);
+            await provider.InitializeAsync(modelConfig, CancellationToken.None);
+
             var request = new AIRequest
             {
                 RequestId = Guid.NewGuid().ToString(),
@@ -295,7 +281,7 @@ namespace DumpMiner.Tests.Services.AI.Providers
 
             // Assert
             cost.Should().BeGreaterThan(0);
-            
+
             // All models should have reasonable costs, with Opus being more expensive
             if (modelName.Contains("opus"))
                 cost.Should().BeGreaterThan(0.01m);
@@ -305,15 +291,16 @@ namespace DumpMiner.Tests.Services.AI.Providers
         }
 
         [Fact]
-        public void Dispose_ShouldNotThrowException()
+        public async Task Dispose_ShouldNotThrowException()
         {
             // Arrange
-            var provider = new AnthropicProvider(_options, _mockLogger.Object);
+            var provider = new AnthropicProvider(_mockLogger.Object);
+            await provider.InitializeAsync(_config, CancellationToken.None);
 
             // Act & Assert
             var act = () => provider.Dispose();
             act.Should().NotThrow();
-            
+
             // Should be safe to dispose multiple times
             act.Should().NotThrow();
         }
@@ -322,10 +309,10 @@ namespace DumpMiner.Tests.Services.AI.Providers
         public void ProviderType_ShouldReturnAnthropic()
         {
             // Arrange
-            var provider = new AnthropicProvider(_options, _mockLogger.Object);
+            var provider = new AnthropicProvider(_mockLogger.Object);
 
             // Act & Assert
             provider.ProviderType.Should().Be(AIProviderType.Anthropic);
         }
     }
-} 
+}

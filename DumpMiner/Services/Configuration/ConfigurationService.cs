@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using DumpMiner.Services.AI.Configuration;
 
 namespace DumpMiner.Services.Configuration
 {
@@ -189,7 +190,7 @@ namespace DumpMiner.Services.Configuration
                     _configuration.Appearance = new AppearanceSettings();
                     break;
                 case "ai":
-                    _configuration.AI = new AISettings();
+                    _configuration.AI = new AIConfiguration();
                     break;
                 case "advanced":
                     _configuration.Advanced = new AdvancedSettings();

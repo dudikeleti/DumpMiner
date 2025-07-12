@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Input;
 using DumpMiner.Common;
 using DumpMiner.Services.Configuration;
+using DumpMiner.Services.AI.Configuration;
 using FirstFloor.ModernUI.Presentation;
 
 namespace DumpMiner.ViewModels
@@ -12,7 +13,7 @@ namespace DumpMiner.ViewModels
     public class AISettingsViewModel : BaseViewModel
     {
         private readonly ConfigurationService _configService;
-        private AISettings _aiSettings;
+        private AIConfiguration _aiConfiguration;
 
         // Model capability information
         private static readonly Dictionary<string, (string description, int contextWindow, int maxOutput)> OpenAIModelInfo = new()
@@ -63,7 +64,7 @@ namespace DumpMiner.ViewModels
         public AISettingsViewModel()
         {
             _configService = ConfigurationService.Instance;
-            _aiSettings = _configService.Configuration.AI;
+            _aiConfiguration = _configService.Configuration.AI;
 
             // Initialize collections
             AvailableProviders = new ObservableCollection<string> { "OpenAI", "Anthropic", "Google" };
@@ -120,7 +121,7 @@ namespace DumpMiner.ViewModels
                 {
                     _selectedProvider = value;
                     OnPropertyChanged();
-                    _aiSettings.DefaultProvider = Enum.Parse<AIProviderType>(value);
+                    _aiConfiguration.DefaultProvider = Enum.Parse<AIProviderType>(value);
                     UpdateSelectedModelInfo();
                     SaveSettings();
                 }
@@ -137,7 +138,7 @@ namespace DumpMiner.ViewModels
                 {
                     _maxTokens = value;
                     OnPropertyChanged();
-                    _aiSettings.MaxTokens = value;
+                    _aiConfiguration.MaxTokens = value;
                     SaveSettings();
                 }
             }
@@ -153,7 +154,7 @@ namespace DumpMiner.ViewModels
                 {
                     _timeoutSeconds = value;
                     OnPropertyChanged();
-                    _aiSettings.TimeoutSeconds = value;
+                    _aiConfiguration.TimeoutSeconds = value;
                     SaveSettings();
                 }
             }
@@ -169,7 +170,7 @@ namespace DumpMiner.ViewModels
                 {
                     _enableCaching = value;
                     OnPropertyChanged();
-                    _aiSettings.EnableCaching = value;
+                    _aiConfiguration.EnableCaching = value;
                     SaveSettings();
                 }
             }
@@ -185,7 +186,7 @@ namespace DumpMiner.ViewModels
                 {
                     _maxAutoFunctionCalls = value;
                     OnPropertyChanged();
-                    _aiSettings.MaxAutoFunctionCalls = value;
+                    _aiConfiguration.MaxAutoFunctionCalls = value;
                     SaveSettings();
                 }
             }
@@ -201,7 +202,7 @@ namespace DumpMiner.ViewModels
                 {
                     _maxObjectAnalysisDepth = value;
                     OnPropertyChanged();
-                    _aiSettings.MaxObjectAnalysisDepth = value;
+                    _aiConfiguration.MaxObjectAnalysisDepth = value;
                     SaveSettings();
                 }
             }
@@ -222,7 +223,7 @@ namespace DumpMiner.ViewModels
                 {
                     _isOpenAIEnabled = value;
                     OnPropertyChanged();
-                    _aiSettings.Providers.OpenAI.IsEnabled = value;
+                    _aiConfiguration.Providers.OpenAI.IsEnabled = value;
                     SaveSettings();
                 }
             }
@@ -237,7 +238,7 @@ namespace DumpMiner.ViewModels
                 {
                     _openAIApiKey = value;
                     OnPropertyChanged();
-                    _aiSettings.Providers.OpenAI.ApiKey = value;
+                    _aiConfiguration.Providers.OpenAI.ApiKey = value;
                     SaveSettings();
                 }
             }
@@ -252,7 +253,7 @@ namespace DumpMiner.ViewModels
                 {
                     _selectedOpenAIModel = value;
                     OnPropertyChanged();
-                    _aiSettings.Providers.OpenAI.Model = value;
+                    _aiConfiguration.Providers.OpenAI.Model = value;
                     UpdateSelectedModelInfo();
                     SaveSettings();
                 }
@@ -274,7 +275,7 @@ namespace DumpMiner.ViewModels
                 {
                     _isAnthropicEnabled = value;
                     OnPropertyChanged();
-                    _aiSettings.Providers.Anthropic.IsEnabled = value;
+                    _aiConfiguration.Providers.Anthropic.IsEnabled = value;
                     SaveSettings();
                 }
             }
@@ -289,7 +290,7 @@ namespace DumpMiner.ViewModels
                 {
                     _anthropicApiKey = value;
                     OnPropertyChanged();
-                    _aiSettings.Providers.Anthropic.ApiKey = value;
+                    _aiConfiguration.Providers.Anthropic.ApiKey = value;
                     SaveSettings();
                 }
             }
@@ -304,7 +305,7 @@ namespace DumpMiner.ViewModels
                 {
                     _selectedAnthropicModel = value;
                     OnPropertyChanged();
-                    _aiSettings.Providers.Anthropic.Model = value;
+                    _aiConfiguration.Providers.Anthropic.Model = value;
                     UpdateSelectedModelInfo();
                     SaveSettings();
                 }
@@ -326,7 +327,7 @@ namespace DumpMiner.ViewModels
                 {
                     _googleEnabled = value;
                     OnPropertyChanged();
-                    _aiSettings.Providers.Google.IsEnabled = value;
+                    _aiConfiguration.Providers.Google.IsEnabled = value;
                     SaveSettings();
                 }
             }
@@ -341,7 +342,7 @@ namespace DumpMiner.ViewModels
                 {
                     _googleApiKey = value;
                     OnPropertyChanged();
-                    _aiSettings.Providers.Google.ApiKey = value;
+                    _aiConfiguration.Providers.Google.ApiKey = value;
                     SaveSettings();
                 }
             }
@@ -356,7 +357,7 @@ namespace DumpMiner.ViewModels
                 {
                     _selectedGoogleModel = value;
                     OnPropertyChanged();
-                    _aiSettings.Providers.Google.Model = value;
+                    _aiConfiguration.Providers.Google.Model = value;
                     UpdateSelectedModelInfo();
                     SaveSettings();
                 }
@@ -367,30 +368,30 @@ namespace DumpMiner.ViewModels
         {
             try
             {
-                _aiSettings = _configService.Configuration.AI;
+                _aiConfiguration = _configService.Configuration.AI;
 
                 // Load general settings
-                SelectedProvider = _aiSettings.DefaultProvider.ToString();
-                MaxTokens = _aiSettings.MaxTokens;
-                TimeoutSeconds = _aiSettings.TimeoutSeconds;
-                EnableCaching = _aiSettings.EnableCaching;
-                MaxAutoFunctionCalls = _aiSettings.MaxAutoFunctionCalls;
-                MaxObjectAnalysisDepth = _aiSettings.MaxObjectAnalysisDepth;
+                SelectedProvider = _aiConfiguration.DefaultProvider.ToString();
+                MaxTokens = _aiConfiguration.MaxTokens;
+                TimeoutSeconds = _aiConfiguration.TimeoutSeconds;
+                EnableCaching = _aiConfiguration.EnableCaching;
+                MaxAutoFunctionCalls = _aiConfiguration.MaxAutoFunctionCalls;
+                MaxObjectAnalysisDepth = _aiConfiguration.MaxObjectAnalysisDepth;
 
                 // Load OpenAI settings
-                IsOpenAIEnabled = _aiSettings.Providers.OpenAI.IsEnabled;
-                OpenAIApiKey = _aiSettings.Providers.OpenAI.ApiKey;
-                SelectedOpenAIModel = _aiSettings.Providers.OpenAI.Model;
+                IsOpenAIEnabled = _aiConfiguration.Providers.OpenAI.IsEnabled;
+                OpenAIApiKey = _aiConfiguration.Providers.OpenAI.ApiKey;
+                SelectedOpenAIModel = _aiConfiguration.Providers.OpenAI.Model;
 
                 // Load Anthropic settings
-                IsAnthropicEnabled = _aiSettings.Providers.Anthropic.IsEnabled;
-                AnthropicApiKey = _aiSettings.Providers.Anthropic.ApiKey;
-                SelectedAnthropicModel = _aiSettings.Providers.Anthropic.Model;
+                IsAnthropicEnabled = _aiConfiguration.Providers.Anthropic.IsEnabled;
+                AnthropicApiKey = _aiConfiguration.Providers.Anthropic.ApiKey;
+                SelectedAnthropicModel = _aiConfiguration.Providers.Anthropic.Model;
 
                 // Load Google settings
-                GoogleEnabled = _aiSettings.Providers.Google.IsEnabled;
-                GoogleApiKey = _aiSettings.Providers.Google.ApiKey;
-                SelectedGoogleModel = _aiSettings.Providers.Google.Model;
+                GoogleEnabled = _aiConfiguration.Providers.Google.IsEnabled;
+                GoogleApiKey = _aiConfiguration.Providers.Google.ApiKey;
+                SelectedGoogleModel = _aiConfiguration.Providers.Google.Model;
 
                 UpdateSelectedModelInfo();
             }
@@ -425,7 +426,7 @@ namespace DumpMiner.ViewModels
             if (result == System.Windows.MessageBoxResult.Yes)
             {
                 _configService.ResetSection("AI");
-                _aiSettings = _configService.Configuration.AI;
+                _aiConfiguration = _configService.Configuration.AI;
                 LoadSettings();
             }
         }

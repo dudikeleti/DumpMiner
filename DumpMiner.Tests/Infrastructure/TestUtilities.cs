@@ -60,15 +60,15 @@ namespace DumpMiner.Tests.Infrastructure
                     pollInterval = TimeSpan.FromMilliseconds(100);
 
                 var deadline = DateTime.UtcNow.Add(timeout);
-                
+
                 while (DateTime.UtcNow < deadline)
                 {
                     if (condition())
                         return;
-                    
+
                     await Task.Delay(pollInterval);
                 }
-                
+
                 throw new TimeoutException($"Condition was not met within {timeout.TotalMilliseconds}ms");
             }
 
@@ -81,15 +81,15 @@ namespace DumpMiner.Tests.Infrastructure
                     pollInterval = TimeSpan.FromMilliseconds(100);
 
                 var deadline = DateTime.UtcNow.Add(timeout);
-                
+
                 while (DateTime.UtcNow < deadline)
                 {
                     if (await condition())
                         return;
-                    
+
                     await Task.Delay(pollInterval);
                 }
-                
+
                 throw new TimeoutException($"Async condition was not met within {timeout.TotalMilliseconds}ms");
             }
 
@@ -100,12 +100,12 @@ namespace DumpMiner.Tests.Infrastructure
                 where TException : Exception
             {
                 var exception = await Assert.ThrowsAsync<TException>(action);
-                
+
                 if (!string.IsNullOrEmpty(expectedMessage))
                 {
                     exception.Message.Should().Contain(expectedMessage);
                 }
-                
+
                 return exception;
             }
 
@@ -195,7 +195,7 @@ namespace DumpMiner.Tests.Infrastructure
             /// <summary>
             /// Creates a disposable temporary file
             /// </summary>
-            public static IDisposable CreateDisposableTempFile(string content = null, string extension = ".txt", out string filePath)
+            public static IDisposable CreateDisposableTempFile(out string filePath, string content = null, string extension = ".txt")
             {
                 filePath = CreateTempFile(content, extension);
                 return new DisposableFile(filePath);
@@ -213,12 +213,12 @@ namespace DumpMiner.Tests.Infrastructure
             private class DisposableFile : IDisposable
             {
                 private readonly string _filePath;
-                
+
                 public DisposableFile(string filePath)
                 {
                     _filePath = filePath;
                 }
-                
+
                 public void Dispose()
                 {
                     SafeDelete(_filePath);
@@ -228,12 +228,12 @@ namespace DumpMiner.Tests.Infrastructure
             private class DisposableDirectory : IDisposable
             {
                 private readonly string _directoryPath;
-                
+
                 public DisposableDirectory(string directoryPath)
                 {
                     _directoryPath = directoryPath;
                 }
-                
+
                 public void Dispose()
                 {
                     SafeDelete(_directoryPath);
@@ -289,14 +289,14 @@ namespace DumpMiner.Tests.Infrastructure
                 {
                     var current = keySelector(list[i]);
                     var previous = keySelector(list[i - 1]);
-                    
+
                     if (ascending)
                     {
-                        current.Should().BeGreaterOrEqualTo(previous);
+                        current.Should().BeGreaterThanOrEqualTo(previous);
                     }
                     else
                     {
-                        current.Should().BeLessOrEqualTo(previous);
+                        current.Should().BeLessThanOrEqualTo(previous);
                     }
                 }
             }
@@ -339,11 +339,11 @@ namespace DumpMiner.Tests.Infrastructure
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 action();
                 stopwatch.Stop();
-                
+
                 var elapsed = stopwatch.Elapsed;
-                elapsed.Should().BeLessOrEqualTo(maxDuration, 
+                elapsed.Should().BeLessThanOrEqualTo(maxDuration,
                     $"because {description ?? "operation"} should complete within {maxDuration.TotalMilliseconds}ms");
-                
+
                 return elapsed;
             }
 
@@ -355,11 +355,11 @@ namespace DumpMiner.Tests.Infrastructure
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 await action();
                 stopwatch.Stop();
-                
+
                 var elapsed = stopwatch.Elapsed;
-                elapsed.Should().BeLessOrEqualTo(maxDuration, 
+                elapsed.Should().BeLessThanOrEqualTo(maxDuration,
                     $"because {description ?? "operation"} should complete within {maxDuration.TotalMilliseconds}ms");
-                
+
                 return elapsed;
             }
 
@@ -369,7 +369,7 @@ namespace DumpMiner.Tests.Infrastructure
             public static PerformanceResult RunPerformanceTest(Action action, int iterations = 100, string description = null)
             {
                 var times = new List<TimeSpan>();
-                
+
                 for (int i = 0; i < iterations; i++)
                 {
                     var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -377,7 +377,7 @@ namespace DumpMiner.Tests.Infrastructure
                     stopwatch.Stop();
                     times.Add(stopwatch.Elapsed);
                 }
-                
+
                 return new PerformanceResult
                 {
                     Description = description ?? "performance test",
@@ -396,7 +396,7 @@ namespace DumpMiner.Tests.Infrastructure
             public static async Task<PerformanceResult> RunPerformanceTestAsync(Func<Task> action, int iterations = 100, string description = null)
             {
                 var times = new List<TimeSpan>();
-                
+
                 for (int i = 0; i < iterations; i++)
                 {
                     var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -404,7 +404,7 @@ namespace DumpMiner.Tests.Infrastructure
                     stopwatch.Stop();
                     times.Add(stopwatch.Elapsed);
                 }
-                
+
                 return new PerformanceResult
                 {
                     Description = description ?? "async performance test",
@@ -450,7 +450,7 @@ namespace DumpMiner.Tests.Infrastructure
             /// <summary>
             /// Validates that a number is within a specific range
             /// </summary>
-            public static void AssertInRange<T>(T value, T min, T max, string description = null) 
+            public static void AssertInRange<T>(T value, T min, T max, string description = null)
                 where T : IComparable<T>
             {
                 value.Should().BeInRange(min, max, description ?? "value should be in range");
@@ -485,12 +485,12 @@ namespace DumpMiner.Tests.Infrastructure
             {
                 var random = new Random();
                 var address = (ulong)random.Next(0x100000, 0x7FFFFFFF);
-                
+
                 if (highBit)
                 {
                     address |= 0x8000000000000000UL;
                 }
-                
+
                 return address;
             }
 
@@ -524,12 +524,12 @@ namespace DumpMiner.Tests.Infrastructure
                 where TException : Exception
             {
                 var exception = Assert.Throws<TException>(action);
-                
+
                 if (!string.IsNullOrEmpty(expectedMessage))
                 {
                     exception.Message.Should().Contain(expectedMessage);
                 }
-                
+
                 return exception;
             }
 
@@ -561,7 +561,7 @@ namespace DumpMiner.Tests.Infrastructure
             /// <summary>
             /// Verifies that a type implements a specific interface
             /// </summary>
-            public static void AssertImplements<TInterface>(Type type)
+            public static void AssertImplements<TInterface>(Type type) where TInterface : class
             {
                 type.Should().Implement<TInterface>();
             }
@@ -579,7 +579,7 @@ namespace DumpMiner.Tests.Infrastructure
             /// </summary>
             public static void AssertAssignableFrom<TBase>(Type derivedType)
             {
-                typeof(TBase).Should().BeAssignableFrom(derivedType);
+                derivedType.Should().BeAssignableTo(typeof(TBase));
             }
         }
     }
@@ -603,4 +603,4 @@ namespace DumpMiner.Tests.Infrastructure
                    $"Min: {MinTime.TotalMilliseconds:F2}ms, Max: {MaxTime.TotalMilliseconds:F2}ms";
         }
     }
-} 
+}
