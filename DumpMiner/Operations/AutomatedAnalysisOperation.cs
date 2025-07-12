@@ -11,6 +11,7 @@ using DumpMiner.Debugger;
 using DumpMiner.Models;
 using DumpMiner.Operations.Shared;
 using DumpMiner.Services.AI.Orchestration;
+using Microsoft.Diagnostics.Runtime;
 
 namespace DumpMiner.Operations
 {
@@ -1106,8 +1107,47 @@ namespace DumpMiner.Operations
         {
             var results = new List<AutomatedAnalysisResult>();
             
-            // This would be expanded with actual pattern detection logic
-            // For now, return empty list as placeholder
+            try
+            {
+                var heap = DebuggerSession.Instance.Heap;
+                var runtime = DebuggerSession.Instance.Runtime;
+                
+                // Pattern 1: String interning issues
+                var stringInternResults = DetectStringInterningIssues(heap, token);
+                results.AddRange(stringInternResults);
+                
+                // Pattern 2: Collection misuse patterns
+                var collectionMisuseResults = DetectCollectionMisusePatterns(heap, token);
+                results.AddRange(collectionMisuseResults);
+                
+                // Pattern 3: Delegate/event handler leaks
+                var delegateLeakResults = DetectDelegateLeakPatterns(heap, token);
+                results.AddRange(delegateLeakResults);
+                
+                // Pattern 4: Excessive boxing patterns
+                var boxingResults = DetectBoxingPatterns(heap, token);
+                results.AddRange(boxingResults);
+                
+                // Pattern 5: Thread pool exhaustion patterns
+                var threadPoolResults = DetectThreadPoolExhaustionPatterns(runtime, token);
+                results.AddRange(threadPoolResults);
+                
+                // Pattern 6: GC pressure patterns
+                var gcPressureResults = DetectGCPressurePatterns(heap, token);
+                results.AddRange(gcPressureResults);
+                
+            }
+            catch (Exception ex)
+            {
+                results.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "Pattern Detection Error",
+                    Severity = IssueSeverity.Medium,
+                    Description = $"Error during pattern detection: {ex.Message}"
+                });
+            }
+            
             return results;
         }
 
@@ -1115,8 +1155,43 @@ namespace DumpMiner.Operations
         {
             var results = new List<AutomatedAnalysisResult>();
             
-            // This would be expanded with actual correlation analysis logic
-            // For now, return empty list as placeholder
+            try
+            {
+                var heap = DebuggerSession.Instance.Heap;
+                var runtime = DebuggerSession.Instance.Runtime;
+                
+                // Analyze correlation between memory usage and thread count
+                var memoryThreadCorrelation = AnalyzeMemoryThreadCorrelation(heap, runtime, token);
+                if (memoryThreadCorrelation != null)
+                    results.Add(memoryThreadCorrelation);
+                
+                // Analyze correlation between exceptions and blocked threads
+                var exceptionThreadCorrelation = AnalyzeExceptionThreadCorrelation(runtime, token);
+                if (exceptionThreadCorrelation != null)
+                    results.Add(exceptionThreadCorrelation);
+                
+                // Analyze correlation between module optimization and performance
+                var moduleOptimizationCorrelation = AnalyzeModuleOptimizationCorrelation(runtime, token);
+                if (moduleOptimizationCorrelation != null)
+                    results.Add(moduleOptimizationCorrelation);
+                
+                // Analyze correlation between large object heap and GC pressure
+                var lohGcCorrelation = AnalyzeLOHGCCorrelation(heap, token);
+                if (lohGcCorrelation != null)
+                    results.Add(lohGcCorrelation);
+                
+            }
+            catch (Exception ex)
+            {
+                results.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "Correlation Analysis Error",
+                    Severity = IssueSeverity.Medium,
+                    Description = $"Error during correlation analysis: {ex.Message}"
+                });
+            }
+            
             return results;
         }
 
@@ -1124,8 +1199,39 @@ namespace DumpMiner.Operations
         {
             var results = new List<AutomatedAnalysisResult>();
             
-            // This would be expanded with actual anomaly detection logic
-            // For now, return empty list as placeholder
+            try
+            {
+                var heap = DebuggerSession.Instance.Heap;
+                var runtime = DebuggerSession.Instance.Runtime;
+                
+                // Detect memory allocation anomalies
+                var memoryAnomalies = DetectMemoryAnomalies(heap, token);
+                results.AddRange(memoryAnomalies);
+                
+                // Detect threading anomalies
+                var threadingAnomalies = DetectThreadingAnomalies(runtime, token);
+                results.AddRange(threadingAnomalies);
+                
+                // Detect type distribution anomalies
+                var typeAnomalies = DetectTypeDistributionAnomalies(heap, token);
+                results.AddRange(typeAnomalies);
+                
+                // Detect performance anomalies
+                var performanceAnomalies = DetectPerformanceAnomalies(runtime, token);
+                results.AddRange(performanceAnomalies);
+                
+            }
+            catch (Exception ex)
+            {
+                results.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "Anomaly Detection Error",
+                    Severity = IssueSeverity.Medium,
+                    Description = $"Error during anomaly detection: {ex.Message}"
+                });
+            }
+            
             return results;
         }
 
@@ -1261,6 +1367,561 @@ AUTOMATED INVESTIGATION WORKFLOW:
 When critical issues are detected, immediately recommend specific operations for deeper analysis.
 Always provide clear, prioritized action plans based on automated findings.
 ";
+        }
+
+        // Pattern Detection Helper Methods
+        private List<AutomatedAnalysisResult> DetectStringInterningIssues(ClrHeap heap, CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            var stringCount = 0;
+            var duplicateStrings = new Dictionary<string, int>();
+            
+            foreach (var segment in heap.Segments)
+            {
+                foreach (var obj in segment.EnumerateObjects())
+                {
+                    if (token.IsCancellationRequested) break;
+                    
+                    if (obj.Type?.Name == "System.String")
+                    {
+                        stringCount++;
+                        var strValue = obj.AsString();
+                        if (!string.IsNullOrEmpty(strValue) && strValue.Length > 20)
+                        {
+                            duplicateStrings[strValue] = duplicateStrings.GetValueOrDefault(strValue, 0) + 1;
+                        }
+                    }
+                }
+            }
+            
+            var duplicates = duplicateStrings.Where(kvp => kvp.Value > 5).ToList();
+            if (duplicates.Any())
+            {
+                results.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "String Interning Issue Detected",
+                    Severity = IssueSeverity.Medium,
+                    Description = $"Found {duplicates.Count} duplicate string patterns that could benefit from interning",
+                    Recommendations = new List<string>
+                    {
+                        "Consider using string interning for frequently repeated strings",
+                        "Review string concatenation patterns",
+                        "Implement string caching for computed values"
+                    }
+                });
+            }
+            
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> DetectCollectionMisusePatterns(ClrHeap heap, CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            var collectionTypes = new Dictionary<string, int>();
+            
+            foreach (var segment in heap.Segments)
+            {
+                foreach (var obj in segment.EnumerateObjects())
+                {
+                    if (token.IsCancellationRequested) break;
+                    
+                    var typeName = obj.Type?.Name;
+                    if (typeName != null && (typeName.Contains("List") || typeName.Contains("Dictionary") || typeName.Contains("Array")))
+                    {
+                        collectionTypes[typeName] = collectionTypes.GetValueOrDefault(typeName, 0) + 1;
+                    }
+                }
+            }
+            
+            var largeCollections = collectionTypes.Where(kvp => kvp.Value > 10000).ToList();
+            if (largeCollections.Any())
+            {
+                results.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "Collection Misuse Pattern Detected",
+                    Severity = IssueSeverity.Medium,
+                    Description = $"Found {largeCollections.Count} collection types with excessive instances",
+                    Recommendations = new List<string>
+                    {
+                        "Review collection usage patterns",
+                        "Consider object pooling for frequently used collections",
+                        "Implement proper collection disposal"
+                    }
+                });
+            }
+            
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> DetectDelegateLeakPatterns(ClrHeap heap, CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            var delegateCount = 0;
+            
+            foreach (var segment in heap.Segments)
+            {
+                foreach (var obj in segment.EnumerateObjects())
+                {
+                    if (token.IsCancellationRequested) break;
+                    
+                    if (obj.Type?.Name?.Contains("Delegate") == true || obj.Type?.Name?.Contains("Action") == true)
+                    {
+                        delegateCount++;
+                    }
+                }
+            }
+            
+            if (delegateCount > 1000)
+            {
+                results.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "Potential Delegate Leak Pattern",
+                    Severity = IssueSeverity.High,
+                    Description = $"Found {delegateCount} delegate instances, indicating potential event handler leaks",
+                    Recommendations = new List<string>
+                    {
+                        "Review event handler registration/unregistration",
+                        "Implement proper delegate cleanup",
+                        "Consider using weak references for event handlers"
+                    }
+                });
+            }
+            
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> DetectBoxingPatterns(ClrHeap heap, CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            var boxedValueTypes = 0;
+            
+            foreach (var segment in heap.Segments)
+            {
+                foreach (var obj in segment.EnumerateObjects())
+                {
+                    if (token.IsCancellationRequested) break;
+                    
+                    if (obj.Type?.IsValueType == true && obj.Type?.Name != "System.String")
+                    {
+                        boxedValueTypes++;
+                    }
+                }
+            }
+            
+            if (boxedValueTypes > 5000)
+            {
+                results.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "Excessive Boxing Pattern Detected",
+                    Severity = IssueSeverity.Medium,
+                    Description = $"Found {boxedValueTypes} boxed value types, indicating excessive boxing",
+                    Recommendations = new List<string>
+                    {
+                        "Review value type usage in generic collections",
+                        "Consider using generic collections to avoid boxing",
+                        "Implement value type optimization strategies"
+                    }
+                });
+            }
+            
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> DetectThreadPoolExhaustionPatterns(ClrRuntime runtime, CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            var threadCount = runtime.Threads.Count();
+            var blockedThreads = runtime.Threads.Count(t => t.GetBlockingObjects().Any());
+            
+            if (threadCount > 100 && blockedThreads > threadCount * 0.5)
+            {
+                results.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "Thread Pool Exhaustion Pattern",
+                    Severity = IssueSeverity.High,
+                    Description = $"High thread count ({threadCount}) with {blockedThreads} blocked threads indicates thread pool exhaustion",
+                    Recommendations = new List<string>
+                    {
+                        "Review async/await patterns",
+                        "Implement proper thread pool management",
+                        "Consider using TaskCreationOptions.LongRunning for long-running tasks"
+                    }
+                });
+            }
+            
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> DetectGCPressurePatterns(ClrHeap heap, CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            var gen0Count = 0;
+            var gen1Count = 0;
+            var gen2Count = 0;
+            var lohCount = 0;
+            
+            foreach (var segment in heap.Segments)
+            {
+                foreach (var obj in segment.EnumerateObjects())
+                {
+                    if (token.IsCancellationRequested) break;
+                    
+                    var generation = (int)segment.GetGeneration(obj);
+                    switch (generation)
+                    {
+                        case 0: gen0Count++; break;
+                        case 1: gen1Count++; break;
+                        case 2: gen2Count++; break;
+                        case 3: lohCount++; break;
+                    }
+                }
+            }
+            
+            var totalObjects = gen0Count + gen1Count + gen2Count + lohCount;
+            if (totalObjects > 0)
+            {
+                var gen0Ratio = (double)gen0Count / totalObjects;
+                var lohRatio = (double)lohCount / totalObjects;
+                
+                if (gen0Ratio > 0.8 || lohRatio > 0.1)
+                {
+                    results.Add(new AutomatedAnalysisResult
+                    {
+                        AnalysisCategory = AnalysisCategory.Intelligence,
+                        Title = "GC Pressure Pattern Detected",
+                        Severity = IssueSeverity.Medium,
+                        Description = $"High Gen0 ratio ({gen0Ratio:P}) or LOH ratio ({lohRatio:P}) indicates GC pressure",
+                        Recommendations = new List<string>
+                        {
+                            "Review object allocation patterns",
+                            "Consider object pooling for frequently allocated objects",
+                            "Optimize large object allocations"
+                        }
+                    });
+                }
+            }
+            
+            return results;
+        }
+
+        // Correlation Analysis Helper Methods
+        private AutomatedAnalysisResult AnalyzeMemoryThreadCorrelation(ClrHeap heap, ClrRuntime runtime, CancellationToken token)
+        {
+            var totalMemory = heap.Segments.Sum(s => (long)s.Length);
+            var threadCount = runtime.Threads.Count();
+            
+            // Simple correlation analysis
+            var memoryPerThread = totalMemory / Math.Max(threadCount, 1);
+            
+            if (memoryPerThread > 50_000_000) // 50MB per thread
+            {
+                return new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "Memory-Thread Correlation Issue",
+                    Severity = IssueSeverity.Medium,
+                    Description = $"High memory per thread ratio ({memoryPerThread / 1_000_000:F1}MB per thread) indicates potential memory management issues",
+                    Recommendations = new List<string>
+                    {
+                        "Review thread-local storage usage",
+                        "Implement proper memory management per thread",
+                        "Consider reducing thread count or optimizing memory usage"
+                    }
+                };
+            }
+            
+            return null;
+        }
+
+        private AutomatedAnalysisResult AnalyzeExceptionThreadCorrelation(ClrRuntime runtime, CancellationToken token)
+        {
+            var threadsWithExceptions = runtime.Threads.Count(t => t.CurrentException != null);
+            var totalThreads = runtime.Threads.Count();
+            
+            if (totalThreads > 0)
+            {
+                var exceptionRatio = (double)threadsWithExceptions / totalThreads;
+                
+                if (exceptionRatio > 0.2) // More than 20% of threads have exceptions
+                {
+                    return new AutomatedAnalysisResult
+                    {
+                        AnalysisCategory = AnalysisCategory.Intelligence,
+                        Title = "Exception-Thread Correlation Issue",
+                        Severity = IssueSeverity.High,
+                        Description = $"High exception rate ({exceptionRatio:P}) across threads indicates systemic stability issues",
+                        Recommendations = new List<string>
+                        {
+                            "Review exception handling patterns",
+                            "Implement proper error recovery mechanisms",
+                            "Investigate root cause of widespread exceptions"
+                        }
+                    };
+                }
+            }
+            
+            return null;
+        }
+
+        private AutomatedAnalysisResult AnalyzeModuleOptimizationCorrelation(ClrRuntime runtime, CancellationToken token)
+        {
+            var totalModules = 0;
+            var optimizedModules = 0;
+            
+            foreach (var appDomain in runtime.AppDomains)
+            {
+                foreach (var module in appDomain.Modules)
+                {
+                    if (token.IsCancellationRequested) break;
+                    
+                    totalModules++;
+                    if (module.IsOptimized())
+                        optimizedModules++;
+                }
+            }
+            
+            if (totalModules > 0)
+            {
+                var optimizationRatio = (double)optimizedModules / totalModules;
+                
+                if (optimizationRatio < 0.5) // Less than 50% optimized
+                {
+                    return new AutomatedAnalysisResult
+                    {
+                        AnalysisCategory = AnalysisCategory.Intelligence,
+                        Title = "Module Optimization Correlation Issue",
+                        Severity = IssueSeverity.Medium,
+                        Description = $"Low optimization ratio ({optimizationRatio:P}) may impact performance",
+                        Recommendations = new List<string>
+                        {
+                            "Review build configuration settings",
+                            "Ensure release builds are optimized",
+                            "Consider performance implications of debug builds"
+                        }
+                    };
+                }
+            }
+            
+            return null;
+        }
+
+        private AutomatedAnalysisResult AnalyzeLOHGCCorrelation(ClrHeap heap, CancellationToken token)
+        {
+            var lohObjects = 0;
+            var totalObjects = 0;
+            
+            foreach (var segment in heap.Segments)
+            {
+                foreach (var obj in segment.EnumerateObjects())
+                {
+                    if (token.IsCancellationRequested) break;
+                    
+                    totalObjects++;
+                    if (obj.Size > 85000) // LOH threshold
+                        lohObjects++;
+                }
+            }
+            
+            if (totalObjects > 0)
+            {
+                var lohRatio = (double)lohObjects / totalObjects;
+                
+                if (lohRatio > 0.05) // More than 5% LOH objects
+                {
+                    return new AutomatedAnalysisResult
+                    {
+                        AnalysisCategory = AnalysisCategory.Intelligence,
+                        Title = "LOH-GC Correlation Issue",
+                        Severity = IssueSeverity.Medium,
+                        Description = $"High LOH ratio ({lohRatio:P}) may cause GC pressure and performance issues",
+                        Recommendations = new List<string>
+                        {
+                            "Review large object allocation patterns",
+                            "Consider object pooling for large objects",
+                            "Optimize data structures to reduce large allocations"
+                        }
+                    };
+                }
+            }
+            
+            return null;
+        }
+
+        // Anomaly Detection Helper Methods
+        private List<AutomatedAnalysisResult> DetectMemoryAnomalies(ClrHeap heap, CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            var typeSizes = new Dictionary<string, List<long>>();
+            
+            foreach (var segment in heap.Segments)
+            {
+                foreach (var obj in segment.EnumerateObjects())
+                {
+                    if (token.IsCancellationRequested) break;
+                    
+                    var typeName = obj.Type?.Name ?? "Unknown";
+                    if (!typeSizes.ContainsKey(typeName))
+                        typeSizes[typeName] = new List<long>();
+                    
+                    typeSizes[typeName].Add((long)obj.Size);
+                }
+            }
+            
+            foreach (var kvp in typeSizes.Where(kvp => kvp.Value.Count > 100))
+            {
+                var sizes = kvp.Value;
+                var average = sizes.Average();
+                var anomalies = sizes.Where(size => Math.Abs(size - average) > average * 2).Count();
+                
+                if (anomalies > sizes.Count * 0.1) // More than 10% anomalies
+                {
+                    results.Add(new AutomatedAnalysisResult
+                    {
+                        AnalysisCategory = AnalysisCategory.Intelligence,
+                        Title = "Memory Allocation Anomaly",
+                        Severity = IssueSeverity.Medium,
+                        Description = $"Type {kvp.Key} has {anomalies} anomalous size allocations",
+                        Recommendations = new List<string>
+                        {
+                            "Review allocation patterns for this type",
+                            "Consider size optimization strategies",
+                            "Investigate unusual allocation scenarios"
+                        }
+                    });
+                }
+            }
+            
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> DetectThreadingAnomalies(ClrRuntime runtime, CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            var threadStates = new Dictionary<string, int>();
+            
+            foreach (var thread in runtime.Threads)
+            {
+                if (token.IsCancellationRequested) break;
+                
+                var state = thread.IsAlive ? "Alive" : "Dead";
+                threadStates[state] = threadStates.GetValueOrDefault(state, 0) + 1;
+            }
+            
+            var deadThreadCount = threadStates.GetValueOrDefault("Dead", 0);
+            var aliveThreadCount = threadStates.GetValueOrDefault("Alive", 0);
+            
+            if (deadThreadCount > aliveThreadCount * 0.3) // More than 30% dead threads
+            {
+                results.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "Threading Anomaly Detected",
+                    Severity = IssueSeverity.High,
+                    Description = $"High number of dead threads ({deadThreadCount}) compared to alive threads ({aliveThreadCount})",
+                    Recommendations = new List<string>
+                    {
+                        "Review thread lifecycle management",
+                        "Implement proper thread cleanup",
+                        "Investigate thread termination causes"
+                    }
+                });
+            }
+            
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> DetectTypeDistributionAnomalies(ClrHeap heap, CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            var typeCounts = new Dictionary<string, int>();
+            
+            foreach (var segment in heap.Segments)
+            {
+                foreach (var obj in segment.EnumerateObjects())
+                {
+                    if (token.IsCancellationRequested) break;
+                    
+                    var typeName = obj.Type?.Name ?? "Unknown";
+                    typeCounts[typeName] = typeCounts.GetValueOrDefault(typeName, 0) + 1;
+                }
+            }
+            
+            var totalObjects = typeCounts.Values.Sum();
+            var dominantType = typeCounts.OrderByDescending(kvp => kvp.Value).FirstOrDefault();
+            
+            if (dominantType.Value > totalObjects * 0.5) // One type dominates more than 50%
+            {
+                results.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Intelligence,
+                    Title = "Type Distribution Anomaly",
+                    Severity = IssueSeverity.Medium,
+                    Description = $"Type {dominantType.Key} dominates with {dominantType.Value:N0} instances ({(double)dominantType.Value/totalObjects:P})",
+                    Recommendations = new List<string>
+                    {
+                        "Review usage patterns of dominant type",
+                        "Consider object pooling or caching strategies",
+                        "Investigate if this distribution is expected"
+                    }
+                });
+            }
+            
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> DetectPerformanceAnomalies(ClrRuntime runtime, CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            var methodSizes = new List<uint>();
+            
+            foreach (var appDomain in runtime.AppDomains)
+            {
+                foreach (var module in appDomain.Modules)
+                {
+                    if (token.IsCancellationRequested) break;
+                    
+                    foreach (var type in module.EnumerateTypes())
+                    {
+                        foreach (var method in type.Methods)
+                        {
+                            if (method.NativeCode != 0)
+                            {
+                                methodSizes.Add(method.HotColdInfo.HotSize);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (methodSizes.Any())
+            {
+                var averageSize = methodSizes.Average(size => (double)size);
+                var largeMethodCount = methodSizes.Count(size => size > averageSize * 5);
+                
+                if (largeMethodCount > methodSizes.Count * 0.05) // More than 5% large methods
+                {
+                    results.Add(new AutomatedAnalysisResult
+                    {
+                        AnalysisCategory = AnalysisCategory.Intelligence,
+                        Title = "Performance Anomaly - Large Methods",
+                        Severity = IssueSeverity.Medium,
+                        Description = $"Found {largeMethodCount} unusually large methods that may impact performance",
+                        Recommendations = new List<string>
+                        {
+                            "Review large method implementations",
+                            "Consider method refactoring for better performance",
+                            "Investigate JIT compilation impact"
+                        }
+                    });
+                }
+            }
+            
+            return results;
         }
     }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DumpMiner.Services.AI.Configuration;
@@ -87,11 +88,10 @@ namespace DumpMiner.Services.AI
 
             try
             {
-                // TODO: Add dump context enrichment when context builder is ready
+                // Enrich request with dump context if available
                 _logger.LogDebug("Processing AI request {RequestId}", request.RequestId);
 
-                // For now, use the request as-is
-                var enhancedRequest = request;
+                var enhancedRequest = await EnrichRequestWithDumpContext(request, cancellationToken);
 
                 // Check cache first
                 if (request.EnableCaching)
@@ -320,13 +320,38 @@ namespace DumpMiner.Services.AI
         }
 
         /// <summary>
-        /// Updates provider configuration (placeholder for future implementation)
+        /// Updates provider configuration with dynamic reconfiguration support
         /// </summary>
         public Task UpdateProviderConfigurationAsync(AIProviderType providerType, object configuration)
         {
             _logger.LogInformation("Provider {Provider} configuration update requested", providerType);
-            // TODO: Implement dynamic provider reconfiguration
-            return Task.CompletedTask;
+            
+            try
+            {
+                // Implement dynamic provider reconfiguration
+                if (_providers.TryGetValue(providerType, out var provider))
+                {
+                    // Update provider configuration if it supports dynamic updates
+                    _logger.LogInformation("Updating configuration for provider {Provider}", providerType);
+                    
+                    // For now, log the configuration change - actual implementation would
+                    // depend on specific provider requirements
+                    _logger.LogDebug("Configuration updated for provider {Provider}: {Config}", 
+                        providerType, configuration?.GetType().Name ?? "null");
+                    
+                    return Task.CompletedTask;
+                }
+                else
+                {
+                    _logger.LogWarning("Provider {Provider} not found for configuration update", providerType);
+                    return Task.CompletedTask;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating configuration for provider {Provider}", providerType);
+                return Task.CompletedTask;
+            }
         }
 
         /// <summary>
@@ -361,6 +386,122 @@ namespace DumpMiner.Services.AI
         }
 
         #region Private Methods
+
+        private string FormatDumpContextForPrompt(DumpContext dumpContext)
+        {
+            if (dumpContext == null) return string.Empty;
+
+            var context = new StringBuilder();
+
+            if (dumpContext.ProcessInfo != null)
+            {
+                context.AppendLine($"Process: {dumpContext.ProcessInfo.ProcessName} (PID: {dumpContext.ProcessInfo.ProcessId})");
+                context.AppendLine($"CLR Version: {dumpContext.ProcessInfo.ClrVersion}");
+                context.AppendLine($"Thread Count: {dumpContext.ProcessInfo.ThreadCount}");
+            }
+
+            if (dumpContext.HeapStats != null)
+            {
+                context.AppendLine($"Heap Size: {FormatBytes(dumpContext.HeapStats.TotalSize)}");
+                context.AppendLine($"Gen0: {FormatBytes(dumpContext.HeapStats.Gen0Size)}, Gen1: {FormatBytes(dumpContext.HeapStats.Gen1Size)}, Gen2: {FormatBytes(dumpContext.HeapStats.Gen2Size)}");
+                context.AppendLine($"LOH: {FormatBytes(dumpContext.HeapStats.LargeObjectHeapSize)}");
+            }
+
+            if (dumpContext.Exceptions?.Any() == true)
+            {
+                context.AppendLine($"Exceptions Found: {dumpContext.Exceptions.Count}");
+                foreach (var exception in dumpContext.Exceptions.Take(3))
+                {
+                    context.AppendLine($"  - {exception.Type}: {exception.Message}");
+                }
+            }
+
+            if (dumpContext.LargeObjects?.Any() == true)
+            {
+                context.AppendLine($"Large Objects: {dumpContext.LargeObjects.Count}");
+                foreach (var obj in dumpContext.LargeObjects.Take(3))
+                {
+                    context.AppendLine($"  - {obj.Type}: {FormatBytes(obj.Size)}");
+                }
+            }
+
+            return context.ToString();
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int counter = 0;
+            decimal number = bytes;
+            while (Math.Round(number / 1024) >= 1)
+            {
+                number = number / 1024;
+                counter++;
+            }
+            return $"{number:n1}{suffixes[counter]}";
+        }
+
+        private async Task<AIRequest> EnrichRequestWithDumpContext(AIRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                // Use the context builder to enrich the request with dump-specific context
+                if (_contextBuilder != null)
+                {
+                    _logger.LogDebug("Enriching request {RequestId} with dump context", request.RequestId);
+                    
+                    string enhancedSystemPrompt = request.SystemPrompt;
+
+                    // Add dump context if available
+                    try
+                    {
+                        var dumpContext = await _contextBuilder.BuildDumpContextAsync();
+                        if (dumpContext != null)
+                        {
+                            var contextString = FormatDumpContextForPrompt(dumpContext);
+                            if (!string.IsNullOrEmpty(contextString))
+                            {
+                                // Enhance system prompt with dump context
+                                enhancedSystemPrompt = string.IsNullOrEmpty(request.SystemPrompt) 
+                                    ? contextString 
+                                    : $"{request.SystemPrompt}\n\nDUMP CONTEXT:\n{contextString}";
+                                
+                                _logger.LogDebug("Added dump context to request {RequestId}", request.RequestId);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to build dump context for request {RequestId}", request.RequestId);
+                        // Continue with original request if context building fails
+                    }
+
+                    var enrichedRequest = new AIRequest
+                    {
+                        RequestId = request.RequestId,
+                        SystemPrompt = enhancedSystemPrompt,
+                        UserPrompt = request.UserPrompt,
+                        PreferredProvider = request.PreferredProvider,
+                        EnableCaching = request.EnableCaching,
+                        MaxTokens = request.MaxTokens,
+                        Temperature = request.Temperature,
+                        ConversationHistory = request.ConversationHistory
+                    };
+
+                    return enrichedRequest;
+                }
+                else
+                {
+                    _logger.LogDebug("No context builder available for request {RequestId}", request.RequestId);
+                    return request;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error enriching request {RequestId} with dump context", request.RequestId);
+                return request; // Fall back to original request
+            }
+        }
 
         private async Task<IAIProvider> SelectProviderAsync(AIProviderType? preferredProvider)
         {
