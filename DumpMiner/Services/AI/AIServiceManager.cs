@@ -343,15 +343,21 @@ namespace DumpMiner.Services.AI
         /// </summary>
         public async Task<bool> IsAvailableAsync()
         {
-            try
+            // Return true if any provider is available
+            foreach (var provider in _providers.Values)
             {
-                return _providers.Values.Any(p => p.IsConfigured);
+                if (await IsProviderAvailableAsync(provider.ProviderType))
+                    return true;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking AI availability");
-                return false;
-            }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the current AI configuration
+        /// </summary>
+        public AIConfiguration GetConfiguration()
+        {
+            return _config;
         }
 
         #region Private Methods

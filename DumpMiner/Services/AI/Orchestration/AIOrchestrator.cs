@@ -128,8 +128,8 @@ namespace DumpMiner.Services.AI.Orchestration
                     SystemPrompt = systemPrompt,
                     UserPrompt = context.UserPrompt,
                     ConversationHistory = context.ConversationHistory,
-                    MaxTokens = CalculateMaxTokens(context),
-                    Temperature = 0.1 // Lower temperature for more consistent debugging analysis
+                    MaxTokens = CalculateMaxTokens(context)
+                    // Temperature will use provider configuration - no override needed
                 };
 
                 // Execute AI request
@@ -454,7 +454,7 @@ namespace DumpMiner.Services.AI.Orchestration
             var availableOperations = new[]
             {
                 "DumpObject", "DumpObjectOperation",
-                "GetObjectRoot", "GetObjectRootOperation", 
+                "GetObjectRoot", "GetObjectRootOperation",
                 "DumpTypeInfo", "DumpTypeInfoOperation",
                 "DumpMethods", "DumpMethodsOperation",
                 "DumpException", "DumpExceptionOperation", "DumpExceptions", "DumpExceptionsOperation",
@@ -486,10 +486,10 @@ namespace DumpMiner.Services.AI.Orchestration
                         // Extract reasoning from the surrounding context
                         var match = matches[0];
                         var reasoning = ExtractReasoningFromContext(aiResponse, match.Index, operation);
-                        
+
                         // Normalize operation name (remove "Operation" suffix if present)
-                        var normalizedName = operation.EndsWith("Operation") 
-                            ? operation.Substring(0, operation.Length - 9) 
+                        var normalizedName = operation.EndsWith("Operation")
+                            ? operation.Substring(0, operation.Length - 9)
                             : operation;
 
                         // Check if we already have this operation
@@ -516,29 +516,97 @@ namespace DumpMiner.Services.AI.Orchestration
             // Extract the sentence containing the operation mention
             var sentenceStart = text.LastIndexOf('.', Math.Max(0, matchIndex - 100));
             if (sentenceStart == -1) sentenceStart = Math.Max(0, matchIndex - 100);
-            
+
             var sentenceEnd = text.IndexOf('.', matchIndex + operation.Length);
             if (sentenceEnd == -1) sentenceEnd = Math.Min(text.Length, matchIndex + operation.Length + 200);
-            
+
             var sentence = text.Substring(sentenceStart, sentenceEnd - sentenceStart).Trim();
-            
+
             // Clean up the sentence
             if (sentence.StartsWith('.')) sentence = sentence.Substring(1).Trim();
             if (sentence.Length > 200) sentence = sentence.Substring(0, 200) + "...";
-            
-            return string.IsNullOrWhiteSpace(sentence) 
-                ? $"AI suggested using {operation} for further investigation" 
+
+            return string.IsNullOrWhiteSpace(sentence)
+                ? $"AI suggested using {operation} for further investigation"
                 : sentence;
         }
 
         private int CalculateMaxTokens(OperationContext context)
         {
-            // Calculate max tokens based on context size and provider limits
-            var baseTokens = 2000; // Base response tokens
+            // More appropriate base tokens for debugging scenarios
+            var baseTokens = 8000; // Increased from 2000 for comprehensive debugging analysis
             var contextTokens = context.EstimatedTokens;
-            var totalAvailable = 128000; // Assume GPT-4 context window
 
-            return Math.Min(baseTokens, totalAvailable - contextTokens - 1000); // Leave buffer
+            // Get model-specific context window (instead of hardcoded 128k)
+            var totalAvailable = GetContextWindowForCurrentModel();
+
+            // Ensure we have enough room for the response
+            var maxAllowed = totalAvailable - contextTokens - 2000; // Increased buffer
+
+            // Return the minimum of desired base tokens and what's available
+            return Math.Max(1000, Math.Min(baseTokens, maxAllowed)); // Ensure at least 1000 tokens
+        }
+
+        private int GetContextWindowForCurrentModel()
+        {
+            try
+            {
+                // Get the current AI configuration from the service manager
+                var config = _aiServiceManager.GetConfiguration();
+                if (config != null)
+                {
+                    var provider = config.DefaultProvider;
+                    return provider switch
+                    {
+                        Services.AI.Configuration.AIProviderType.OpenAI => GetOpenAIContextWindow(config.Providers.OpenAI.Model),
+                        Services.AI.Configuration.AIProviderType.Anthropic => GetAnthropicContextWindow(config.Providers.Anthropic.Model),
+                        Services.AI.Configuration.AIProviderType.Google => GetGoogleContextWindow(config.Providers.Google.Model),
+                        _ => 128000 // Fallback
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get model-specific context window, using default");
+            }
+            
+            return 128000; // Safe fallback
+        }
+        
+        private int GetOpenAIContextWindow(string model)
+        {
+            return model switch
+            {
+                "gpt-4.1" => 128000,
+                "gpt-4o" => 128000,
+                "o4-mini" => 128000,
+                "o3-mini" => 128000,
+                "gpt-4.5" => 128000,
+                "o3" => 128000,
+                _ => 128000 // Default to modern capabilities
+            };
+        }
+        
+        private int GetAnthropicContextWindow(string model)
+        {
+            return model switch
+            {
+                "claude-sonnet-3.7" => 200000,
+                "claude-sonnet-4" => 200000,
+                "claude-opus-4" => 200000,
+                "claude-sonnet-3.5" => 200000,
+                _ => 200000 // Default for Claude
+            };
+        }
+        
+        private int GetGoogleContextWindow(string model)
+        {
+            return model switch
+            {
+                "gemini-2.0-flash" => 1000000,
+                "gemini-2.5-pro" => 2000000,
+                _ => 1000000 // Default for Gemini
+            };
         }
 
         private int EstimateTokenCount(string text)

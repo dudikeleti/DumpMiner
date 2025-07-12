@@ -26,10 +26,10 @@ namespace DumpMiner.Services.AI.Providers
         // Model pricing per 1M tokens (input/output) - as of 2024
         private static readonly Dictionary<string, (decimal input, decimal output)> ModelPricing = new()
         {
-            { "claude-3-opus-20240229", (15.00m, 75.00m) },
-            { "claude-3-sonnet-20240229", (3.00m, 15.00m) },
-            { "claude-3-haiku-20240307", (0.25m, 1.25m) },
-            { "claude-3-5-sonnet-20241022", (3.00m, 15.00m) }
+            { "claude-sonnet-3.7", (3.00m, 15.00m) },
+            { "claude-sonnet-4", (3.00m, 15.00m) },
+            { "claude-opus-4", (15.00m, 75.00m) },
+            { "claude-sonnet-3.5", (3.00m, 15.00m) }
         };
 
         public AnthropicProvider(ILogger<AnthropicProvider> logger)
@@ -105,6 +105,7 @@ namespace DumpMiner.Services.AI.Providers
                     Model = _configuration.Model,
                     MaxTokens = request.MaxTokens ?? 4000,
                     Temperature = (decimal)(request.Temperature ?? _configuration.Temperature),
+                    TopP = (decimal)_configuration.TopP,
                     Messages = messages,
                     Stream = false
                 };
@@ -242,10 +243,10 @@ namespace DumpMiner.Services.AI.Providers
         {
             return _configuration?.Model switch
             {
-                "claude-3-opus-20240229" => 200000,
-                "claude-3-sonnet-20240229" => 200000,
-                "claude-3-haiku-20240307" => 200000,
-                "claude-3-5-sonnet-20241022" => 200000,
+                "claude-sonnet-3.7" => 200000,
+                "claude-sonnet-4" => 200000,
+                "claude-opus-4" => 200000,
+                "claude-sonnet-3.5" => 200000,
                 _ => 200000
             };
         }

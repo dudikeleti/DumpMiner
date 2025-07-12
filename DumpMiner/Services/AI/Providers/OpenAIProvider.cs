@@ -28,11 +28,12 @@ namespace DumpMiner.Services.AI.Providers
         // Model pricing per 1K tokens (input/output) - as of 2024
         private static readonly Dictionary<string, (decimal input, decimal output)> ModelPricing = new()
         {
-            { "gpt-4", (0.03m, 0.06m) },
-            { "gpt-4-turbo", (0.01m, 0.03m) },
+            { "gpt-4.1", (0.005m, 0.015m) },
             { "gpt-4o", (0.005m, 0.015m) },
-            { "gpt-3.5-turbo", (0.0015m, 0.002m) },
-            { "gpt-3.5-turbo-16k", (0.003m, 0.004m) }
+            { "o4-mini", (0.00015m, 0.0006m) },
+            { "o3-mini", (0.00015m, 0.0006m) },
+            { "gpt-4.5", (0.005m, 0.015m) },
+            { "o3", (0.005m, 0.015m) },
         };
 
         public OpenAIProvider(ILogger<OpenAIProvider> logger)
@@ -117,7 +118,7 @@ namespace DumpMiner.Services.AI.Providers
                 {
                     MaxTokens = request.MaxTokens ?? _configuration.MaxTokens,
                     Temperature = request.Temperature ?? _configuration.Temperature,
-                    TopP = 1.0,
+                    TopP = _configuration.TopP,
                     FrequencyPenalty = 0.0,
                     PresencePenalty = 0.0
                 };
@@ -246,11 +247,12 @@ namespace DumpMiner.Services.AI.Providers
         {
             return _configuration?.Model switch
             {
-                "gpt-4" => 8192,
-                "gpt-4-turbo" => 128000,
+                "gpt-4.1" => 128000,
                 "gpt-4o" => 128000,
-                "gpt-3.5-turbo" => 4096,
-                "gpt-3.5-turbo-16k" => 16384,
+                "o4-mini" => 128000,
+                "o3-mini" => 128000,
+                "gpt-4.5" => 128000,
+                "o3" => 128000,
                 _ => 4096
             };
         }

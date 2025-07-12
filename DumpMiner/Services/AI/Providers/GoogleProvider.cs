@@ -31,10 +31,8 @@ namespace DumpMiner.Services.AI.Providers
         // Model pricing per 1K tokens (input/output) - as of 2024
         private static readonly Dictionary<string, (decimal input, decimal output)> ModelPricing = new()
         {
-            { "gemini-pro", (0.0005m, 0.0015m) },
-            { "gemini-pro-vision", (0.0005m, 0.0015m) },
-            { "gemini-1.5-pro", (0.0035m, 0.0105m) },
-            { "gemini-1.5-flash", (0.000075m, 0.0003m) }
+            { "gemini-2.0-flash", (0.000075m, 0.0003m) },
+            { "gemini-2.5-pro", (0.0035m, 0.0105m) }
         };
 
         public GoogleProvider(ILogger<GoogleProvider> logger)
@@ -123,9 +121,10 @@ namespace DumpMiner.Services.AI.Providers
                 // Prepare execution settings
                 var executionSettings = new GeminiPromptExecutionSettings
                 {
-                    MaxTokens = request.MaxTokens ?? 1000,
+                    MaxTokens = request.MaxTokens ?? _configuration.MaxTokens,
                     Temperature = (float)(request.Temperature ?? _configuration.Temperature),
-                    TopP = 1.0f
+                    TopP = (float)_configuration.TopP, // Use optimized TopP for coding/debugging (0.95)
+                    TopK = _configuration.TopK // Use optimized TopK for coding/debugging (30)
                 };
 
                 // Execute the request
@@ -256,11 +255,9 @@ namespace DumpMiner.Services.AI.Providers
         {
             return _configuration?.Model switch
             {
-                "gemini-pro" => 32768,
-                "gemini-pro-vision" => 16384,
-                "gemini-1.5-pro" => 2097152, // 2M tokens
-                "gemini-1.5-flash" => 1048576, // 1M tokens
-                _ => 32768
+                "gemini-2.0-flash" => 1048576, // 1M tokens
+                "gemini-2.5-pro" => 2097152, // 2M tokens
+                _ => 1048576 // Default to 1M tokens
             };
         }
 

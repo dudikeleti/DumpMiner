@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Input;
 using DumpMiner.Common;
 using DumpMiner.Services.Configuration;
@@ -12,6 +14,52 @@ namespace DumpMiner.ViewModels
         private readonly ConfigurationService _configService;
         private AISettings _aiSettings;
 
+        // Model capability information
+        private static readonly Dictionary<string, (string description, int contextWindow, int maxOutput)> OpenAIModelInfo = new()
+        {
+            // GPT-4.1 Family - Latest models with 1M context
+            ["gpt-4.1"] = ("Most capable model with massive context", 1000000, 32768),
+            ["gpt-4.1-mini"] = ("High performance, cost-efficient with 1M context", 1000000, 32768),
+            ["gpt-4.1-nano"] = ("Fastest, cheapest with 1M context", 1000000, 32768),
+            
+            // Reasoning Models - Advanced problem-solving
+            ["o3"] = ("Advanced reasoning and complex problem-solving", 200000, 100000),
+            ["o4-mini"] = ("Fast reasoning model, cost-efficient", 200000, 100000),
+            ["o3-mini"] = ("Lightweight reasoning model", 200000, 100000),
+            ["o1"] = ("General reasoning model", 200000, 100000),
+            
+            // GPT-4o Family - Omni-modal capabilities
+            ["gpt-4o"] = ("Multimodal model with vision and audio", 128000, 16384),
+            ["gpt-4o-mini"] = ("Compact multimodal model", 128000, 16384),
+            
+            // Other Models
+            ["gpt-4.5"] = ("Enhanced general intelligence model", 128000, 16384),
+        };
+
+        private static readonly Dictionary<string, (string description, int contextWindow, int maxOutput)> AnthropicModelInfo = new()
+        {
+            // Claude 4 Family - Most capable
+            ["claude-opus-4"] = ("Most capable model for complex tasks", 200000, 32000),
+            ["claude-sonnet-4"] = ("High-performance balanced model", 200000, 64000),
+            
+            // Claude 3.7 Family - Extended thinking
+            ["claude-sonnet-3.7"] = ("High intelligence with extended thinking", 200000, 64000),
+            
+            // Claude 3.5 Family - Previous generation
+            ["claude-sonnet-3.5"] = ("Intelligent model for various tasks", 200000, 8192),
+            ["claude-haiku-3.5"] = ("Fastest model for simple tasks", 200000, 8192),
+        };
+
+        private static readonly Dictionary<string, (string description, int contextWindow, int maxOutput)> GoogleModelInfo = new()
+        {
+            // Gemini 2.5 Family - Latest and most capable
+            ["gemini-2.5-pro"] = ("Most capable for complex reasoning", 1048576, 65536),
+            ["gemini-2.5-flash"] = ("Fast and efficient general purpose", 1048576, 65536),
+            
+            // Gemini 2.0 Family - Previous generation  
+            ["gemini-2.0-flash"] = ("Fast general-purpose model", 1048576, 65536),
+        };
+
         public AISettingsViewModel()
         {
             _configService = ConfigurationService.Instance;
@@ -19,9 +67,15 @@ namespace DumpMiner.ViewModels
 
             // Initialize collections
             AvailableProviders = new ObservableCollection<string> { "OpenAI", "Anthropic", "Google" };
-            OpenAIModels = new ObservableCollection<string> { "gpt-4", "gpt-3.5-turbo", "gpt-4-turbo" };
-            AnthropicModels = new ObservableCollection<string> { "claude-3-sonnet-20240229", "claude-3-haiku-20240307", "claude-3-opus-20240229" };
-            GoogleModels = new ObservableCollection<string> { "gemini-pro", "gemini-pro-vision" };
+            
+            // OpenAI models - Updated with official specifications
+            OpenAIModels = new ObservableCollection<string>(OpenAIModelInfo.Keys);
+            
+            // Anthropic models - Updated with official specifications  
+            AnthropicModels = new ObservableCollection<string>(AnthropicModelInfo.Keys);
+            
+            // Google models - Updated with official specifications
+            GoogleModels = new ObservableCollection<string>(GoogleModelInfo.Keys);
 
             // Initialize commands
             TestConnectionCommand = new RelayCommand(_ => TestConnection());
@@ -40,6 +94,21 @@ namespace DumpMiner.ViewModels
         public ICommand TestConnectionCommand { get; }
         public ICommand ResetToDefaultsCommand { get; }
 
+        // Model capability properties for display
+        private string _selectedModelInfo = string.Empty;
+        public string SelectedModelInfo
+        {
+            get => _selectedModelInfo;
+            set
+            {
+                if (_selectedModelInfo != value)
+                {
+                    _selectedModelInfo = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         // General AI Settings
         private string _selectedProvider;
         public string SelectedProvider
@@ -52,6 +121,7 @@ namespace DumpMiner.ViewModels
                     _selectedProvider = value;
                     OnPropertyChanged();
                     _aiSettings.DefaultProvider = Enum.Parse<AIProviderType>(value);
+                    UpdateSelectedModelInfo();
                     SaveSettings();
                 }
             }
@@ -138,15 +208,19 @@ namespace DumpMiner.ViewModels
         }
 
         // OpenAI Settings
-        private bool _openAIEnabled;
-        public bool OpenAIEnabled
+        private bool _isOpenAIEnabled;
+        private string _openAIApiKey = string.Empty;
+        private string _selectedOpenAIModel = string.Empty;
+
+        // OpenAI Properties
+        public bool IsOpenAIEnabled
         {
-            get => _openAIEnabled;
+            get => _isOpenAIEnabled;
             set
             {
-                if (_openAIEnabled != value)
+                if (_isOpenAIEnabled != value)
                 {
-                    _openAIEnabled = value;
+                    _isOpenAIEnabled = value;
                     OnPropertyChanged();
                     _aiSettings.Providers.OpenAI.IsEnabled = value;
                     SaveSettings();
@@ -154,7 +228,6 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        private string _openAIApiKey;
         public string OpenAIApiKey
         {
             get => _openAIApiKey;
@@ -170,7 +243,6 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        private string _selectedOpenAIModel;
         public string SelectedOpenAIModel
         {
             get => _selectedOpenAIModel;
@@ -181,37 +253,26 @@ namespace DumpMiner.ViewModels
                     _selectedOpenAIModel = value;
                     OnPropertyChanged();
                     _aiSettings.Providers.OpenAI.Model = value;
-                    SaveSettings();
-                }
-            }
-        }
-
-        private double _openAITemperature;
-        public double OpenAITemperature
-        {
-            get => _openAITemperature;
-            set
-            {
-                if (_openAITemperature != value)
-                {
-                    _openAITemperature = value;
-                    OnPropertyChanged();
-                    _aiSettings.Providers.OpenAI.Temperature = value;
+                    UpdateSelectedModelInfo();
                     SaveSettings();
                 }
             }
         }
 
         // Anthropic Settings
-        private bool _anthropicEnabled;
-        public bool AnthropicEnabled
+        private bool _isAnthropicEnabled;
+        private string _anthropicApiKey = string.Empty;
+        private string _selectedAnthropicModel = string.Empty;
+
+        // Anthropic properties
+        public bool IsAnthropicEnabled
         {
-            get => _anthropicEnabled;
+            get => _isAnthropicEnabled;
             set
             {
-                if (_anthropicEnabled != value)
+                if (_isAnthropicEnabled != value)
                 {
-                    _anthropicEnabled = value;
+                    _isAnthropicEnabled = value;
                     OnPropertyChanged();
                     _aiSettings.Providers.Anthropic.IsEnabled = value;
                     SaveSettings();
@@ -219,7 +280,6 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        private string _anthropicApiKey;
         public string AnthropicApiKey
         {
             get => _anthropicApiKey;
@@ -235,7 +295,6 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        private string _selectedAnthropicModel;
         public string SelectedAnthropicModel
         {
             get => _selectedAnthropicModel;
@@ -246,6 +305,7 @@ namespace DumpMiner.ViewModels
                     _selectedAnthropicModel = value;
                     OnPropertyChanged();
                     _aiSettings.Providers.Anthropic.Model = value;
+                    UpdateSelectedModelInfo();
                     SaveSettings();
                 }
             }
@@ -253,6 +313,10 @@ namespace DumpMiner.ViewModels
 
         // Google Settings
         private bool _googleEnabled;
+        private string _googleApiKey = string.Empty;
+        private string _selectedGoogleModel = string.Empty;
+
+        // Google properties
         public bool GoogleEnabled
         {
             get => _googleEnabled;
@@ -268,7 +332,6 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        private string _googleApiKey;
         public string GoogleApiKey
         {
             get => _googleApiKey;
@@ -284,7 +347,6 @@ namespace DumpMiner.ViewModels
             }
         }
 
-        private string _selectedGoogleModel;
         public string SelectedGoogleModel
         {
             get => _selectedGoogleModel;
@@ -295,6 +357,7 @@ namespace DumpMiner.ViewModels
                     _selectedGoogleModel = value;
                     OnPropertyChanged();
                     _aiSettings.Providers.Google.Model = value;
+                    UpdateSelectedModelInfo();
                     SaveSettings();
                 }
             }
@@ -302,29 +365,40 @@ namespace DumpMiner.ViewModels
 
         private void LoadSettings()
         {
-            // Load general settings
-            SelectedProvider = _aiSettings.DefaultProvider.ToString();
-            MaxTokens = _aiSettings.MaxTokens;
-            TimeoutSeconds = _aiSettings.TimeoutSeconds;
-            EnableCaching = _aiSettings.EnableCaching;
-            MaxAutoFunctionCalls = _aiSettings.MaxAutoFunctionCalls;
-            MaxObjectAnalysisDepth = _aiSettings.MaxObjectAnalysisDepth;
+            try
+            {
+                _aiSettings = _configService.Configuration.AI;
 
-            // Load OpenAI settings
-            OpenAIEnabled = _aiSettings.Providers.OpenAI.IsEnabled;
-            OpenAIApiKey = _aiSettings.Providers.OpenAI.ApiKey;
-            SelectedOpenAIModel = _aiSettings.Providers.OpenAI.Model;
-            OpenAITemperature = _aiSettings.Providers.OpenAI.Temperature;
+                // Load general settings
+                SelectedProvider = _aiSettings.DefaultProvider.ToString();
+                MaxTokens = _aiSettings.MaxTokens;
+                TimeoutSeconds = _aiSettings.TimeoutSeconds;
+                EnableCaching = _aiSettings.EnableCaching;
+                MaxAutoFunctionCalls = _aiSettings.MaxAutoFunctionCalls;
+                MaxObjectAnalysisDepth = _aiSettings.MaxObjectAnalysisDepth;
 
-            // Load Anthropic settings
-            AnthropicEnabled = _aiSettings.Providers.Anthropic.IsEnabled;
-            AnthropicApiKey = _aiSettings.Providers.Anthropic.ApiKey;
-            SelectedAnthropicModel = _aiSettings.Providers.Anthropic.Model;
+                // Load OpenAI settings
+                IsOpenAIEnabled = _aiSettings.Providers.OpenAI.IsEnabled;
+                OpenAIApiKey = _aiSettings.Providers.OpenAI.ApiKey;
+                SelectedOpenAIModel = _aiSettings.Providers.OpenAI.Model;
 
-            // Load Google settings
-            GoogleEnabled = _aiSettings.Providers.Google.IsEnabled;
-            GoogleApiKey = _aiSettings.Providers.Google.ApiKey;
-            SelectedGoogleModel = _aiSettings.Providers.Google.Model;
+                // Load Anthropic settings
+                IsAnthropicEnabled = _aiSettings.Providers.Anthropic.IsEnabled;
+                AnthropicApiKey = _aiSettings.Providers.Anthropic.ApiKey;
+                SelectedAnthropicModel = _aiSettings.Providers.Anthropic.Model;
+
+                // Load Google settings
+                GoogleEnabled = _aiSettings.Providers.Google.IsEnabled;
+                GoogleApiKey = _aiSettings.Providers.Google.ApiKey;
+                SelectedGoogleModel = _aiSettings.Providers.Google.Model;
+
+                UpdateSelectedModelInfo();
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't crash the UI
+                System.Diagnostics.Debug.WriteLine($"Error loading AI settings: {ex.Message}");
+            }
         }
 
         private void SaveSettings()
@@ -354,6 +428,35 @@ namespace DumpMiner.ViewModels
                 _aiSettings = _configService.Configuration.AI;
                 LoadSettings();
             }
+        }
+
+        private void UpdateSelectedModelInfo()
+        {
+            var info = GetCurrentModelInfo();
+            if (info.HasValue)
+            {
+                var contextMB = info.Value.contextWindow >= 1000000 ? $"{info.Value.contextWindow / 1000000}M" : $"{info.Value.contextWindow / 1000}K";
+                var outputMB = info.Value.maxOutput >= 1000000 ? $"{info.Value.maxOutput / 1000000}M" : $"{info.Value.maxOutput / 1000}K";
+                SelectedModelInfo = $"{info.Value.description} • Context: {contextMB} tokens • Max Output: {outputMB} tokens";
+            }
+            else
+            {
+                SelectedModelInfo = "Select a model to see capabilities";
+            }
+        }
+
+        private (string description, int contextWindow, int maxOutput)? GetCurrentModelInfo()
+        {
+            return SelectedProvider switch
+            {
+                "OpenAI" when !string.IsNullOrEmpty(SelectedOpenAIModel) && OpenAIModelInfo.ContainsKey(SelectedOpenAIModel) 
+                    => OpenAIModelInfo[SelectedOpenAIModel],
+                "Anthropic" when !string.IsNullOrEmpty(SelectedAnthropicModel) && AnthropicModelInfo.ContainsKey(SelectedAnthropicModel) 
+                    => AnthropicModelInfo[SelectedAnthropicModel],
+                "Google" when !string.IsNullOrEmpty(SelectedGoogleModel) && GoogleModelInfo.ContainsKey(SelectedGoogleModel) 
+                    => GoogleModelInfo[SelectedGoogleModel],
+                _ => null
+            };
         }
     }
 }

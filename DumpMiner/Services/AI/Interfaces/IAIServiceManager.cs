@@ -98,6 +98,11 @@ namespace DumpMiner.Services.AI.Interfaces
         /// Checks if AI services are available
         /// </summary>
         Task<bool> IsAvailableAsync();
+
+        /// <summary>
+        /// Gets the current AI configuration
+        /// </summary>
+        AIConfiguration GetConfiguration();
     }
 
     /// <summary>

@@ -3,12 +3,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ui="clr-namespace:DumpMiner.Infrastructure.UI"
              mc:Ignorable="d"
-             d:DesignHeight="600"
-             d:DesignWidth="800">
+             d:DesignHeight="700"
+             d:DesignWidth="900">
+    <UserControl.Resources>
+        <ui:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <ui:ModelToContextConverter x:Key="ModelToContextConverter"/>
+        <ui:ModelToOutputConverter x:Key="ModelToOutputConverter"/>
+        <ui:ModelToDescriptionConverter x:Key="ModelToDescriptionConverter"/>
+    </UserControl.Resources>
     <Grid>
         <ScrollViewer>
-            <StackPanel HorizontalAlignment="Left" MinWidth="600" Margin="10">
+            <StackPanel HorizontalAlignment="Left" MinWidth="700" Margin="10">
                 <TextBlock Text="AI Settings"
                            Style="{StaticResource Heading2}" />
                 <GridSplitter BorderThickness="1" Height="1" Margin="0,5,0,15"/>
@@ -22,38 +29,51 @@
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="Default AI Provider:" MinWidth="200" VerticalAlignment="Center"/>
                     <ComboBox ItemsSource="{Binding AvailableProviders}" 
-                              SelectedItem="{Binding SelectedProvider}" 
+                              SelectedItem="{Binding SelectedProvider, Mode=TwoWay}" 
                               MinWidth="200" Margin="5,0"/>
                 </StackPanel>
 
+                <!-- Model Capability Information -->
+                <Border Background="#F5F5F5" BorderBrush="#D0D0D0" BorderThickness="1" 
+                        CornerRadius="4" Padding="10" Margin="0,0,0,15"
+                        Visibility="{Binding SelectedModelInfo, Converter={StaticResource StringToVisibilityConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="Current Model Capabilities" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <TextBlock Text="{Binding SelectedModelInfo}" 
+                                   TextWrapping="Wrap" 
+                                   Foreground="#555555"
+                                   FontStyle="Italic"/>
+                    </StackPanel>
+                </Border>
+
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="Max Tokens:" MinWidth="200" VerticalAlignment="Center"/>
-                    <TextBox Text="{Binding MaxTokens}" MinWidth="200" Margin="5,0"/>
-                    <TextBlock Text="(100-32000)" VerticalAlignment="Center" Margin="5,0" 
+                    <TextBox Text="{Binding MaxTokens, Mode=TwoWay}" MinWidth="200" Margin="5,0"/>
+                    <TextBlock Text="(100-200000, optimized for debugging)" VerticalAlignment="Center" Margin="5,0" 
                                Foreground="Gray" FontStyle="Italic"/>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="Timeout (seconds):" MinWidth="200" VerticalAlignment="Center"/>
-                    <TextBox Text="{Binding TimeoutSeconds}" MinWidth="200" Margin="5,0"/>
-                    <TextBlock Text="(5-300)" VerticalAlignment="Center" Margin="5,0" 
+                    <TextBox Text="{Binding TimeoutSeconds, Mode=TwoWay}" MinWidth="200" Margin="5,0"/>
+                    <TextBlock Text="(30-600, per AI call)" VerticalAlignment="Center" Margin="5,0" 
                                Foreground="Gray" FontStyle="Italic"/>
                 </StackPanel>
 
                 <CheckBox Content="Enable Response Caching" 
-                          IsChecked="{Binding EnableCaching}" 
+                          IsChecked="{Binding EnableCaching, Mode=TwoWay}" 
                           Margin="0,5,0,10"/>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="Max Auto Function Calls:" MinWidth="200" VerticalAlignment="Center"/>
-                    <TextBox Text="{Binding MaxAutoFunctionCalls}" MinWidth="200" Margin="5,0"/>
+                    <TextBox Text="{Binding MaxAutoFunctionCalls, Mode=TwoWay}" MinWidth="200" Margin="5,0"/>
                     <TextBlock Text="(1-20)" VerticalAlignment="Center" Margin="5,0" 
                                Foreground="Gray" FontStyle="Italic"/>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
                     <TextBlock Text="Max Object Analysis Depth:" MinWidth="200" VerticalAlignment="Center"/>
-                    <TextBox Text="{Binding MaxObjectAnalysisDepth}" MinWidth="200" Margin="5,0"/>
+                    <TextBox Text="{Binding MaxObjectAnalysisDepth, Mode=TwoWay}" MinWidth="200" Margin="5,0"/>
                     <TextBlock Text="(1-10)" VerticalAlignment="Center" Margin="5,0" 
                                Foreground="Gray" FontStyle="Italic"/>
                 </StackPanel>
@@ -62,78 +82,143 @@
                 <TextBlock Text="OpenAI Provider Settings" 
                            Style="{StaticResource Heading2}" 
                            FontSize="16" 
-                           Margin="0,0,0,10"/>
+                           Margin="0,0,0,5"/>
+                
+                <TextBlock Margin="0,0,0,10">
+                    <Hyperlink NavigateUri="https://openai.com/api/pricing/" 
+                               RequestNavigate="Hyperlink_RequestNavigate"
+                               Foreground="#FF647687">
+                        View OpenAI Pricing →
+                    </Hyperlink>
+                </TextBlock>
 
                 <CheckBox Content="Enable OpenAI Provider" 
-                          IsChecked="{Binding OpenAIEnabled}" 
+                          IsChecked="{Binding IsOpenAIEnabled, Mode=TwoWay}" 
                           Margin="0,0,0,10"/>
-                
+
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="API Key:" MinWidth="200" VerticalAlignment="Center"/>
-                    <TextBox Text="{Binding OpenAIApiKey}" MinWidth="300" Margin="5,0"/>
+                    <TextBox Text="{Binding OpenAIApiKey, Mode=TwoWay}" MinWidth="300" Margin="5,0"/>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="Model:" MinWidth="200" VerticalAlignment="Center"/>
                     <ComboBox ItemsSource="{Binding OpenAIModels}" 
-                              SelectedItem="{Binding SelectedOpenAIModel}" 
+                              SelectedItem="{Binding SelectedOpenAIModel, Mode=TwoWay}" 
                               MinWidth="200" Margin="5,0"/>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                    <TextBlock Text="Temperature:" MinWidth="200" VerticalAlignment="Center"/>
-                    <Slider Value="{Binding OpenAITemperature}" 
-                            Minimum="0" Maximum="2" 
-                            TickFrequency="0.1" 
-                            IsSnapToTickEnabled="True"
-                            MinWidth="200" Margin="5,0"/>
-                    <TextBlock Text="{Binding OpenAITemperature, StringFormat=F1}" 
-                               MinWidth="30" VerticalAlignment="Center" Margin="5,0"/>
-                </StackPanel>
+                <!-- OpenAI Model Info Display -->
+                <Border Background="#E8F4FD" BorderBrush="#B8D4EA" BorderThickness="1" 
+                        CornerRadius="4" Padding="8" Margin="220,0,0,20"
+                        Visibility="{Binding SelectedOpenAIModel, Converter={StaticResource StringToVisibilityConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="Model Information" FontWeight="Bold" FontSize="11" Margin="0,0,0,3"/>
+                        <TextBlock TextWrapping="Wrap" FontSize="10" Foreground="#444444">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}Context: {0} • Max Output: {1} • {2}">
+                                    <Binding Path="SelectedOpenAIModel" Converter="{StaticResource ModelToContextConverter}"/>
+                                    <Binding Path="SelectedOpenAIModel" Converter="{StaticResource ModelToOutputConverter}"/>
+                                    <Binding Path="SelectedOpenAIModel" Converter="{StaticResource ModelToDescriptionConverter}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
 
                 <!-- Anthropic Provider Settings -->
                 <TextBlock Text="Anthropic Provider Settings" 
                            Style="{StaticResource Heading2}" 
                            FontSize="16" 
-                           Margin="0,0,0,10"/>
+                           Margin="0,0,0,5"/>
+
+                <TextBlock Margin="0,0,0,10">
+                    <Hyperlink NavigateUri="https://www.anthropic.com/pricing#api" 
+                               RequestNavigate="Hyperlink_RequestNavigate"
+                               Foreground="#FF647687">
+                        View Anthropic Pricing →
+                    </Hyperlink>
+                </TextBlock>
 
                 <CheckBox Content="Enable Anthropic Provider" 
-                          IsChecked="{Binding AnthropicEnabled}" 
+                          IsChecked="{Binding IsAnthropicEnabled, Mode=TwoWay}" 
                           Margin="0,0,0,10"/>
                 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="API Key:" MinWidth="200" VerticalAlignment="Center"/>
-                    <TextBox Text="{Binding AnthropicApiKey}" MinWidth="300" Margin="5,0"/>
+                    <TextBox Text="{Binding AnthropicApiKey, Mode=TwoWay}" MinWidth="300" Margin="5,0"/>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="Model:" MinWidth="200" VerticalAlignment="Center"/>
                     <ComboBox ItemsSource="{Binding AnthropicModels}" 
-                              SelectedItem="{Binding SelectedAnthropicModel}" 
+                              SelectedItem="{Binding SelectedAnthropicModel, Mode=TwoWay}" 
                               MinWidth="200" Margin="5,0"/>
                 </StackPanel>
+
+                <!-- Anthropic Model Info Display -->
+                <Border Background="#FDF4E8" BorderBrush="#F0D0B8" BorderThickness="1" 
+                        CornerRadius="4" Padding="8" Margin="220,0,0,20"
+                        Visibility="{Binding SelectedAnthropicModel, Converter={StaticResource StringToVisibilityConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="Model Information" FontWeight="Bold" FontSize="11" Margin="0,0,0,3"/>
+                        <TextBlock Text="All Claude models: 200K context window" TextWrapping="Wrap" FontSize="10" Foreground="#444444"/>
+                        <TextBlock TextWrapping="Wrap" FontSize="10" Foreground="#666666" Margin="0,2,0,0">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}Max Output: {0} • {1}">
+                                    <Binding Path="SelectedAnthropicModel" Converter="{StaticResource ModelToOutputConverter}"/>
+                                    <Binding Path="SelectedAnthropicModel" Converter="{StaticResource ModelToDescriptionConverter}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
 
                 <!-- Google Provider Settings -->
                 <TextBlock Text="Google Provider Settings" 
                            Style="{StaticResource Heading2}" 
                            FontSize="16" 
-                           Margin="0,0,0,10"/>
+                           Margin="0,0,0,5"/>
+
+                <TextBlock Margin="0,0,0,10">
+                    <Hyperlink NavigateUri="https://ai.google.dev/gemini-api/docs/pricing" 
+                               RequestNavigate="Hyperlink_RequestNavigate"
+                               Foreground="#FF647687">
+                        View Google Gemini Pricing →
+                    </Hyperlink>
+                </TextBlock>
 
                 <CheckBox Content="Enable Google Provider" 
-                          IsChecked="{Binding GoogleEnabled}" 
+                          IsChecked="{Binding GoogleEnabled, Mode=TwoWay}" 
                           Margin="0,0,0,10"/>
                 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="API Key:" MinWidth="200" VerticalAlignment="Center"/>
-                    <TextBox Text="{Binding GoogleApiKey}" MinWidth="300" Margin="5,0"/>
+                    <TextBox Text="{Binding GoogleApiKey, Mode=TwoWay}" MinWidth="300" Margin="5,0"/>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="Model:" MinWidth="200" VerticalAlignment="Center"/>
                     <ComboBox ItemsSource="{Binding GoogleModels}" 
-                              SelectedItem="{Binding SelectedGoogleModel}" 
+                              SelectedItem="{Binding SelectedGoogleModel, Mode=TwoWay}" 
                               MinWidth="200" Margin="5,0"/>
                 </StackPanel>
+
+                <!-- Google Model Info Display -->
+                <Border Background="#E8F5E8" BorderBrush="#B8E0B8" BorderThickness="1" 
+                        CornerRadius="4" Padding="8" Margin="220,0,0,20"
+                        Visibility="{Binding SelectedGoogleModel, Converter={StaticResource StringToVisibilityConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="Model Information" FontWeight="Bold" FontSize="11" Margin="0,0,0,3"/>
+                        <TextBlock Text="All Gemini models: 1M context window • 65K max output" TextWrapping="Wrap" FontSize="10" Foreground="#444444"/>
+                        <TextBlock Text="1 token ≈ 4 characters (60-80 English words per 100 tokens)" TextWrapping="Wrap" FontSize="10" Foreground="#666666" Margin="0,2,0,0"/>
+                        <TextBlock TextWrapping="Wrap" FontSize="10" Foreground="#666666" Margin="0,2,0,0">
+                            <TextBlock.Text>
+                                <Binding Path="SelectedGoogleModel" Converter="{StaticResource ModelToDescriptionConverter}"/>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
 
                 <!-- Action Buttons -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">

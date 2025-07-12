@@ -223,9 +223,9 @@ namespace DumpMiner.Services.Configuration
     public sealed class OpenAIConfiguration
     {
         public string ApiKey { get; set; } = string.Empty;
-        public string Model { get; set; } = "gpt-4";
+        public string Model { get; set; } = "o3";
         public string BaseUrl { get; set; } = "https://api.openai.com/v1";
-        public double Temperature { get; set; } = 0.7;
+        public double Temperature { get; set; } = 0.2;
         public bool IsEnabled { get; set; } = true;
         
         [Range(100, 32000)]
@@ -241,9 +241,9 @@ namespace DumpMiner.Services.Configuration
     public sealed class AnthropicConfiguration
     {
         public string ApiKey { get; set; } = string.Empty;
-        public string Model { get; set; } = "claude-3-sonnet-20240229";
+        public string Model { get; set; } = "claude-sonnet-4";
         public string BaseUrl { get; set; } = "https://api.anthropic.com";
-        public double Temperature { get; set; } = 0.7;
+        public double Temperature { get; set; } = 0.2;
         public bool IsEnabled { get; set; } = true;
     }
 
@@ -253,9 +253,9 @@ namespace DumpMiner.Services.Configuration
     public sealed class GoogleConfiguration
     {
         public string ApiKey { get; set; } = string.Empty;
-        public string Model { get; set; } = "gemini-pro";
+        public string Model { get; set; } = "gemini-2.5-pro";
         public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com";
-        public double Temperature { get; set; } = 0.7;
+        public double Temperature { get; set; } = 0.2;
         public bool IsEnabled { get; set; } = true;
     }
 
