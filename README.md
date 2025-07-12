@@ -98,7 +98,7 @@ Found: StringCache.Dictionary holding 10,000+ references
 
 Run the comprehensive test suite:
 ```powershell
-./test-ai.ps1
+./system-validation.ps1
 ```
 
 ## 📊 Current Implementation Status

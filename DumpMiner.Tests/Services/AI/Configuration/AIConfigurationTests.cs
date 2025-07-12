@@ -18,8 +18,8 @@ public class AIConfigurationTests
 
         // Assert
         config.DefaultProvider.Should().Be(AIProviderType.OpenAI);
-        config.MaxTokens.Should().Be(4000);
-        config.TimeoutSeconds.Should().Be(60);
+        config.MaxTokens.Should().Be(16000);
+        config.TimeoutSeconds.Should().Be(180);
         config.EnableCaching.Should().BeTrue();
         config.CacheExpirationMinutes.Should().Be(60);
         config.MaxConversationHistory.Should().Be(20);
@@ -113,9 +113,9 @@ public class AIConfigurationTests
 
         // Assert
         config.ApiKey.Should().Be(string.Empty);
-        config.Model.Should().Be("gpt-4");
+        config.Model.Should().Be("o3");
         config.BaseUrl.Should().Be("https://api.openai.com/v1");
-        config.Temperature.Should().Be(0.7);
+        config.Temperature.Should().Be(0.2);
         config.IsEnabled.Should().BeTrue();
     }
 
@@ -154,9 +154,9 @@ public class AIConfigurationTests
 
         // Assert
         config.ApiKey.Should().Be(string.Empty);
-        config.Model.Should().Be("claude-3-sonnet-20240229");
+        config.Model.Should().Be("claude-sonnet-4");
         config.BaseUrl.Should().Be("https://api.anthropic.com");
-        config.Temperature.Should().Be(0.7);
+        config.Temperature.Should().Be(0.2);
         config.IsEnabled.Should().BeTrue();
     }
 
@@ -168,9 +168,9 @@ public class AIConfigurationTests
 
         // Assert
         config.ApiKey.Should().Be(string.Empty);
-        config.Model.Should().Be("gemini-pro");
+                    config.Model.Should().Be("gemini-2.5-pro");
         config.BaseUrl.Should().Be("https://generativelanguage.googleapis.com");
-        config.Temperature.Should().Be(0.7);
+        config.Temperature.Should().Be(0.2);
         config.IsEnabled.Should().BeTrue();
     }
 
@@ -219,13 +219,13 @@ public class AIConfigurationTests
                 Anthropic = new AnthropicConfiguration
                 {
                     ApiKey = "anthropic-test-key",
-                    Model = "claude-3-opus-20240229",
+                    Model = "claude-sonnet-4",
                     Temperature = 0.3
                 },
                 Google = new GoogleConfiguration
                 {
                     ApiKey = "google-test-key",
-                    Model = "gemini-pro-vision",
+                    Model = "gemini-2.0-flash",
                     Temperature = 0.8
                 }
             }

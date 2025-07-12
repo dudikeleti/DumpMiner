@@ -219,7 +219,7 @@ public class AIServiceTestFixture : IDisposable
                 RequestId = request.RequestId,
                 Content = GenerateMockAnalysisResponse(request),
                 Provider = request.PreferredProvider ?? AIProviderType.OpenAI,
-                Model = "gpt-4",
+                Model = "o3",
                 IsSuccess = true,
                 Metadata = new ResponseMetadata
                 {

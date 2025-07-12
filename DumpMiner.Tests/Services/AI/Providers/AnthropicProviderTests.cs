@@ -16,25 +16,20 @@ namespace DumpMiner.Tests.Services.AI.Providers
     public class AnthropicProviderTests
     {
         private readonly Mock<ILogger<AnthropicProvider>> _mockLogger;
-        private readonly AIConfiguration _config;
-        private readonly IOptions<AIConfiguration> _options;
+        private readonly AnthropicConfiguration _config;
 
         public AnthropicProviderTests()
         {
             _mockLogger = new Mock<ILogger<AnthropicProvider>>();
-            _config = new AIConfiguration
+            _config = new AnthropicConfiguration
             {
-                Anthropic = new AnthropicConfiguration
-                {
-                    ApiKey = "test-api-key-anthropic",
-                    Model = "claude-3-sonnet-20240229",
-                    Temperature = 0.7,
-                    IsEnabled = true,
-                    MaxTokens = 4000,
-                    TimeoutSeconds = 60
-                }
+                ApiKey = "test-api-key-anthropic",
+                Model = "claude-sonnet-4",
+                Temperature = 0.7,
+                IsEnabled = true,
+                MaxTokens = 4000,
+                TimeoutSeconds = 60
             };
-            _options = Options.Create(_config);
         }
 
         [Fact]
@@ -55,10 +50,13 @@ namespace DumpMiner.Tests.Services.AI.Providers
             // Arrange
             var emptyKeyConfig = new AIConfiguration
             {
-                Anthropic = new AnthropicConfiguration
+                Providers = new ProviderConfigurations
                 {
-                    ApiKey = "",
-                    IsEnabled = true
+                    Anthropic = new AnthropicConfiguration
+                    {
+                        ApiKey = "",
+                        IsEnabled = true
+                    }
                 }
             };
             var emptyKeyOptions = Options.Create(emptyKeyConfig);
@@ -86,10 +84,13 @@ namespace DumpMiner.Tests.Services.AI.Providers
             // Arrange
             var disabledConfig = new AIConfiguration
             {
-                Anthropic = new AnthropicConfiguration
+                Providers = new ProviderConfigurations
                 {
-                    ApiKey = "test-key",
-                    IsEnabled = false
+                    Anthropic = new AnthropicConfiguration
+                    {
+                        ApiKey = "test-key",
+                        IsEnabled = false
+                    }
                 }
             };
             var disabledOptions = Options.Create(disabledConfig);
@@ -129,13 +130,16 @@ namespace DumpMiner.Tests.Services.AI.Providers
             // Arrange
             var opusConfig = new AIConfiguration
             {
-                Anthropic = new AnthropicConfiguration
+                Providers = new ProviderConfigurations
                 {
-                    ApiKey = "test-key",
-                    Model = "claude-3-opus-20240229",
-                    IsEnabled = true,
-                    MaxTokens = 4000,
-                    TimeoutSeconds = 60
+                    Anthropic = new AnthropicConfiguration
+                    {
+                        ApiKey = "test-key",
+                        Model = "claude-opus-4",
+                        IsEnabled = true,
+                        MaxTokens = 4000,
+                        TimeoutSeconds = 60
+                    }
                 }
             };
             var opusOptions = Options.Create(opusConfig);
@@ -190,10 +194,13 @@ namespace DumpMiner.Tests.Services.AI.Providers
             // Arrange
             var unconfiguredConfig = new AIConfiguration
             {
-                Anthropic = new AnthropicConfiguration
+                Providers = new ProviderConfigurations
                 {
-                    ApiKey = "",
-                    IsEnabled = false
+                    Anthropic = new AnthropicConfiguration
+                    {
+                        ApiKey = "",
+                        IsEnabled = false
+                    }
                 }
             };
             var unconfiguredOptions = Options.Create(unconfiguredConfig);
@@ -256,10 +263,10 @@ namespace DumpMiner.Tests.Services.AI.Providers
         }
 
         [Theory]
-        [InlineData("claude-3-opus-20240229")]
-        [InlineData("claude-3-sonnet-20240229")]
-        [InlineData("claude-3-haiku-20240307")]
-        [InlineData("claude-3-5-sonnet-20241022")]
+        [InlineData("claude-sonnet-3.7")]
+        [InlineData("claude-sonnet-4")]
+        [InlineData("claude-opus-4")]
+        [InlineData("claude-sonnet-3.5")]
         public void EstimateCost_WithDifferentModels_ShouldReturnAppropriateValues(string modelName)
         {
             // Arrange
@@ -289,11 +296,12 @@ namespace DumpMiner.Tests.Services.AI.Providers
             // Assert
             cost.Should().BeGreaterThan(0);
             
-            // Opus should be most expensive, Haiku least expensive
+            // All models should have reasonable costs, with Opus being more expensive
             if (modelName.Contains("opus"))
                 cost.Should().BeGreaterThan(0.01m);
-            else if (modelName.Contains("haiku"))
-                cost.Should().BeLessThan(0.01m);
+            else
+                cost.Should().BeGreaterThan(0.001m);
+            cost.Should().BeLessThan(0.1m);
         }
 
         [Fact]
