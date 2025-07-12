@@ -4,11 +4,17 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:controls="clr-namespace:DumpMiner.Infrastructure.UI.Controls"
+             xmlns:ui="clr-namespace:DumpMiner.Infrastructure.UI"
              mc:Ignorable="d"
              d:DesignHeight="300"
              d:DesignWidth="300">
+    <UserControl.Resources>
+        <ui:BooleanToFontWeightConverter x:Key="BooleanToFontWeightConverter"/>
+        <ui:BooleanToArgumentColorConverter x:Key="BooleanToArgumentColorConverter"/>
+        <ui:BooleanToArgumentTypeConverter x:Key="BooleanToArgumentTypeConverter"/>
+    </UserControl.Resources>
     <controls:OperationView Header="Dump CLR stack"
-                            Explanation="Dump all process threads with all their stack including stack objects"
+                            Explanation="Dump all process threads with their stack frames, including local variables, method parameters, and stack objects"
                             ObjectAddressVisibility="Collapsed"
                             ObjectTypeVisibility="Collapsed">
         <controls:OperationView.ItemsTemplate>
@@ -31,6 +37,7 @@
                                 Margin="0,0,0,1">
                             <Grid>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition></RowDefinition>
                                     <RowDefinition></RowDefinition>
                                     <RowDefinition></RowDefinition>
                                     <RowDefinition></RowDefinition>
@@ -66,6 +73,20 @@
                                 <TextBlock Grid.Row="2" Grid.Column="4" Text="{Binding Exception.Message}"
                                            FontStyle="Oblique"
                                            FontWeight="Medium" />
+
+                                <!-- Local Variables Summary -->
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Local variables:        "
+                                           FontStyle="Oblique"
+                                           FontWeight="Medium" />
+                                <TextBlock Grid.Row="3" Grid.Column="2" 
+                                           FontStyle="Oblique"
+                                           FontWeight="Medium">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}Total: {0} frames with variables">
+                                            <Binding Path="StackFrames.Count"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
                             </Grid>
 
                         </Border>
@@ -94,6 +115,8 @@
                                                             <RowDefinition />
                                                             <RowDefinition Height="5" />
                                                             <RowDefinition />
+                                                            <RowDefinition Height="10" />
+                                                            <RowDefinition Height="Auto" />
                                                         </Grid.RowDefinitions>
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="25" />
@@ -120,6 +143,65 @@
                                                                       Grid.Column="3"
                                                                       IsChecked="{Binding Method.IsStatic, Mode=OneWay}"
                                                                       IsEnabled="False" />
+                                                        
+                                                        <!-- Local Variables Section -->
+                                                        <Expander Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="4" 
+                                                                  Header="Local Variables" 
+                                                                  Foreground="{StaticResource ItemText}"
+                                                                  MaxHeight="300">
+                                                            <ListView ItemsSource="{Binding LocalVariables}" 
+                                                                      MaxHeight="250">
+                                                                <ListView.View>
+                                                                    <GridView>
+                                                                        <GridViewColumn Header="Name" Width="120">
+                                                                            <GridViewColumn.CellTemplate>
+                                                                                <DataTemplate>
+                                                                                    <TextBlock Text="{Binding Name}" 
+                                                                                               FontWeight="{Binding IsArgument, Converter={StaticResource BooleanToFontWeightConverter}}"
+                                                                                               Foreground="{Binding IsArgument, Converter={StaticResource BooleanToArgumentColorConverter}}"/>
+                                                                                </DataTemplate>
+                                                                            </GridViewColumn.CellTemplate>
+                                                                        </GridViewColumn>
+                                                                        <GridViewColumn Header="Type" Width="150">
+                                                                            <GridViewColumn.CellTemplate>
+                                                                                <DataTemplate>
+                                                                                    <TextBox Text="{Binding Type, Mode=OneWay}" 
+                                                                                             BorderBrush="{x:Null}" 
+                                                                                             FontFamily="Consolas"/>
+                                                                                </DataTemplate>
+                                                                            </GridViewColumn.CellTemplate>
+                                                                        </GridViewColumn>
+                                                                        <GridViewColumn Header="Value" Width="200">
+                                                                            <GridViewColumn.CellTemplate>
+                                                                                <DataTemplate>
+                                                                                    <TextBox Text="{Binding Value, Mode=OneWay}" 
+                                                                                             BorderBrush="{x:Null}" 
+                                                                                             FontFamily="Consolas"
+                                                                                             TextWrapping="Wrap"/>
+                                                                                </DataTemplate>
+                                                                            </GridViewColumn.CellTemplate>
+                                                                        </GridViewColumn>
+                                                                        <GridViewColumn Header="Kind" Width="80">
+                                                                            <GridViewColumn.CellTemplate>
+                                                                                <DataTemplate>
+                                                                                    <TextBlock Text="{Binding IsArgument, Converter={StaticResource BooleanToArgumentTypeConverter}}"
+                                                                                               FontStyle="Italic"
+                                                                                               FontSize="10"/>
+                                                                                </DataTemplate>
+                                                                            </GridViewColumn.CellTemplate>
+                                                                        </GridViewColumn>
+                                                                        <GridViewColumn Header="Index" Width="50">
+                                                                            <GridViewColumn.CellTemplate>
+                                                                                <DataTemplate>
+                                                                                    <TextBlock Text="{Binding Index}" 
+                                                                                               HorizontalAlignment="Center"/>
+                                                                                </DataTemplate>
+                                                                            </GridViewColumn.CellTemplate>
+                                                                        </GridViewColumn>
+                                                                    </GridView>
+                                                                </ListView.View>
+                                                            </ListView>
+                                                        </Expander>
                                                     </Grid>
                                                 </Expander>
                                             </DataTemplate>

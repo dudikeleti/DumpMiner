@@ -186,12 +186,12 @@ namespace DumpMiner.Operations
 
                     if (!thread.IsAlive)
                         threadMetrics.DeadThreads++;
-                    else if (thread.IsBackground())
-                        threadMetrics.BackgroundThreads++;
                     else
                         threadMetrics.ForegroundThreads++;
 
-                    if (thread.IsBlocked())
+                    // Check if thread is blocked using ClrMD 4.0 API
+                    var blockingObjects = thread.GetBlockingObjects().ToList();
+                    if (blockingObjects.Any())
                     {
                         threadMetrics.BlockedThreads++;
                         blockedThreads.Add(new ThreadInfo
@@ -199,7 +199,7 @@ namespace DumpMiner.Operations
                             ManagedThreadId = thread.ManagedThreadId,
                             OSThreadId = thread.OSThreadId,
                             IsAlive = thread.IsAlive,
-                            BlockingObjectCount = thread.GetBlockingObjectCount()
+                            BlockingObjectCount = blockingObjects.Count
                         });
                     }
 
@@ -255,6 +255,7 @@ namespace DumpMiner.Operations
                     foreach (var module in appDomain.Modules)
                     {
                         performanceMetrics.TotalModules++;
+
                         if (module.IsOptimized())
                             performanceMetrics.OptimizedModules++;
 
@@ -275,7 +276,8 @@ namespace DumpMiner.Operations
                                     performanceMetrics.TotalCodeSize += codeSize;
                                 }
 
-                                if (method.IsGeneric())
+                                // Check if method is generic by looking at signature
+                                if (method.Name.Contains('<') || method.Signature.Contains('<'))
                                     performanceMetrics.GenericMethods++;
                             }
                         }
@@ -692,21 +694,503 @@ namespace DumpMiner.Operations
             return IssueSeverity.Low;
         }
 
-        // Placeholder implementations for remaining analysis methods
-        private AutomatedAnalysisResult? CheckMemoryPressureIndicators(MemoryAnalysisMetrics metrics, int[] generationStats) => null;
-        private AutomatedAnalysisResult? AnalyzeThreadingHealth(ThreadingMetrics metrics, List<ThreadInfo> blockedThreads) => null;
-        private AutomatedAnalysisResult? AssessDeadlockRisk(List<ThreadInfo> blockedThreads, ThreadingMetrics metrics) => null;
-        private AutomatedAnalysisResult? AnalyzeThreadPoolUsage(ThreadingMetrics metrics) => null;
-        private AutomatedAnalysisResult? AnalyzePerformanceHealth(PerformanceMetrics metrics) => null;
-        private AutomatedAnalysisResult? CheckCompilationIssues(PerformanceMetrics metrics) => null;
-        private AutomatedAnalysisResult? AnalyzeExceptions(ExceptionMetrics metrics, Dictionary<string, int> types) => null;
-        private AutomatedAnalysisResult? CheckForCriticalExceptions(Dictionary<string, int> types) => null;
-        private AutomatedAnalysisResult? AnalyzeResourceHealth(ResourceMetrics metrics) => null;
-        private AutomatedAnalysisResult? CheckForResourceLeaks(ResourceMetrics metrics) => null;
-        private List<AutomatedAnalysisResult> DetectCommonPatterns(CancellationToken token) => new();
-        private List<AutomatedAnalysisResult> PerformCorrelationAnalysis(CancellationToken token) => new();
-        private List<AutomatedAnalysisResult> DetectAnomalies(CancellationToken token) => new();
-        private List<AutomatedAnalysisResult> GenerateProactiveRecommendations(List<AutomatedAnalysisResult> results) => new();
+        // Implemented analysis methods
+        private AutomatedAnalysisResult? CheckMemoryPressureIndicators(MemoryAnalysisMetrics metrics, int[] generationStats)
+        {
+            var issues = new List<string>();
+            var recommendations = new List<string>();
+            var severity = IssueSeverity.Low;
+            var score = 8.0;
+
+            // Check for memory pressure indicators
+            if (metrics.TotalSize > 1_000_000_000) // 1GB
+            {
+                severity = IssueSeverity.High;
+                issues.Add("High memory usage detected");
+                recommendations.Add("Investigate memory usage patterns");
+                score -= 3.0;
+            }
+
+            // Check LOH pressure
+            if (metrics.LargeObjectCount > 500)
+            {
+                if (severity < IssueSeverity.Medium) severity = IssueSeverity.Medium;
+                issues.Add("High Large Object Heap usage");
+                recommendations.Add("Review large object allocations");
+                score -= 1.5;
+            }
+
+            // Check generation distribution
+            if (generationStats.Length > 2)
+            {
+                var totalObjects = generationStats.Sum();
+                var gen2Ratio = totalObjects > 0 ? (double)generationStats[2] / totalObjects : 0;
+                
+                if (gen2Ratio > 0.6) // More than 60% in Gen 2
+                {
+                    if (severity < IssueSeverity.Medium) severity = IssueSeverity.Medium;
+                    issues.Add("High Gen 2 object ratio - potential memory retention");
+                    recommendations.Add("Investigate long-lived objects");
+                    score -= 2.0;
+                }
+            }
+
+            if (!issues.Any()) return null;
+
+            return new AutomatedAnalysisResult
+            {
+                AnalysisCategory = AnalysisCategory.Memory,
+                Title = "Memory Pressure Indicators",
+                Severity = severity,
+                Description = $"Detected {issues.Count} memory pressure indicators:\n" + string.Join("\n", issues.Select(i => $"• {i}")),
+                Recommendations = recommendations,
+                Score = Math.Max(0, score)
+            };
+        }
+
+        private AutomatedAnalysisResult? AnalyzeThreadingHealth(ThreadingMetrics metrics, List<ThreadInfo> blockedThreads)
+        {
+            var issues = new List<string>();
+            var recommendations = new List<string>();
+            var severity = IssueSeverity.Low;
+            var score = 8.0;
+
+            // Check for excessive threads
+            if (metrics.TotalThreads > 50)
+            {
+                severity = IssueSeverity.Medium;
+                issues.Add($"High thread count: {metrics.TotalThreads}");
+                recommendations.Add("Review thread creation patterns");
+                score -= 1.5;
+            }
+
+            // Check for blocked threads
+            if (metrics.BlockedThreads > 5)
+            {
+                severity = IssueSeverity.High;
+                issues.Add($"Multiple blocked threads: {metrics.BlockedThreads}");
+                recommendations.Add("Investigate thread blocking patterns");
+                score -= 2.5;
+            }
+
+            // Check for dead threads
+            if (metrics.DeadThreads > 10)
+            {
+                if (severity < IssueSeverity.Medium) severity = IssueSeverity.Medium;
+                issues.Add($"High dead thread count: {metrics.DeadThreads}");
+                recommendations.Add("Review thread lifecycle management");
+                score -= 1.0;
+            }
+
+            // Check for threads with exceptions
+            if (metrics.ThreadsWithExceptions > 0)
+            {
+                if (severity < IssueSeverity.High) severity = IssueSeverity.High;
+                issues.Add($"Threads with exceptions: {metrics.ThreadsWithExceptions}");
+                recommendations.Add("Investigate thread exceptions");
+                score -= 2.0;
+            }
+
+            if (!issues.Any()) return null;
+
+            return new AutomatedAnalysisResult
+            {
+                AnalysisCategory = AnalysisCategory.Threading,
+                Title = "Threading Health Analysis",
+                Severity = severity,
+                Description = $"Threading health issues detected:\n" + string.Join("\n", issues.Select(i => $"• {i}")),
+                Recommendations = recommendations,
+                Score = Math.Max(0, score)
+            };
+        }
+
+        private AutomatedAnalysisResult? AssessDeadlockRisk(List<ThreadInfo> blockedThreads, ThreadingMetrics metrics)
+        {
+            if (blockedThreads.Count < 2) return null;
+
+            var severity = IssueSeverity.Medium;
+            var score = 5.0;
+
+            // Assess deadlock risk based on blocked threads
+            if (blockedThreads.Count >= 5)
+            {
+                severity = IssueSeverity.High;
+                score = 3.0;
+            }
+
+            var description = $"Deadlock risk assessment:\n" +
+                            $"• {blockedThreads.Count} blocked threads detected\n" +
+                            $"• Threads involved: {string.Join(", ", blockedThreads.Select(t => t.ManagedThreadId))}";
+
+            return new AutomatedAnalysisResult
+            {
+                AnalysisCategory = AnalysisCategory.Threading,
+                Title = "Deadlock Risk Assessment",
+                Severity = severity,
+                Description = description,
+                Score = score,
+                Recommendations = new List<string>
+                {
+                    "Run DeadlockDetection operation for detailed analysis",
+                    "Review thread synchronization patterns",
+                    "Check for circular wait conditions"
+                }
+            };
+        }
+
+        private AutomatedAnalysisResult? AnalyzeThreadPoolUsage(ThreadingMetrics metrics)
+        {
+            // Basic thread pool analysis
+            if (metrics.TotalThreads > 100)
+            {
+                return new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Threading,
+                    Title = "Thread Pool Usage Analysis",
+                    Severity = IssueSeverity.Medium,
+                    Description = $"High thread count detected: {metrics.TotalThreads} threads",
+                    Score = 4.0,
+                    Recommendations = new List<string>
+                    {
+                        "Consider using async/await patterns",
+                        "Review thread pool configuration",
+                        "Investigate thread starvation"
+                    }
+                };
+            }
+
+            return null;
+        }
+
+        private AutomatedAnalysisResult? AnalyzePerformanceHealth(PerformanceMetrics metrics)
+        {
+            var issues = new List<string>();
+            var recommendations = new List<string>();
+            var severity = IssueSeverity.Low;
+            var score = 8.0;
+
+            // Check compilation ratio
+            if (metrics.TotalMethods > 0)
+            {
+                var compilationRatio = (double)metrics.CompiledMethods / metrics.TotalMethods;
+                if (compilationRatio < 0.3) // Less than 30% compiled
+                {
+                    severity = IssueSeverity.Medium;
+                    issues.Add($"Low JIT compilation ratio: {compilationRatio:P1}");
+                    recommendations.Add("Investigate JIT compilation issues");
+                    score -= 2.0;
+                }
+            }
+
+            // Check for large methods
+            if (metrics.LargeMethods > 10)
+            {
+                if (severity < IssueSeverity.Medium) severity = IssueSeverity.Medium;
+                issues.Add($"High number of large methods: {metrics.LargeMethods}");
+                recommendations.Add("Review method size and complexity");
+                score -= 1.5;
+            }
+
+            // Check optimization ratio
+            if (metrics.TotalModules > 0)
+            {
+                var optimizationRatio = (double)metrics.OptimizedModules / metrics.TotalModules;
+                if (optimizationRatio < 0.5) // Less than 50% optimized
+                {
+                    if (severity < IssueSeverity.Medium) severity = IssueSeverity.Medium;
+                    issues.Add($"Low optimization ratio: {optimizationRatio:P1}");
+                    recommendations.Add("Review build configuration for optimizations");
+                    score -= 1.0;
+                }
+            }
+
+            if (!issues.Any()) return null;
+
+            return new AutomatedAnalysisResult
+            {
+                AnalysisCategory = AnalysisCategory.Performance,
+                Title = "Performance Health Analysis",
+                Severity = severity,
+                Description = $"Performance issues detected:\n" + string.Join("\n", issues.Select(i => $"• {i}")),
+                Recommendations = recommendations,
+                Score = Math.Max(0, score)
+            };
+        }
+
+        private AutomatedAnalysisResult? CheckCompilationIssues(PerformanceMetrics metrics)
+        {
+            if (metrics.TotalMethods == 0) return null;
+
+            var compilationRatio = (double)metrics.CompiledMethods / metrics.TotalMethods;
+            
+            if (compilationRatio < 0.2) // Less than 20% compiled
+            {
+                return new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Performance,
+                    Title = "JIT Compilation Issues",
+                    Severity = IssueSeverity.High,
+                    Description = $"Very low JIT compilation ratio: {compilationRatio:P1}\n" +
+                                 $"Only {metrics.CompiledMethods} of {metrics.TotalMethods} methods are compiled",
+                    Score = 2.0,
+                    Recommendations = new List<string>
+                    {
+                        "Investigate JIT compilation failures",
+                        "Check for AOT compilation issues",
+                        "Review method accessibility and usage"
+                    }
+                };
+            }
+
+            return null;
+        }
+
+        private AutomatedAnalysisResult? AnalyzeExceptions(ExceptionMetrics metrics, Dictionary<string, int> types)
+        {
+            if (metrics.TotalExceptions == 0) return null;
+
+            var severity = metrics.TotalExceptions > 5 ? IssueSeverity.High : IssueSeverity.Medium;
+            var score = Math.Max(0, 8.0 - (metrics.TotalExceptions * 0.5));
+
+            var description = new StringBuilder();
+            description.AppendLine($"Exception analysis results:");
+            description.AppendLine($"• Total exceptions: {metrics.TotalExceptions}");
+            description.AppendLine($"• Exception types: {types.Count}");
+            
+            if (types.Any())
+            {
+                description.AppendLine("• Top exception types:");
+                foreach (var kvp in types.OrderByDescending(kvp => kvp.Value).Take(5))
+                {
+                    description.AppendLine($"  - {kvp.Key}: {kvp.Value} occurrences");
+                }
+            }
+
+            return new AutomatedAnalysisResult
+            {
+                AnalysisCategory = AnalysisCategory.Exceptions,
+                Title = "Exception Analysis",
+                Severity = severity,
+                Description = description.ToString(),
+                Score = score,
+                Recommendations = new List<string>
+                {
+                    "Investigate exception root causes",
+                    "Review error handling patterns",
+                    "Use DumpExceptions operation for detailed analysis"
+                }
+            };
+        }
+
+        private AutomatedAnalysisResult? CheckForCriticalExceptions(Dictionary<string, int> types)
+        {
+            var criticalExceptions = new Dictionary<string, int>();
+            var criticalTypes = new[]
+            {
+                "System.OutOfMemoryException",
+                "System.StackOverflowException",
+                "System.AccessViolationException",
+                "System.InvalidOperationException",
+                "System.ArgumentException",
+                "System.NullReferenceException"
+            };
+
+            foreach (var criticalType in criticalTypes)
+            {
+                if (types.ContainsKey(criticalType))
+                {
+                    criticalExceptions[criticalType] = types[criticalType];
+                }
+            }
+
+            if (!criticalExceptions.Any()) return null;
+
+            var severity = IssueSeverity.Critical;
+            var description = new StringBuilder();
+            description.AppendLine("Critical exceptions detected:");
+            
+            foreach (var kvp in criticalExceptions)
+            {
+                description.AppendLine($"• {kvp.Key}: {kvp.Value} occurrences");
+            }
+
+            return new AutomatedAnalysisResult
+            {
+                AnalysisCategory = AnalysisCategory.Exceptions,
+                Title = "Critical Exception Detection",
+                Severity = severity,
+                Description = description.ToString(),
+                Score = 1.0,
+                Recommendations = new List<string>
+                {
+                    "Investigate critical exceptions immediately",
+                    "Review memory management if OutOfMemoryException detected",
+                    "Check for infinite recursion if StackOverflowException detected",
+                    "Validate null checks if NullReferenceException detected"
+                }
+            };
+        }
+
+        private AutomatedAnalysisResult? AnalyzeResourceHealth(ResourceMetrics metrics)
+        {
+            var issues = new List<string>();
+            var recommendations = new List<string>();
+            var severity = IssueSeverity.Low;
+            var score = 8.0;
+
+            // Check AppDomain count
+            if (metrics.AppDomainCount > 10)
+            {
+                severity = IssueSeverity.Medium;
+                issues.Add($"High AppDomain count: {metrics.AppDomainCount}");
+                recommendations.Add("Review AppDomain usage patterns");
+                score -= 1.5;
+            }
+
+            // Check module count
+            if (metrics.TotalModules > 100)
+            {
+                if (severity < IssueSeverity.Medium) severity = IssueSeverity.Medium;
+                issues.Add($"High module count: {metrics.TotalModules}");
+                recommendations.Add("Review assembly loading patterns");
+                score -= 1.0;
+            }
+
+            // Check dynamic modules
+            if (metrics.DynamicModules > 20)
+            {
+                if (severity < IssueSeverity.Medium) severity = IssueSeverity.Medium;
+                issues.Add($"High dynamic module count: {metrics.DynamicModules}");
+                recommendations.Add("Review dynamic code generation");
+                score -= 1.0;
+            }
+
+            if (!issues.Any()) return null;
+
+            return new AutomatedAnalysisResult
+            {
+                AnalysisCategory = AnalysisCategory.Resources,
+                Title = "Resource Health Analysis",
+                Severity = severity,
+                Description = $"Resource health issues:\n" + string.Join("\n", issues.Select(i => $"• {i}")),
+                Recommendations = recommendations,
+                Score = Math.Max(0, score)
+            };
+        }
+
+        private AutomatedAnalysisResult? CheckForResourceLeaks(ResourceMetrics metrics)
+        {
+            // Basic resource leak detection
+            if (metrics.TotalAssemblySize > 500_000_000) // 500MB
+            {
+                return new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Resources,
+                    Title = "Potential Resource Leak",
+                    Severity = IssueSeverity.Medium,
+                    Description = $"High total assembly size: {OperationHelpers.FormatSize((long)metrics.TotalAssemblySize)}",
+                    Score = 4.0,
+                    Recommendations = new List<string>
+                    {
+                        "Investigate assembly loading patterns",
+                        "Check for memory leaks in loaded assemblies",
+                        "Review AppDomain usage"
+                    }
+                };
+            }
+
+            return null;
+        }
+
+        private List<AutomatedAnalysisResult> DetectCommonPatterns(CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            
+            // This would be expanded with actual pattern detection logic
+            // For now, return empty list as placeholder
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> PerformCorrelationAnalysis(CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            
+            // This would be expanded with actual correlation analysis logic
+            // For now, return empty list as placeholder
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> DetectAnomalies(CancellationToken token)
+        {
+            var results = new List<AutomatedAnalysisResult>();
+            
+            // This would be expanded with actual anomaly detection logic
+            // For now, return empty list as placeholder
+            return results;
+        }
+
+        private List<AutomatedAnalysisResult> GenerateProactiveRecommendations(List<AutomatedAnalysisResult> results)
+        {
+            var recommendations = new List<AutomatedAnalysisResult>();
+            
+            // Generate proactive recommendations based on findings
+            var memoryIssues = results.Where(r => r.AnalysisCategory == AnalysisCategory.Memory).ToList();
+            var threadingIssues = results.Where(r => r.AnalysisCategory == AnalysisCategory.Threading).ToList();
+            var performanceIssues = results.Where(r => r.AnalysisCategory == AnalysisCategory.Performance).ToList();
+            
+            if (memoryIssues.Any())
+            {
+                recommendations.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Recommendations,
+                    Title = "Memory Optimization Recommendations",
+                    Severity = IssueSeverity.Low,
+                    Description = "Consider implementing memory optimization strategies",
+                    Recommendations = new List<string>
+                    {
+                        "Implement object pooling for frequently allocated objects",
+                        "Use memory profiling tools regularly",
+                        "Review garbage collection settings"
+                    }
+                });
+            }
+            
+            if (threadingIssues.Any())
+            {
+                recommendations.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Recommendations,
+                    Title = "Threading Best Practices",
+                    Severity = IssueSeverity.Low,
+                    Description = "Consider implementing threading best practices",
+                    Recommendations = new List<string>
+                    {
+                        "Use async/await patterns where appropriate",
+                        "Implement proper thread synchronization",
+                        "Consider using thread-safe collections"
+                    }
+                });
+            }
+            
+            if (performanceIssues.Any())
+            {
+                recommendations.Add(new AutomatedAnalysisResult
+                {
+                    AnalysisCategory = AnalysisCategory.Recommendations,
+                    Title = "Performance Optimization Tips",
+                    Severity = IssueSeverity.Low,
+                    Description = "Consider implementing performance optimizations",
+                    Recommendations = new List<string>
+                    {
+                        "Enable compiler optimizations in release builds",
+                        "Use JIT compilation hints where appropriate",
+                        "Profile hot paths and optimize critical methods"
+                    }
+                });
+            }
+            
+            return recommendations;
+        }
 
         public override string GetAIInsights(Collection<object> operationResults)
         {

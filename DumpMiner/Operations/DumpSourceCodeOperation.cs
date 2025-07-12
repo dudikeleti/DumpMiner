@@ -29,8 +29,79 @@ namespace DumpMiner.Operations
 
         public override async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
-            // todo: support list of methods
-            return new object[] { new SourceCode { Code = GetSourceCode((int)model.ObjectAddress) } };
+            // Enhanced support for multiple methods
+            var results = new List<object>();
+            
+            try
+            {
+                // Check if customParameter contains a list of methods
+                if (customParameter is IEnumerable<int> methodTokens)
+                {
+                    // Process multiple methods
+                    foreach (var methodToken in methodTokens)
+                    {
+                        if (token.IsCancellationRequested) break;
+                        
+                        try
+                        {
+                            var sourceCode = GetSourceCode(methodToken);
+                            results.Add(new SourceCode 
+                            { 
+                                Code = sourceCode,
+                                MetadataToken = methodToken,
+                                Description = $"Method with token: 0x{methodToken:X8}"
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            results.Add(new SourceCode
+                            {
+                                Code = $"// Error decompiling method with token 0x{methodToken:X8}: {ex.Message}",
+                                MetadataToken = methodToken,
+                                Description = $"Method with token: 0x{methodToken:X8} (Error)",
+                                HasError = true
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    // Single method (original behavior)
+                    var methodToken = (int)model.ObjectAddress;
+                    try
+                    {
+                        var sourceCode = GetSourceCode(methodToken);
+                        results.Add(new SourceCode 
+                        { 
+                            Code = sourceCode,
+                            MetadataToken = methodToken,
+                            Description = $"Method with token: 0x{methodToken:X8}"
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        results.Add(new SourceCode
+                        {
+                            Code = $"// Error decompiling method with token 0x{methodToken:X8}: {ex.Message}",
+                            MetadataToken = methodToken,
+                            Description = $"Method with token: 0x{methodToken:X8} (Error)",
+                            HasError = true
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                results.Add(new SourceCode
+                {
+                    Code = $"// Error during source code operation: {ex.Message}",
+                    MetadataToken = 0,
+                    Description = "Source Code Operation Error",
+                    HasError = true
+                });
+            }
+            
+            return results;
         }
 
         private string GetSourceCode(int metadataToken)
@@ -71,10 +142,13 @@ namespace DumpMiner.Operations
         internal class SourceCode
         {
             public string Code { get; set; }
+            public int MetadataToken { get; set; }
+            public string Description { get; set; }
+            public bool HasError { get; set; }
 
             public override string ToString()
             {
-                return Code;
+                return HasError ? $"ERROR: {Description}" : Code;
             }
         }
     }
