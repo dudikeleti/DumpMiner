@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -187,6 +188,74 @@ namespace DumpMiner.Infrastructure.UI.Controls
                         e.Handled = true; // Prevent the Enter key from being processed further
                     }
                 }
+            }
+        }
+
+        private void HelpButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Get the operation name from the parent window that has ExtendedData
+            var operationName = string.Empty;
+            
+            // Try to get the operation name from the parent UserControl
+            var parentWindow = Window.GetWindow(this);
+            if (parentWindow != null)
+            {
+                // Look for UserControl parents that implement IHasViewModel
+                var parent = this.Parent;
+                while (parent != null)
+                {
+                    if (parent is UserControl userControl)
+                    {
+                        // Check if this UserControl has ExtendedData property
+                        var extendedDataProperty = userControl.GetType().GetProperty("ExtendedData");
+                        if (extendedDataProperty != null)
+                        {
+                            var extendedData = extendedDataProperty.GetValue(userControl) as Dictionary<string, object>;
+                            if (extendedData != null && extendedData.TryGetValue("OperationName", out var opName))
+                            {
+                                operationName = opName as string;
+                                break;
+                            }
+                        }
+                    }
+                    parent = parent is FrameworkElement fe ? fe.Parent : null;
+                }
+            }
+
+            if (string.IsNullOrEmpty(operationName))
+            {
+                // Fallback: try to determine from the header
+                operationName = HeaderTextBlock.Text;
+            }
+
+            if (!string.IsNullOrEmpty(operationName))
+            {
+                // Create callback to pass AI questions back to the operation
+                Action<string> askAICallback = null;
+                var viewModel = this.DataContext;
+                if (viewModel != null)
+                {
+                    askAICallback = (question) =>
+                    {
+                        // Set the AI question
+                        var aiQuestionProperty = viewModel.GetType().GetProperty("AiQuestion");
+                        if (aiQuestionProperty != null)
+                        {
+                            aiQuestionProperty.SetValue(viewModel, question);
+                        }
+                        
+                        // Execute the AskAi command
+                        var askAiCommand = viewModel.GetType().GetProperty("AskAiCommand")?.GetValue(viewModel) as ICommand;
+                        if (askAiCommand != null && askAiCommand.CanExecute(null))
+                        {
+                            askAiCommand.Execute(null);
+                        }
+                    };
+                }
+
+                var helpDialog = new Contents.OperationHelp(operationName, askAICallback);
+                helpDialog.Owner = Window.GetWindow(this);
+                helpDialog.ShowDialog();
             }
         }
     }

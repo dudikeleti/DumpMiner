@@ -56,8 +56,117 @@
                                 Width="80"
                                 Height="80" />
         <StackPanel Grid.Row="0">
-            <TextBlock Name="HeaderTextBlock"
-                       Style="{StaticResource Heading1}" />
+            <DockPanel>
+                <Button Name="HelpButton" 
+                        DockPanel.Dock="Right"
+                        Content="?"
+                        FontWeight="Normal"
+                        FontSize="16"
+                        FontFamily="Segoe UI"
+                        Width="32"
+                        Height="32"
+                        Margin="8,0,0,0"
+                        ToolTip="Show detailed help for this operation"
+                        Click="HelpButton_Click"
+                        Cursor="Hand">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Name="border" 
+                                                Background="{TemplateBinding Background}" 
+                                                CornerRadius="16"
+                                                RenderTransformOrigin="0.5,0.5">
+                                            <Border.Effect>
+                                                <DropShadowEffect Color="#000000" Direction="270" ShadowDepth="2" Opacity="0.3" BlurRadius="4"/>
+                                            </Border.Effect>
+                                            <Border.RenderTransform>
+                                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                            </Border.RenderTransform>
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                           To="1.05" Duration="0:0:0.2"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                           To="1.05" Duration="0:0:0.2"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.Effect).(DropShadowEffect.ShadowDepth)"
+                                                                           To="4" Duration="0:0:0.2"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.Effect).(DropShadowEffect.BlurRadius)"
+                                                                           To="8" Duration="0:0:0.2"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.Effect).(DropShadowEffect.Opacity)"
+                                                                           To="0.5" Duration="0:0:0.2"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                                <Trigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                           To="1" Duration="0:0:0.2"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                           To="1" Duration="0:0:0.2"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.Effect).(DropShadowEffect.ShadowDepth)"
+                                                                           To="2" Duration="0:0:0.2"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.Effect).(DropShadowEffect.BlurRadius)"
+                                                                           To="4" Duration="0:0:0.2"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.Effect).(DropShadowEffect.Opacity)"
+                                                                           To="0.3" Duration="0:0:0.2"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.ExitActions>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                           To="0.95" Duration="0:0:0.1"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                           To="0.95" Duration="0:0:0.1"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.Effect).(DropShadowEffect.ShadowDepth)"
+                                                                           To="1" Duration="0:0:0.1"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.Effect).(DropShadowEffect.BlurRadius)"
+                                                                           To="2" Duration="0:0:0.1"/>
+                                                            <DoubleAnimation Storyboard.TargetName="border" 
+                                                                           Storyboard.TargetProperty="(Border.Effect).(DropShadowEffect.Opacity)"
+                                                                           To="0.6" Duration="0:0:0.1"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <TextBlock Name="HeaderTextBlock"
+                           Style="{StaticResource Heading1}" />
+            </DockPanel>
             <TextBlock TextWrapping="Wrap"
                        Name="ExplanationTextBlock"
                        FontStyle="Italic"/>
