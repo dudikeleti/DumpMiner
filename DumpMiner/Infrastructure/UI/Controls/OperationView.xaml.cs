@@ -231,7 +231,7 @@ namespace DumpMiner.Infrastructure.UI.Controls
             if (!string.IsNullOrEmpty(operationName))
             {
                 // Create callback to pass AI questions back to the operation
-                Action<string> askAICallback = null;
+                Func<string, bool> askAICallback = null;
                 var viewModel = this.DataContext;
                 if (viewModel != null)
                 {
@@ -244,12 +244,20 @@ namespace DumpMiner.Infrastructure.UI.Controls
                             aiQuestionProperty.SetValue(viewModel, question);
                         }
                         
-                        // Execute the AskAi command
-                        var askAiCommand = viewModel.GetType().GetProperty("AskAiCommand")?.GetValue(viewModel) as ICommand;
-                        if (askAiCommand != null && askAiCommand.CanExecute(null))
+                        // Check if AI is enabled (operation has been run)
+                        var isAiEnabledProperty = viewModel.GetType().GetProperty("IsAiEnabled");
+                        if (isAiEnabledProperty != null)
                         {
-                            askAiCommand.Execute(null);
+                            var isAiEnabled = (bool)isAiEnabledProperty.GetValue(viewModel);
+                            if (isAiEnabled)
+                            {
+                                // AI panel is available, question has been set, return success
+                                return true;
+                            }
                         }
+                        
+                        // AI panel is not available yet, return false
+                        return false;
                     };
                 }
 

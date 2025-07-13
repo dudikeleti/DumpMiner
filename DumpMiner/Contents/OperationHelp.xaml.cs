@@ -12,9 +12,9 @@ namespace DumpMiner.Contents
         private readonly IHelpService _helpService;
         private readonly string _operationName;
         private OperationHelpContent _helpContent;
-        private Action<string> _askAICallback;
+        private Func<string, bool> _askAICallback;
 
-        public OperationHelp(string operationName, Action<string> askAICallback = null)
+        public OperationHelp(string operationName, Func<string, bool> askAICallback = null)
         {
             InitializeComponent();
             _operationName = operationName;
@@ -355,8 +355,21 @@ namespace DumpMiner.Contents
             if (_askAICallback != null)
             {
                 var question = $"I need help with the {_helpContent.DisplayName} operation. Can you explain how to use it effectively and what I should look for in the results?";
-                _askAICallback(question);
-                Close();
+                var success = _askAICallback(question);
+                
+                if (success)
+                {
+                    // Question was successfully prepared in the AI text box
+                    MessageBox.Show($"Question prepared in AI text box:\n\n\"{question}\"\n\nYou can now edit the question and click 'Ask AI' when ready.", 
+                                  "AI Question Prepared", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Close();
+                }
+                else
+                {
+                    // AI panel is not available yet
+                    MessageBox.Show($"Please run the {_helpContent.DisplayName} operation first to enable AI assistance.\n\nOnce you have results, you can ask AI questions about them.", 
+                                  "Run Operation First", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             else
             {
