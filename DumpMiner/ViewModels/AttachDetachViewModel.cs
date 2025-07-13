@@ -206,7 +206,8 @@ namespace DumpMiner.ViewModels
                 bool success = await DebuggerSession.Instance.LoadDump(file.FileName, CrashDumpReader.DbgEng);
                 if (!success)
                 {
-                    App.Container.GetExport<IDialogService>().Value.ShowDialog("Load dump failed");
+                    var errorService = App.Container.GetExportedValueOrDefault<IUserFriendlyErrorService>();
+                    errorService?.ShowError("Failed to load the dump file. Please ensure the file is a valid .NET memory dump and try again.", "Dump Load Failed");
                 }
 
                 AttachedProcessName = file.FileName;

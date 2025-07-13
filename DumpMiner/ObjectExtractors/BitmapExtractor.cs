@@ -1,4 +1,5 @@
-﻿using DumpMiner.Debugger;
+﻿using DumpMiner.Common;
+using DumpMiner.Debugger;
 using Microsoft.Diagnostics.Runtime;
 using System;
 using System.Drawing;
@@ -55,7 +56,8 @@ namespace DumpMiner.ObjectExtractors
                 // only support 32-bit images for now
                 if (DebuggerSession.Instance.DataTarget.DataReader.PointerSize != 4)
                 {
-                    App.Dialog.ShowDialog("Only 32-bit targets are currently supported for bitmap extraction.", title: "Error");
+                    var errorService = App.Container.GetExportedValueOrDefault<IUserFriendlyErrorService>();
+                    errorService?.ShowError("Bitmap extraction is currently only supported for 32-bit processes. Please use a 32-bit target process.", "Unsupported Platform");
                     return Task.FromResult(false);
                 }
 

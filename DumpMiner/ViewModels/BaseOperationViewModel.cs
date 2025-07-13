@@ -23,6 +23,7 @@ namespace DumpMiner.ViewModels
         public OperationModel Model { get; set; }
         protected CancellationTokenSource CancellationTokenSource;
         private readonly TimeSpan _defaultTimeout;
+        private readonly IUserFriendlyErrorService _errorService;
 
         public BaseOperationViewModel()
         {
@@ -33,6 +34,7 @@ namespace DumpMiner.ViewModels
             var configService = ConfigurationService.Instance;
             var timeoutMs = configService.Configuration.General.DefaultTimeoutMs;
             _defaultTimeout = TimeSpan.FromMilliseconds(timeoutMs);
+            _errorService = App.Container.GetExportedValueOrDefault<IUserFriendlyErrorService>();
         }
 
         public virtual IDebuggerOperation Operation { get; set; }
@@ -158,7 +160,7 @@ namespace DumpMiner.ViewModels
             if (!DebuggerSession.Instance.IsAttached)
             {
                 DebuggerSession.Instance.Detach();
-                App.Container.GetExport<IDialogService>().Value.ShowDialog("Process is detached");
+                _errorService?.ShowError("Cannot execute operation because there is no active connection to a process or dump file.", "Process Not Connected");
                 return;
             }
 
@@ -183,11 +185,11 @@ namespace DumpMiner.ViewModels
             }
             catch (OperationCanceledException)
             {
-                App.Container.GetExport<IDialogService>().Value.ShowDialog("Operation is canceled");
+                _errorService?.ShowError("Operation was cancelled", "Operation Cancelled");
             }
             catch (Exception ex)
             {
-                App.Container.GetExport<IDialogService>().Value.ShowDialog($"Exception{Environment.NewLine}{ex.Message}{Environment.NewLine}{ex.StackTrace.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)[0]}");
+                _errorService?.ShowError(ex, "executing operation");
             }
 
             if (result != null)
@@ -205,7 +207,7 @@ namespace DumpMiner.ViewModels
             if (!DebuggerSession.Instance.IsAttached)
             {
                 DebuggerSession.Instance.Detach();
-                App.Container.GetExport<IDialogService>().Value.ShowDialog("Process is detached");
+                _errorService?.ShowError("Cannot perform AI analysis because there is no active connection to a process or dump file.", "Process Not Connected");
                 return;
             }
 
@@ -226,11 +228,11 @@ namespace DumpMiner.ViewModels
             }
             catch (OperationCanceledException)
             {
-                App.Container.GetExport<IDialogService>().Value.ShowDialog("Operation is canceled");
+                _errorService?.ShowError("AI analysis was cancelled", "AI Analysis Cancelled");
             }
             catch (Exception ex)
             {
-                App.Container.GetExport<IDialogService>().Value.ShowDialog($"Exception{Environment.NewLine}{ex.Message}{Environment.NewLine}{ex.StackTrace.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)[0]}");
+                _errorService?.ShowError(ex, "AI analysis");
             }
 
             IsLoading = false;

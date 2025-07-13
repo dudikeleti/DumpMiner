@@ -115,7 +115,8 @@ namespace DumpMiner.Debugger
             var result = CreateRuntime();
             if (!result.succeeded)
             {
-                App.Container.GetExport<IDialogService>().Value.ShowDialog(result.error);
+                var errorService = App.Container.GetExportedValueOrDefault<IUserFriendlyErrorService>();
+                errorService?.ShowError($"Failed to load dump file: {result.error}", "Dump Load Error");
                 Dispose(true);
             }
 
@@ -143,7 +144,8 @@ namespace DumpMiner.Debugger
                     if (!result.succeeded)
                     {
                         Dispose(true);
-                        App.Container.GetExport<IDialogService>().Value.ShowDialog(result.error);
+                        var errorService = App.Container.GetExportedValueOrDefault<IUserFriendlyErrorService>();
+                        errorService?.ShowError($"Failed to attach to process: {result.error}", "Process Attach Error");
                         return;
                     }
 

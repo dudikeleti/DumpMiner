@@ -152,7 +152,8 @@ namespace DumpMiner.Infrastructure.UI.Controls
             var sizeProperty = SelectedItem.GetType().GetProperty("Size", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             if (addressProperty == null || sizeProperty == null)
             {
-                App.Dialog.ShowDialog("The object must has address and size", title: "Error");
+                var errorService = App.Container.GetExportedValueOrDefault<IUserFriendlyErrorService>();
+                errorService?.ShowError("The selected object does not have the required address and size properties for dumping.", "Invalid Object Selected");
                 return;
             }
 

@@ -31,21 +31,23 @@ namespace DumpMiner.Operations
                 var typeName = model.Types;
                 var size = (ulong)customParameter
                     ;
+                var errorService = App.Container.GetExportedValueOrDefault<IUserFriendlyErrorService>();
+
                 if (address == 0)
                 {
-                    App.Dialog.ShowDialog("Selected object address is zero. Cannot dump.", title: "Error");
+                    errorService?.ShowError("Please select a valid object to dump. The object address cannot be zero.", "Invalid Object Address");
                     return null;
                 }
 
                 if (size == 0)
                 {
-                    App.Dialog.ShowDialog("Selected object size is zero. Cannot dump.", title: "Error");
+                    errorService?.ShowError("The selected object has zero size and cannot be dumped.", "Invalid Object Size");
                     return null;
                 }
 
                 if (size > int.MaxValue)
                 {
-                    App.Dialog.ShowDialog("Selected object size is too large. Cannot dump.", title: "Error");
+                    errorService?.ShowError("The selected object is too large to dump. Please select a smaller object.", "Object Too Large");
                     return null;
                 }
 
@@ -55,7 +57,7 @@ namespace DumpMiner.Operations
                     var bytesRead = DebuggerSession.Instance.DataTarget.DataReader.Read(address, buffer);
                     if (bytesRead <= 0)
                     {
-                        App.Dialog.ShowDialog("Could not read process memory.", title: "Error");
+                        errorService?.ShowError("Unable to read memory from the target process. The process may have terminated or the memory address is invalid.", "Memory Read Error");
                         return null;
                     }
 
@@ -134,8 +136,9 @@ namespace DumpMiner.Operations
                 }
                 catch (Exception ex)
                 {
-                    App.Dialog.ShowDialog($"An exception occurred while dumping the object: {ex}", title: "Error");
-                    return new[] { new { Status = "Failed", Error = ex.Message } };
+                    var errorServiceInner = App.Container.GetExportedValueOrDefault<IUserFriendlyErrorService>();
+                    errorServiceInner?.ShowError(ex, "object dump operation");
+                    return new[] { new { Status = "Failed", Error = "Object dump operation failed" } };
                 }
             });
         }
