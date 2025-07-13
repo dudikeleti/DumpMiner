@@ -10,6 +10,7 @@ using DumpMiner.Services.AI.Configuration;
 using DumpMiner.Services.AI.Interfaces;
 using DumpMiner.Services.AI.Models;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
 namespace DumpMiner.Services.AI.Providers
 {
@@ -228,9 +229,35 @@ namespace DumpMiner.Services.AI.Providers
             if (!ModelPricing.TryGetValue(_configuration?.Model ?? "", out var pricing))
                 return null;
 
-            // Rough estimation based on text length
-            var inputTokens = EstimateTokenCount(request.SystemPrompt + request.UserPrompt + 
-                string.Join(" ", request.ConversationHistory.Select(h => h.Content)));
+            // Build complete prompt text including dump context
+            var promptText = new StringBuilder();
+            
+            // Add system prompt
+            if (!string.IsNullOrEmpty(request.SystemPrompt))
+            {
+                promptText.AppendLine(request.SystemPrompt);
+            }
+            
+            // Add dump context if available
+            if (request.DumpContext != null)
+            {
+                promptText.AppendLine(FormatDumpContextForCostEstimation(request.DumpContext));
+            }
+            
+            // Add user prompt
+            if (!string.IsNullOrEmpty(request.UserPrompt))
+            {
+                promptText.AppendLine(request.UserPrompt);
+            }
+            
+            // Add conversation history
+            if (request.ConversationHistory.Any())
+            {
+                promptText.AppendLine(string.Join(" ", request.ConversationHistory.Select(h => h.Content)));
+            }
+
+            // Rough estimation based on complete text length
+            var inputTokens = EstimateTokenCount(promptText.ToString());
             var outputTokens = request.MaxTokens ?? 1000;
 
             var inputCost = (inputTokens / 1_000_000m) * pricing.input;
@@ -266,6 +293,58 @@ namespace DumpMiner.Services.AI.Providers
         {
             // Rough estimation: ~4 characters per token for English text
             return string.IsNullOrEmpty(text) ? 0 : (int)Math.Ceiling(text.Length / 4.0);
+        }
+
+        private static string FormatDumpContextForCostEstimation(DumpContext dumpContext)
+        {
+            var context = new StringBuilder();
+
+            if (dumpContext.ProcessInfo != null)
+            {
+                context.AppendLine($"Process: {dumpContext.ProcessInfo.ProcessName} (PID: {dumpContext.ProcessInfo.ProcessId})");
+                context.AppendLine($"CLR Version: {dumpContext.ProcessInfo.ClrVersion}");
+                context.AppendLine($"Thread Count: {dumpContext.ProcessInfo.ThreadCount}");
+            }
+
+            if (dumpContext.HeapStats != null)
+            {
+                context.AppendLine($"Heap Size: {FormatBytes(dumpContext.HeapStats.TotalSize)}");
+                context.AppendLine($"Gen0: {FormatBytes(dumpContext.HeapStats.Gen0Size)}, Gen1: {FormatBytes(dumpContext.HeapStats.Gen1Size)}, Gen2: {FormatBytes(dumpContext.HeapStats.Gen2Size)}");
+                context.AppendLine($"LOH: {FormatBytes(dumpContext.HeapStats.LargeObjectHeapSize)}");
+            }
+
+            if (dumpContext.Exceptions?.Any() == true)
+            {
+                context.AppendLine($"Exceptions Found: {dumpContext.Exceptions.Count}");
+                foreach (var exception in dumpContext.Exceptions.Take(3))
+                {
+                    context.AppendLine($"  - {exception.Type}: {exception.Message}");
+                }
+            }
+
+            if (dumpContext.LargeObjects?.Any() == true)
+            {
+                context.AppendLine($"Large Objects: {dumpContext.LargeObjects.Count}");
+                foreach (var obj in dumpContext.LargeObjects.Take(3))
+                {
+                    context.AppendLine($"  - {obj.Type}: {FormatBytes(obj.Size)}");
+                }
+            }
+
+            return context.ToString();
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int counter = 0;
+            decimal number = bytes;
+            while (Math.Round(number / 1024) >= 1)
+            {
+                number = number / 1024;
+                counter++;
+            }
+            return $"{number:n1}{suffixes[counter]}";
         }
 
         public void Dispose()
