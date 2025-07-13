@@ -220,7 +220,7 @@ namespace DumpMiner.Tests.Operations
             // Assert
             insights.Should().NotBeNullOrEmpty("because AI should provide insights about heap objects");
             insights.Should().Contain("objects", "because insights should mention objects");
-            insights.Should().Contain("memory", "because insights should mention memory usage");
+            insights.Should().Contain("Heap Analysis", "because insights should provide heap analysis");
             
             // Verify insights contain useful information
             TestUtilities.Validation.AssertNotNullOrEmpty(insights, "AI insights should not be empty");
@@ -239,8 +239,10 @@ namespace DumpMiner.Tests.Operations
             var insights = _operation.GetAIInsights(emptyResults);
 
             // Assert
-            insights.Should().NotBeNullOrEmpty("because AI should provide insights even for empty results");
-            insights.Should().Contain("0 objects", "because insights should mention zero objects");
+            insights.Should().NotBeNullOrEmpty();
+            insights.Should().Contain("Heap Analysis: 0 objects");
+            insights.Should().NotContain("Type distribution");
+            insights.Should().NotContain("Top object types");
         }
 
         [Fact]
@@ -253,8 +255,8 @@ namespace DumpMiner.Tests.Operations
             var insights = _operation.GetAIInsights(null);
 
             // Assert
-            insights.Should().NotBeNullOrEmpty("because AI should provide insights even for null results");
-            insights.Should().Contain("No results", "because insights should mention no results");
+            insights.Should().NotBeNullOrEmpty();
+            insights.Should().Contain("No results available");
         }
 
         #endregion
@@ -280,13 +282,13 @@ namespace DumpMiner.Tests.Operations
 
             // Assert
             insights.Should().NotBeNullOrEmpty();
-            insights.Should().Contain("large", "because insights should identify large objects");
-            insights.Should().Contain("memory", "because insights should mention memory usage");
+            insights.Should().Contain("Heap Analysis: 3 objects");
+            insights.Should().Contain("Total heap size");
             
-            // Verify the insights mention potential memory issues
-            var insightsLower = insights.ToLower();
-            (insightsLower.Contains("large") || insightsLower.Contains("memory") || insightsLower.Contains("heap"))
-                .Should().BeTrue("because insights should mention memory-related terms");
+            // Verify the insights contain object type information
+            insights.Should().Contain("System.Byte[]");
+            insights.Should().Contain("System.String");
+            insights.Should().Contain("System.Collections.Generic.List`1");
         }
 
         [Theory]
@@ -304,15 +306,22 @@ namespace DumpMiner.Tests.Operations
             var objects = new System.Collections.ObjectModel.Collection<object>();
             for (int i = 0; i < objectCount; i++)
             {
-                objects.Add(new { Address = (ulong)(0x12345678 + i * 8), Type = "System.String", Size = 32 });
+                objects.Add(new { Address = (ulong)(0x12345678 + i), Type = "System.String", Size = 32 });
             }
 
             // Act
             var insights = _operation.GetAIInsights(objects);
 
             // Assert
-            insights.Should().NotBeNullOrEmpty($"because insights should be provided for {description}");
-            insights.Should().Contain(objectCount.ToString(), $"because insights should mention the count for {description}");
+            insights.Should().NotBeNullOrEmpty();
+            insights.Should().Contain($"Heap Analysis: {objectCount:N0} objects", $"because insights should show the correct count for {description}");
+            insights.Should().Contain("System.String");
+            
+            // For large counts, check for potential issues
+            if (objectCount > 100000)
+            {
+                insights.Should().Contain("Potential Issues", "because large object counts should trigger warnings");
+            }
         }
 
         #endregion

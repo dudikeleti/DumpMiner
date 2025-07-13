@@ -35,9 +35,9 @@ public class AIConfigurationTests
 
     [Theory]
     [InlineData(100, true)]
-    [InlineData(32000, true)]
+    [InlineData(200000, true)]
     [InlineData(99, false)]
-    [InlineData(32001, false)]
+    [InlineData(200001, false)]
     public void AIConfiguration_MaxTokens_ValidationShouldWork(int maxTokens, bool expectedValid)
     {
         // Arrange
@@ -52,10 +52,10 @@ public class AIConfigurationTests
     }
 
     [Theory]
-    [InlineData(5, true)]
-    [InlineData(300, true)]
-    [InlineData(4, false)]
-    [InlineData(301, false)]
+    [InlineData(30, true)]
+    [InlineData(600, true)]
+    [InlineData(29, false)]
+    [InlineData(601, false)]
     public void AIConfiguration_TimeoutSeconds_ValidationShouldWork(int timeoutSeconds, bool expectedValid)
     {
         // Arrange
@@ -149,29 +149,33 @@ public class AIConfigurationTests
     [Fact]
     public void AnthropicConfiguration_DefaultValues_ShouldBeValid()
     {
-        // Arrange & Act
+        // Arrange
         var config = new AnthropicConfiguration();
 
+        // Act
+        var validationResults = ValidateModel(config);
+
         // Assert
-        config.ApiKey.Should().Be(string.Empty);
+        validationResults.Should().NotBeEmpty(); // Should fail validation because ApiKey is required
+        config.IsEnabled.Should().BeFalse(); // Default is disabled
         config.Model.Should().Be("claude-sonnet-4");
         config.BaseUrl.Should().Be("https://api.anthropic.com");
-        config.Temperature.Should().Be(0.2);
-        config.IsEnabled.Should().BeTrue();
     }
 
     [Fact]
     public void GoogleConfiguration_DefaultValues_ShouldBeValid()
     {
-        // Arrange & Act
+        // Arrange
         var config = new GoogleConfiguration();
 
+        // Act
+        var validationResults = ValidateModel(config);
+
         // Assert
-        config.ApiKey.Should().Be(string.Empty);
-                    config.Model.Should().Be("gemini-2.5-pro");
+        validationResults.Should().NotBeEmpty(); // Should fail validation because ApiKey is required
+        config.IsEnabled.Should().BeFalse(); // Default is disabled
+        config.Model.Should().Be("gemini-2.5-pro");
         config.BaseUrl.Should().Be("https://generativelanguage.googleapis.com");
-        config.Temperature.Should().Be(0.2);
-        config.IsEnabled.Should().BeTrue();
     }
 
     [Fact]

@@ -22,6 +22,9 @@ namespace DumpMiner.Operations
 
         public override async Task<IEnumerable<object>> Execute(OperationModel model, CancellationToken token, object customParameter)
         {
+            if (model == null)
+                throw new ArgumentNullException(nameof(model));
+
             List<string> types = model.Types?.Split(';').ToList();
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
@@ -64,6 +67,14 @@ namespace DumpMiner.Operations
         public override string GetAIInsights(Collection<object> operationResults)
         {
             var insights = new System.Text.StringBuilder();
+            
+            // Handle null results gracefully
+            if (operationResults == null)
+            {
+                insights.AppendLine("Heap Analysis: No results available");
+                return insights.ToString();
+            }
+            
             insights.AppendLine($"Heap Analysis: {operationResults.Count:N0} objects");
 
             if (!operationResults.Any())

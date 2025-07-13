@@ -188,11 +188,9 @@ namespace DumpMiner.Tests.Infrastructure
         /// <summary>
         /// Creates a mock configuration service with default settings
         /// </summary>
-        public static Mock<ConfigurationService> CreateConfigurationService()
+        public static ApplicationConfiguration CreateTestApplicationConfiguration()
         {
-            var mock = new Mock<ConfigurationService>();
-
-            var config = new ApplicationConfiguration
+            return new ApplicationConfiguration
             {
                 General = new GeneralSettings
                 {
@@ -207,10 +205,16 @@ namespace DumpMiner.Tests.Infrastructure
                     FontSize = FontSizeType.Small
                 }
             };
+        }
 
-            mock.Setup(x => x.Configuration).Returns(config);
-            mock.Setup(x => x.SaveConfiguration());
-
+        /// <summary>
+        /// Creates a mock IOptions<ApplicationConfiguration> for testing
+        /// </summary>
+        public static Mock<IOptions<ApplicationConfiguration>> CreateConfigurationOptions()
+        {
+            var config = CreateTestApplicationConfiguration();
+            var mock = new Mock<IOptions<ApplicationConfiguration>>();
+            mock.Setup(x => x.Value).Returns(config);
             return mock;
         }
 

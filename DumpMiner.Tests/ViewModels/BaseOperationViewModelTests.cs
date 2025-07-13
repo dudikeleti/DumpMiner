@@ -23,20 +23,20 @@ namespace DumpMiner.Tests.ViewModels
     public class BaseOperationViewModelTests : BaseTestClass
     {
         private readonly Mock<IDebuggerOperation> _mockOperation;
-        private readonly Mock<ConfigurationService> _mockConfigService;
+        private readonly ApplicationConfiguration _testConfiguration;
         private readonly TestableBaseOperationViewModel _viewModel;
 
         public BaseOperationViewModelTests(ITestOutputHelper testOutput) : base(testOutput)
         {
             _mockOperation = MockFactories.CreateDebuggerOperation("TestOperation");
-            _mockConfigService = MockFactories.CreateConfigurationService();
+            _testConfiguration = MockFactories.CreateTestApplicationConfiguration();
             _viewModel = new TestableBaseOperationViewModel();
         }
 
         protected override void SetUp()
         {
             base.SetUp();
-            _viewModel.SetupForTesting(_mockOperation.Object, _mockConfigService.Object);
+            _viewModel.SetupForTesting(_mockOperation.Object, _testConfiguration);
         }
 
         #region Property Tests
@@ -541,7 +541,7 @@ namespace DumpMiner.Tests.ViewModels
     {
         private readonly List<object[]> _resultSets = new();
 
-        public void SetupForTesting(IDebuggerOperation operation, ConfigurationService configService)
+        public void SetupForTesting(IDebuggerOperation operation, ApplicationConfiguration configService)
         {
             Operation = operation;
             // Note: In a real scenario, we'd need to setup the configuration service properly
