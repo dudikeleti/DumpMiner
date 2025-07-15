@@ -136,7 +136,7 @@ namespace DumpMiner
         {
             try
             {
-                var configuration = new ConfigurationBuilder()
+                var configuration = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                     .Build();

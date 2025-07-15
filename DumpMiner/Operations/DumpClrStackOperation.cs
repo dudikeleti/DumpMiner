@@ -179,7 +179,7 @@ namespace DumpMiner.Operations
                                 Address = ptr,
                                 Object = obj,
                                 Name = type.Name,
-                                Value = new DumpMiner.Debugger.ClrObject(obj, type, token).Fields.Value
+                                Value = new DumpMiner.Debugger.ClrObject(obj, type, token, ClrObjectConfiguration.Conservative).Fields.Value
                             });
 
                         if (token.IsCancellationRequested)

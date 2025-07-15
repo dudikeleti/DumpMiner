@@ -47,7 +47,7 @@ namespace DumpMiner.Operations
                 if (type.ComponentType == null || type.ComponentType.IsPrimitive)
                 {
                     // return new List<ClrObjectModel>() { new ClrObjectModel() { Address = itemAddress, Value = itemValue, MetadataToken = type.ComponentType?.MetadataToken ?? 0, Offset = (ulong)(type.ElementSize * index), TypeName = type.ComponentType?.Name ?? type.Name.Replace("[]", string.Empty) } };
-                    return new DumpMiner.Debugger.ClrObject(itemAddress, type.ComponentType, token).Fields.Value;
+                    return new DumpMiner.Debugger.ClrObject(itemAddress, type.ComponentType, token, ClrObjectConfiguration.Default).Fields.Value;
                 }
 
                 if (type.ComponentType.Name == "System.String")
@@ -57,7 +57,7 @@ namespace DumpMiner.Operations
 
                 if (type.ComponentType?.IsObjectReference == true)
                 {
-                    return new DumpMiner.Debugger.ClrObject((ulong)itemValue, heap.GetObjectType((ulong)itemValue), token).Fields.Value;
+                    return new DumpMiner.Debugger.ClrObject((ulong)itemValue, heap.GetObjectType((ulong)itemValue), token, ClrObjectConfiguration.Default).Fields.Value;
                 }
 
                 return null;

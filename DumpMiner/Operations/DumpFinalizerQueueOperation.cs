@@ -23,7 +23,7 @@ namespace DumpMiner.Operations
                 var heap = DebuggerSession.Instance.Heap;
                 var enumerable = from finalizer in DebuggerSession.Instance.Runtime.Heap.EnumerateFinalizableObjects()
                                  let type = heap.GetObjectType(finalizer)
-                                 select new ClrObject(finalizer, type, token).Fields.Value;
+                                 select new ClrObject(finalizer, type, token, ClrObjectConfiguration.Conservative).Fields.Value;
                 return enumerable.ToList();
             });
         }

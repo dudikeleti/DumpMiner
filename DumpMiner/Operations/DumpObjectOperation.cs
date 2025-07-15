@@ -27,7 +27,9 @@ namespace DumpMiner.Operations
                 {
                     return null;
                 }
-                return new DumpMiner.Debugger.ClrObject(model.ObjectAddress, type, token).Fields.Value;
+                // Use conservative configuration for general object dumps to prevent performance issues
+                var config = ClrObjectConfiguration.Conservative;
+                return new DumpMiner.Debugger.ClrObject(model.ObjectAddress, type, token, config).Fields.Value;
             });
         }
 
