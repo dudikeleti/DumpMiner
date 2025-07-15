@@ -4,7 +4,6 @@ using DumpMiner.Debugger;
 using DumpMiner.Models;
 using DumpMiner.Operations.Shared;
 using Microsoft.Diagnostics.Runtime;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
@@ -27,29 +26,70 @@ namespace DumpMiner.Operations
             if (!ulong.TryParse(customParameter.ToString(), out size))
                 return null;
 
-            var operation = App.Container.GetExportedValue<IDebuggerOperation>(OperationNames.GetObjectSize);
-            if (operation == null)
-                return null;
-
             List<string> types = model.Types?.Split(';').ToList();
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 var heap = DebuggerSession.Instance.Heap;
                 var results = new List<object>();
+                var progressReporter = model.ProgressReporter;
+                var startTime = DateTime.Now;
+
+                // Phase 1: Initialize and enumerate segments
+                progressReporter?.ReportPhase("Initializing", "Preparing heap segments for analysis");
+                progressReporter?.ReportProgress(0, "Initializing analysis", $"Searching for objects larger than {FormatSize((long)size)}");
 
                 var segmentsObjectsDictionary = new Dictionary<ClrSegment, IEnumerable<ClrObject>>();
-                foreach (var segment in heap.Segments)
+                var segments = heap.Segments.ToList();
+                var totalSegments = segments.Count;
+                var currentSegment = 0;
+
+                // Pre-enumerate objects for better progress tracking
+                foreach (var segment in segments)
                 {
-                    segmentsObjectsDictionary[segment] = segment.EnumerateObjects().AsParallel();
+                    currentSegment++;
+                    progressReporter?.ReportProgress((currentSegment * 10) / totalSegments,
+                        $"Enumerating segment {currentSegment} of {totalSegments}",
+                        "Preparing objects for analysis");
+
+                    segmentsObjectsDictionary[segment] = segment.EnumerateObjects().ToList();
                 }
+
+                // Phase 2: Analyze objects in each segment
+                progressReporter?.ReportPhase("Analyzing Objects", "Searching for large objects");
+
+                var totalObjectsProcessed = 0L;
+                var totalObjectsFound = segmentsObjectsDictionary.Values.Sum(objs => objs.Count());
+                currentSegment = 0;
 
                 foreach (var kvp in segmentsObjectsDictionary)
                 {
                     var seg = kvp.Key;
-                    foreach (var obj in kvp.Value)
+                    var segmentObjects = kvp.Value.ToList();
+                    currentSegment++;
+
+                    var segmentObjectCount = 0;
+                    var totalSegmentObjects = segmentObjects.Count;
+
+                    progressReporter?.ReportProgress(10 + (currentSegment * 80) / totalSegments,
+                        $"Segment {currentSegment} of {totalSegments}",
+                        $"Analyzing {totalSegmentObjects:N0} objects in segment");
+
+                    foreach (var obj in segmentObjects)
                     {
                         if (token.IsCancellationRequested)
                             break;
+
+                        segmentObjectCount++;
+                        totalObjectsProcessed++;
+
+                        // Report progress every 5000 objects for better responsiveness
+                        if (segmentObjectCount % 5000 == 0)
+                        {
+                            var overallProgress = 10 + (int)((totalObjectsProcessed * 80.0) / totalObjectsFound);
+                            progressReporter?.ReportProgress(overallProgress,
+                                $"Analyzing {totalObjectsProcessed:N0} of {totalObjectsFound:N0} objects",
+                                $"Segment {currentSegment}: {segmentObjectCount:N0}/{totalSegmentObjects:N0} objects, {results.Count:N0} large objects found");
+                        }
 
                         var type = heap.GetObjectType(obj);
                         if (type == null)
@@ -57,47 +97,22 @@ namespace DumpMiner.Operations
 
                         if (types?.Any(t => type.Name.ToLower().Contains(t.ToLower())) ?? true)
                         {
-                            dynamic result = operation.Execute(new OperationModel { ObjectAddress = obj }, token, null).Result.FirstOrDefault();
-                            if (result == null || result.TotalSize < size)
-                                continue;
-                            results.Add(new { Address = obj, Type = type.Name, Generation = seg.GetGeneration(obj), Size = result.TotalSize });
-                        }   
+                            // Calculate object size directly using ClrMD for much better performance
+                            ulong objectSize = obj.Size;
+
+                            // For more accurate size calculation, include referenced objects if needed, GetObjectSizeOperation does recursive analysis
+                            if (objectSize >= size)
+                            {
+                                results.Add(new { Address = obj.Address, Type = type.Name, Generation = seg.GetGeneration(obj), Size = objectSize });
+                            }
+                        }
                     }
                 }
 
-                //It will not work properly because in the end i must be serial because the debugger operation must run on the same thread that attach to dump\process
-                //It will work if we are inspecting a dump file and the dump reader is ClrMD
-                //Parallel.ForEach(
-                //    // The values to be aggregated 
-                //    heapObjects,
+                // Final completion reporting
+                var processingTime = DateTime.Now - startTime;
+                progressReporter?.ReportCompleted(totalObjectsProcessed, processingTime);
 
-                //    // The local initial partial result
-                //    () => new List<object>(),
-
-                //    // The loop body
-                //    (obj, loopState, partialResult) =>
-                //    {
-                //        if (token.IsCancellationRequested)
-                //            return partialResult;
-
-                //        var type = heap.GetObjectType(obj);
-                //        dynamic result = operation.Execute(new OperationModel { ObjectAddress = obj }, token, null).Result.FirstOrDefault();
-                //        if (result != null && result.TotalSize >= size)
-                //            partialResult.Add(new { Address = obj, Type = type.Name, Generation = heap.GetGeneration(obj), Size = result.TotalSize });
-                //        return partialResult;
-                //    },
-
-                //    // The final step of each local context            
-                //    (localPartialSum) =>
-                //    {
-                //        // Enforce serial access to single, shared result
-                //        lock (lockObject)
-                //        {
-                //            results.AddRange(localPartialSum);
-                //        }
-                //    });
-
-                
                 return results;
             });
         }
@@ -107,15 +122,15 @@ namespace DumpMiner.Operations
             var insights = new System.Text.StringBuilder();
             insights.AppendLine($"Large Objects Analysis: {operationResults.Count} large objects");
 
-            if (!operationResults.Any()) 
+            if (!operationResults.Any())
             {
                 insights.AppendLine("✅ No large objects found above specified threshold");
                 return insights.ToString();
             }
 
             // Calculate statistics
-            var objects = operationResults.Select(r => new 
-            { 
+            var objects = operationResults.Select(r => new
+            {
                 Type = OperationHelpers.GetPropertyValue<string>(r, "Type", "Unknown"),
                 Size = OperationHelpers.GetPropertyValue<ulong>(r, "Size", 0),
                 Generation = OperationHelpers.GetPropertyValue<string>(r, "Generation", "Unknown"),
@@ -193,7 +208,7 @@ When analyzing large object data, pay attention to:
         protected override Dictionary<string, Services.AI.Orchestration.AIFunctionParameter> GetFunctionParameters()
         {
             var baseParams = base.GetFunctionParameters();
-            
+
             baseParams["sizeThreshold"] = new Services.AI.Orchestration.AIFunctionParameter
             {
                 Type = "integer",
@@ -212,10 +227,10 @@ When analyzing large object data, pay attention to:
                 var sizeBytes = Convert.ToInt64(customParameter);
                 if (sizeBytes <= 0)
                     return "Size threshold: Default (85KB - Large Object Heap threshold)";
-                
+
                 return $"Size threshold: {sizeBytes:N0} bytes ({FormatSize(sizeBytes)})";
             }
-            
+
             return base.GetCustomParameterDescription(customParameter);
         }
 

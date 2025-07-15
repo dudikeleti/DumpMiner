@@ -16,6 +16,9 @@
         <ui:BytesToKbOrMbConverter x:Key="SizeConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <ui:HexDecConverter x:Key="HexDecConverter"/>
+        
+        <!-- Inverted Boolean to Visibility Converter -->
+        <ui:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter"/>
 
         <ControlTemplate x:Key="TextBoxWithCornerRadius" TargetType="{x:Type TextBoxBase}">
             <Border Background="{TemplateBinding Background}" 
@@ -49,12 +52,118 @@
             <RowDefinition Height="20" />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <mui:ModernProgressRing Grid.Row="0"
-                                Grid.RowSpan="3"
-                                IsActive="{Binding IsLoading}"
-                                Panel.ZIndex="1"
-                                Width="80"
-                                Height="80" />
+        <!-- Enhanced Progress Display -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource WindowBackground}"
+                BorderBrush="{DynamicResource WindowBorderActive}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Margin="20"
+                Panel.ZIndex="1"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                MinWidth="400"
+                MaxWidth="500"
+                Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+            
+            <Grid Margin="24">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="16"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="12"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="16"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="12"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Phase and Status -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding PhaseText}" 
+                               FontSize="16" 
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource Accent}"
+                               Margin="0,0,8,0"/>
+                    <TextBlock Text="{Binding ProgressPercentage, StringFormat={}({0}%)}" 
+                               FontSize="16" 
+                               FontWeight="Normal"
+                               Foreground="{DynamicResource ItemText}"/>
+                </StackPanel>
+
+                <!-- Progress Bar -->
+                <Grid Grid.Row="2">
+                    <ProgressBar Value="{Binding ProgressPercentage}" 
+                                 Maximum="100" 
+                                 Height="8" 
+                                 Background="{DynamicResource ButtonBackground}"
+                                 BorderThickness="0"
+                                 Foreground="{DynamicResource Accent}"/>
+                    
+                                         <!-- Animated Progress Ring (fallback for indeterminate progress) -->
+                     <mui:ModernProgressRing Width="24" 
+                                             Height="24" 
+                                             HorizontalAlignment="Right"
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,8,0"
+                                             IsActive="{Binding IsLoading}"
+                                             Visibility="{Binding HasDetailedProgress, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
+                </Grid>
+
+                <!-- Current Item Information -->
+                <TextBlock Grid.Row="4" 
+                           Text="{Binding ProgressText}" 
+                           FontSize="14" 
+                           FontWeight="Medium"
+                           Foreground="{DynamicResource ItemText}"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           Visibility="{Binding HasDetailedProgress, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                <!-- Status Message -->
+                <TextBlock Grid.Row="6" 
+                           Text="{Binding DetailedStatus}" 
+                           FontSize="12" 
+                           FontWeight="Normal"
+                           Foreground="{DynamicResource ItemTextHover}"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxWidth="300"/>
+
+                <!-- Time and Speed Information -->
+                <Grid Grid.Row="8" Visibility="{Binding HasTimeEstimate, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="⏱️" FontSize="12" Margin="0,0,4,0"/>
+                        <TextBlock Text="{Binding TimeRemainingText}" 
+                                   FontSize="12" 
+                                   FontWeight="Normal"
+                                   Foreground="{DynamicResource ItemTextHover}"/>
+                    </StackPanel>
+
+                    <Border Grid.Column="1" 
+                            Width="1" 
+                            Height="16" 
+                            Background="{DynamicResource ItemTextHover}" 
+                            Opacity="0.3" 
+                            Margin="12,0"/>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="⚡" FontSize="12" Margin="0,0,4,0"/>
+                        <TextBlock Text="{Binding ProcessingSpeedText}" 
+                                   FontSize="12" 
+                                   FontWeight="Normal"
+                                   Foreground="{DynamicResource ItemTextHover}"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
         <StackPanel Grid.Row="0">
             <DockPanel>
                 <Button Name="HelpButton" 

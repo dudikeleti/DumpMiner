@@ -33,24 +33,48 @@ namespace DumpMiner.Operations
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 var analysisResults = new List<AutomatedAnalysisResult>();
+                var progressReporter = model.ProgressReporter;
+                var startTime = DateTime.Now;
 
                 try
                 {
-                    // Execute comprehensive automated analysis
-                    var comprehensiveAnalysis = PerformComprehensiveAnalysis(model, token);
+                    // Phase 1: Comprehensive Analysis (40% of total work)
+                    progressReporter?.ReportPhase("Comprehensive Analysis", "Analyzing memory, threading, performance, exceptions, and resources...");
+                    progressReporter?.ReportProgress(0, "Starting comprehensive analysis", "Initializing analysis modules");
+                    
+                    var comprehensiveAnalysis = PerformComprehensiveAnalysis(model, token, progressReporter);
                     analysisResults.AddRange(comprehensiveAnalysis);
+                    
+                    progressReporter?.ReportProgress(40, "Comprehensive analysis complete", $"Found {comprehensiveAnalysis.Count} analysis results");
 
-                    // Perform intelligent issue detection
-                    var issueDetection = PerformIntelligentIssueDetection(token);
+                    // Phase 2: Intelligent Issue Detection (30% of total work)
+                    progressReporter?.ReportPhase("Intelligent Detection", "Detecting patterns, correlations, and anomalies...");
+                    progressReporter?.ReportProgress(40, "Starting intelligent detection", "Analyzing patterns and correlations");
+                    
+                    var issueDetection = PerformIntelligentIssueDetection(token, progressReporter);
                     analysisResults.AddRange(issueDetection);
+                    
+                    progressReporter?.ReportProgress(70, "Intelligent detection complete", $"Detected {issueDetection.Count} intelligent insights");
 
-                    // Generate automated recommendations
+                    // Phase 3: Automated Recommendations (20% of total work)
+                    progressReporter?.ReportPhase("Generating Recommendations", "Creating actionable recommendations...");
+                    progressReporter?.ReportProgress(70, "Generating recommendations", "Analyzing results for actionable insights");
+                    
                     var recommendations = GenerateAutomatedRecommendations(analysisResults, token);
                     analysisResults.AddRange(recommendations);
+                    
+                    progressReporter?.ReportProgress(90, "Recommendations complete", $"Generated {recommendations.Count} recommendations");
 
-                    // Create executive summary
+                    // Phase 4: Executive Summary (10% of total work)
+                    progressReporter?.ReportPhase("Executive Summary", "Creating executive summary...");
+                    progressReporter?.ReportProgress(90, "Creating executive summary", "Consolidating analysis results");
+                    
                     var executiveSummary = CreateExecutiveSummary(analysisResults);
                     analysisResults.Insert(0, executiveSummary);
+                    
+                    // Completion
+                    var totalTime = DateTime.Now - startTime;
+                    progressReporter?.ReportCompleted(analysisResults.Count, totalTime);
 
                     return analysisResults;
                 }
@@ -71,27 +95,32 @@ namespace DumpMiner.Operations
             });
         }
 
-        private List<AutomatedAnalysisResult> PerformComprehensiveAnalysis(OperationModel model, CancellationToken token)
+        private List<AutomatedAnalysisResult> PerformComprehensiveAnalysis(OperationModel model, CancellationToken token, IProgressReporter progressReporter = null)
         {
             var results = new List<AutomatedAnalysisResult>();
 
-            // 1. Memory Analysis
+            // 1. Memory Analysis (8% of total work)
+            progressReporter?.ReportProgress(2, "Memory Analysis", "Analyzing managed heap and memory usage");
             var memoryAnalysis = PerformMemoryAnalysis(token);
             results.AddRange(memoryAnalysis);
 
-            // 2. Threading Analysis
+            // 2. Threading Analysis (8% of total work)
+            progressReporter?.ReportProgress(10, "Threading Analysis", "Analyzing threads, locks, and synchronization");
             var threadingAnalysis = PerformThreadingAnalysis(token);
             results.AddRange(threadingAnalysis);
 
-            // 3. Performance Analysis
+            // 3. Performance Analysis (8% of total work)
+            progressReporter?.ReportProgress(18, "Performance Analysis", "Analyzing JIT compilation and method optimization");
             var performanceAnalysis = PerformPerformanceAnalysis(token);
             results.AddRange(performanceAnalysis);
 
-            // 4. Exception Analysis
+            // 4. Exception Analysis (8% of total work)
+            progressReporter?.ReportProgress(26, "Exception Analysis", "Analyzing exceptions and error patterns");
             var exceptionAnalysis = PerformExceptionAnalysis(token);
             results.AddRange(exceptionAnalysis);
 
-            // 5. Resource Analysis
+            // 5. Resource Analysis (8% of total work)
+            progressReporter?.ReportProgress(34, "Resource Analysis", "Analyzing application domains and resource usage");
             var resourceAnalysis = PerformResourceAnalysis(token);
             results.AddRange(resourceAnalysis);
 
@@ -419,21 +448,24 @@ namespace DumpMiner.Operations
             return results;
         }
 
-        private List<AutomatedAnalysisResult> PerformIntelligentIssueDetection(CancellationToken token)
+        private List<AutomatedAnalysisResult> PerformIntelligentIssueDetection(CancellationToken token, IProgressReporter progressReporter = null)
         {
             var results = new List<AutomatedAnalysisResult>();
 
             try
             {
-                // Pattern-based issue detection
+                // Pattern-based issue detection (10% of total work)
+                progressReporter?.ReportProgress(45, "Pattern Detection", "Detecting common memory and performance patterns");
                 var patternIssues = DetectCommonPatterns(token);
                 results.AddRange(patternIssues);
 
-                // Correlation analysis
+                // Correlation analysis (10% of total work)
+                progressReporter?.ReportProgress(55, "Correlation Analysis", "Analyzing correlations between components");
                 var correlationIssues = PerformCorrelationAnalysis(token);
                 results.AddRange(correlationIssues);
 
-                // Anomaly detection
+                // Anomaly detection (10% of total work)
+                progressReporter?.ReportProgress(65, "Anomaly Detection", "Detecting unusual patterns and anomalies");
                 var anomalies = DetectAnomalies(token);
                 results.AddRange(anomalies);
 

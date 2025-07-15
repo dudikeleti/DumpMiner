@@ -24,6 +24,7 @@ namespace DumpMiner.ViewModels
         protected CancellationTokenSource CancellationTokenSource;
         private readonly TimeSpan _defaultTimeout;
         private readonly IUserFriendlyErrorService _errorService;
+        private readonly IProgressReporter _progressReporter;
 
         public BaseOperationViewModel()
         {
@@ -35,6 +36,18 @@ namespace DumpMiner.ViewModels
             var timeoutMs = configService.Configuration.General.DefaultTimeoutMs;
             _defaultTimeout = TimeSpan.FromMilliseconds(timeoutMs);
             _errorService = App.Container.GetExportedValueOrDefault<IUserFriendlyErrorService>();
+            
+            // Initialize enhanced progress reporting
+            _progressReporter = new ProgressReporter();
+            _progressReporter.ProgressChanged += OnProgressChanged;
+            
+            // Initialize progress properties
+            ProgressPercentage = 0;
+            CurrentItem = string.Empty;
+            StatusMessage = "Ready";
+            ProcessingSpeed = 0;
+            EstimatedTimeRemaining = null;
+            CurrentPhase = "Idle";
         }
 
         public virtual IDebuggerOperation Operation { get; set; }
@@ -60,6 +73,115 @@ namespace DumpMiner.ViewModels
                 OnPropertyChanged();
             }
         }
+
+        // Enhanced Progress Properties
+        private int _progressPercentage;
+        public int ProgressPercentage
+        {
+            get { return _progressPercentage; }
+            set
+            {
+                _progressPercentage = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _currentItem;
+        public string CurrentItem
+        {
+            get { return _currentItem; }
+            set
+            {
+                _currentItem = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _statusMessage;
+        public string StatusMessage
+        {
+            get { return _statusMessage; }
+            set
+            {
+                _statusMessage = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private double _processingSpeed;
+        public double ProcessingSpeed
+        {
+            get { return _processingSpeed; }
+            set
+            {
+                _processingSpeed = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private TimeSpan? _estimatedTimeRemaining;
+        public TimeSpan? EstimatedTimeRemaining
+        {
+            get { return _estimatedTimeRemaining; }
+            set
+            {
+                _estimatedTimeRemaining = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _currentPhase;
+        public string CurrentPhase
+        {
+            get { return _currentPhase; }
+            set
+            {
+                _currentPhase = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private long _currentCount;
+        public long CurrentCount
+        {
+            get { return _currentCount; }
+            set
+            {
+                _currentCount = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private long _totalCount;
+        public long TotalCount
+        {
+            get { return _totalCount; }
+            set
+            {
+                _totalCount = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _itemType;
+        public string ItemType
+        {
+            get { return _itemType; }
+            set
+            {
+                _itemType = value;
+                OnPropertyChanged();
+            }
+        }
+
+        // Progress helper properties for UI
+        public string ProgressText => !string.IsNullOrEmpty(CurrentItem) ? CurrentItem : $"{ProgressPercentage}%";
+        public string DetailedStatus => !string.IsNullOrEmpty(StatusMessage) ? StatusMessage : "Processing...";
+        public string TimeRemainingText => EstimatedTimeRemaining?.ToString(@"mm\:ss") ?? "--:--";
+        public string ProcessingSpeedText => ProcessingSpeed > 0 ? $"{ProcessingSpeed:F1} items/s" : "--";
+        public string PhaseText => !string.IsNullOrEmpty(CurrentPhase) ? CurrentPhase : "Working";
+        public bool HasDetailedProgress => TotalCount > 0;
+        public bool HasTimeEstimate => EstimatedTimeRemaining.HasValue;
 
         private ObservableCollection<object> _items;
         public ObservableCollection<object> Items
@@ -172,6 +294,9 @@ namespace DumpMiner.ViewModels
             {
                 Model.CustomParameterDescription = aiOperation.GetCustomParameterDescription(o);
             }
+
+            // Provide the progress reporter to the operation
+            Model.ProgressReporter = _progressReporter;
 
             CancelOperationVisibility = Visibility.Visible;
             Items = null;
@@ -326,6 +451,34 @@ namespace DumpMiner.ViewModels
             }
         }
 
+        private void OnProgressChanged(object sender, ProgressEventArgs e)
+        {
+            // Update progress properties on UI thread
+            Application.Current?.Dispatcher?.Invoke(() =>
+            {
+                ProgressPercentage = e.Percentage;
+                CurrentItem = e.CurrentItem;
+                StatusMessage = e.StatusMessage;
+                ProcessingSpeed = e.ProcessingSpeed;
+                EstimatedTimeRemaining = e.EstimatedTimeRemaining;
+                CurrentPhase = e.PhaseName;
+                CurrentCount = e.CurrentCount;
+                TotalCount = e.TotalCount;
+                ItemType = e.ItemType;
+                
+                // Update computed properties
+                OnPropertyChanged(nameof(ProgressText));
+                OnPropertyChanged(nameof(DetailedStatus));
+                OnPropertyChanged(nameof(TimeRemainingText));
+                OnPropertyChanged(nameof(ProcessingSpeedText));
+                OnPropertyChanged(nameof(PhaseText));
+                OnPropertyChanged(nameof(HasDetailedProgress));
+                OnPropertyChanged(nameof(HasTimeEstimate));
+            });
+        }
+
+        protected IProgressReporter GetProgressReporter() => _progressReporter;
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -339,6 +492,11 @@ namespace DumpMiner.ViewModels
                 _results.Clear();
                 _resultsCurrentIndex = -1;
                 //Operation = null;
+                
+                if (_progressReporter != null)
+                {
+                    _progressReporter.ProgressChanged -= OnProgressChanged;
+                }
             }
             base.Dispose(disposing);
         }

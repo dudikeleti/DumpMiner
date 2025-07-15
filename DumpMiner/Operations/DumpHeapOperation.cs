@@ -31,11 +31,51 @@ namespace DumpMiner.Operations
                 var generation = (int)customParameter;
                 var heap = DebuggerSession.Instance.Heap;
                 var results = new List<object>();
-                foreach (var seg in heap.Segments)
+                var progressReporter = model.ProgressReporter;
+                
+                // Phase 1: Initialize and count segments
+                progressReporter?.ReportPhase("Initializing", "Analyzing heap structure...");
+                var segments = heap.Segments.ToList();
+                var totalSegments = segments.Count;
+                var currentSegment = 0;
+                
+                // Phase 2: Process each segment
+                progressReporter?.ReportPhase("Processing Heap", $"Analyzing {totalSegments} memory segments");
+                
+                var totalObjectsProcessed = 0L;
+                var startTime = DateTime.Now;
+                
+                foreach (var seg in segments)
                 {
-                    foreach (var clrObject in seg.EnumerateObjects())
+                    currentSegment++;
+                    
+                    // Report segment progress
+                    var segmentProgress = (currentSegment * 100) / totalSegments;
+                    progressReporter?.ReportProgress(segmentProgress, 
+                        $"Segment {currentSegment} of {totalSegments}", 
+                        $"Processing memory segment {currentSegment:N0}/{totalSegments:N0}");
+                    
+                    var segmentObjectCount = 0;
+                    var segmentObjects = seg.EnumerateObjects().ToList();
+                    var totalSegmentObjects = segmentObjects.Count;
+                    
+                    foreach (var clrObject in segmentObjects)
                     {
                         if (token.IsCancellationRequested) break;
+                        
+                        segmentObjectCount++;
+                        totalObjectsProcessed++;
+                        
+                        // Report detailed object progress every 1000 objects
+                        if (segmentObjectCount % 1000 == 0)
+                        {
+                            var objectProgress = (segmentObjectCount * 100) / totalSegmentObjects;
+                            progressReporter?.ReportProgress(totalObjectsProcessed, 
+                                totalObjectsProcessed + (totalSegmentObjects - segmentObjectCount), 
+                                "objects",
+                                $"Segment {currentSegment}: {segmentObjectCount:N0}/{totalSegmentObjects:N0} objects");
+                        }
+                        
                         var type = clrObject.Type;
                         if (type == null)
                         {
@@ -60,6 +100,10 @@ namespace DumpMiner.Operations
                     }
                 }
 
+                // Phase 3: Completing
+                var totalTime = DateTime.Now - startTime;
+                progressReporter?.ReportCompleted(totalObjectsProcessed, totalTime);
+                
                 return results;
             });
         }

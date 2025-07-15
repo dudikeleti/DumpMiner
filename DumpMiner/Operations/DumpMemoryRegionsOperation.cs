@@ -27,11 +27,18 @@ namespace DumpMiner.Operations
                 var runtime = DebuggerSession.Instance.Runtime;
                 var dataTarget = DebuggerSession.Instance.DataTarget;
                 var allResults = new List<object>();
+                var progressReporter = model.ProgressReporter;
+                var startTime = DateTime.Now;
 
                 try
                 {
-                    // 1. Get heap segments and analyze by generation
+                    // Phase 1: Analyze heap segments (40% of total work)
+                    progressReporter?.ReportPhase("Heap Analysis", "Analyzing heap segments and memory regions");
+                    progressReporter?.ReportProgress(0, "Starting heap analysis", "Examining heap segment structure");
+                    
                     var heapSegments = AnalyzeHeapSegments(runtime, token);
+                    
+                    progressReporter?.ReportProgress(20, "Categorizing heap segments", $"Analyzing {heapSegments.Count} heap segments");
                     
                     // Group by specific generation types for better insights
                     var heapByGeneration = heapSegments
@@ -47,7 +54,9 @@ namespace DumpMiner.Operations
                     
                     allResults.AddRange(heapByGeneration.Cast<object>());
 
-                    // 2. Add other heap types (any remaining segments)
+                    // Phase 2: Analyze other heap types (20% of total work)
+                    progressReporter?.ReportProgress(40, "Other heap types", "Analyzing remaining heap segments");
+                    
                     var otherHeapTypes = heapSegments
                         .Where(h => !h.Usage.Contains("Ephemeral") && !h.Usage.Contains("Large") && !h.Usage.Contains("Pinned"))
                         .GroupBy(h => ExtractHeapType(h.Usage))
@@ -60,7 +69,9 @@ namespace DumpMiner.Operations
                     
                     allResults.AddRange(otherHeapTypes.Cast<object>());
 
-                    // 3. Add committed vs reserved memory analysis
+                    // Phase 3: Memory usage analysis (20% of total work)
+                    progressReporter?.ReportProgress(60, "Memory usage analysis", "Analyzing committed vs reserved memory");
+                    
                     var totalCommitted = heapSegments.Sum(h => GetCommittedSize(h.Details));
                     var totalReserved = heapSegments.Sum(h => GetReservedSize(h.Details));
                     
@@ -84,7 +95,9 @@ namespace DumpMiner.Operations
                         });
                     }
 
-                    // 4. Analyze memory fragmentation with more details
+                    // Phase 4: Memory fragmentation analysis (10% of total work)
+                    progressReporter?.ReportProgress(80, "Fragmentation analysis", "Analyzing memory fragmentation patterns");
+                    
                     var fragmentationInfo = AnalyzeMemoryFragmentation(heapSegments, token);
                     if (fragmentationInfo.Any())
                     {
@@ -97,7 +110,9 @@ namespace DumpMiner.Operations
                         });
                     }
 
-                    // 5. Add overall statistics
+                    // Phase 5: Overall statistics (10% of total work)
+                    progressReporter?.ReportProgress(90, "Overall statistics", "Calculating final statistics");
+                    
                     var totalHeapSize = heapSegments.Sum(h => (long)h.Size);
                     allResults.Add(new
                     {
@@ -116,6 +131,10 @@ namespace DumpMiner.Operations
                             TotalSize = 0L
                         });
                     }
+
+                    // Completion
+                    var totalTime = DateTime.Now - startTime;
+                    progressReporter?.ReportCompleted(allResults.Count, totalTime);
 
                     return allResults;
                 }

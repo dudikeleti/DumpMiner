@@ -46,7 +46,7 @@
                                     DisplayMemberBinding="{Binding BaseName}" />
                     <GridViewColumn Width="20"
                                     DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />
-                    <GridViewColumn Header="Field name"
+                    <GridViewColumn Header="Name"
                                     DisplayMemberBinding="{Binding FieldName}" />
                     <GridViewColumn Width="20"
                                     DisplayMemberBinding="{Binding DataContext.Empty, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" />

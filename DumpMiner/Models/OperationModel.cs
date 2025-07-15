@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Text;
+using DumpMiner.Common;
 
 namespace DumpMiner.Models
 {
@@ -21,6 +22,11 @@ namespace DumpMiner.Models
         /// Human-readable description of the custom parameter for AI context
         /// </summary>
         public string CustomParameterDescription { get; set; }
+        
+        /// <summary>
+        /// Progress reporter for operation progress updates
+        /// </summary>
+        public IProgressReporter ProgressReporter { get; set; }
     }
 
     /// <summary>

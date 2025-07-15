@@ -47,7 +47,7 @@ namespace DumpMiner.Operations
             insights.AppendLine($"Object contains {fields.Count} fields");
 
             // Look for common patterns
-            var fieldTypes = OperationHelpers.GetTopGroups(fields, f => 
+            var fieldTypes = OperationHelpers.GetTopGroups(fields, f =>
                 OperationHelpers.GetPropertyValue<string>(f, "Type", "Unknown"));
 
             if (fieldTypes.Any())

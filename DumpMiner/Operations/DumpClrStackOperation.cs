@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
@@ -26,23 +27,61 @@ namespace DumpMiner.Operations
             return await DebuggerSession.Instance.ExecuteOperation(() =>
             {
                 var result = new List<ClrStackDump>();
-                foreach (var thread in DebuggerSession.Instance.Runtime.Threads)
+                var progressReporter = model.ProgressReporter;
+
+                // Phase 1: Initialize and count threads
+                progressReporter?.ReportPhase("Initializing", "Analyzing thread structure...");
+                var threads = DebuggerSession.Instance.Runtime.Threads.ToList();
+                var totalThreads = threads.Count;
+                var currentThreadIndex = 0;
+                var totalFramesProcessed = 0L;
+                var startTime = DateTime.Now;
+
+                // Phase 2: Process each thread
+                progressReporter?.ReportPhase("Processing Threads", $"Analyzing {totalThreads} threads");
+
+                foreach (var thread in threads)
                 {
                     if (token.IsCancellationRequested)
                         break;
 
+                    currentThreadIndex++;
+
+                    // Report thread progress
+                    var threadProgress = (currentThreadIndex * 100) / totalThreads;
+                    var threadType = thread.IsAlive ? "Live" : "Dead";
+                    progressReporter?.ReportProgress(threadProgress,
+                        $"Thread {currentThreadIndex} of {totalThreads}",
+                        $"Processing {threadType} thread {thread.ManagedThreadId} (OS: {thread.OSThreadId})");
+
                     var stackDetails = new ClrStackDump();
                     stackDetails.StackFrames = new List<Frame>();
                     stackDetails.StackObjects = new List<StackObject>();
-                    
-                    foreach (var stackFrame in thread.EnumerateStackTrace(true))
+
+                    // Get all stack frames for this thread
+                    var stackFrames = thread.EnumerateStackTrace(true).ToList();
+                    var totalFrames = stackFrames.Count;
+                    var currentFrameIndex = 0;
+
+                    foreach (var stackFrame in stackFrames)
                     {
+                        currentFrameIndex++;
+                        totalFramesProcessed++;
+
+                        // Report frame progress every 10 frames or on significant frames
+                        if (currentFrameIndex % 10 == 0 || currentFrameIndex == totalFrames)
+                        {
+                            progressReporter?.ReportProgress(totalFramesProcessed,
+                                totalFramesProcessed + (totalFrames - currentFrameIndex),
+                                "frames",
+                                $"Thread {currentThreadIndex}: Frame {currentFrameIndex:N0}/{totalFrames:N0}");
+                        }
                         stackDetails.StackBase = thread.StackBase;
                         stackDetails.StackLimit = thread.StackLimit;
                         stackDetails.Exception = thread.CurrentException;
                         stackDetails.OSThreadID = thread.IsAlive ? thread.OSThreadId.ToString() : "XXX";
                         stackDetails.ManagedThreadId = thread.ManagedThreadId;
-                        
+
                         var frame = new Frame
                         {
                             StackPointer = stackFrame.StackPointer,
@@ -83,7 +122,7 @@ namespace DumpMiner.Operations
                             frame.LocalVariables.Add(new LocalVariable
                             {
                                 Name = "Error",
-                                Type = "Information", 
+                                Type = "Information",
                                 Index = -1,
                                 Value = $"Failed to extract local variables: {ex.Message}",
                                 IsArgument = false
@@ -140,15 +179,20 @@ namespace DumpMiner.Operations
                                 Address = ptr,
                                 Object = obj,
                                 Name = type.Name,
-                                // Value = new Microsoft.Diagnostics.Runtime.ClrObject(obj, type);
                                 Value = new DumpMiner.Debugger.ClrObject(obj, type, token).Fields.Value
                             });
 
                         if (token.IsCancellationRequested)
                             break;
                     }
+
                     result.Add(stackDetails);
                 }
+
+                // Phase 3: Completing
+                var totalTime = DateTime.Now - startTime;
+                progressReporter?.ReportCompleted(totalFramesProcessed, totalTime);
+
                 return result;
             });
         }
@@ -222,7 +266,7 @@ namespace DumpMiner.Operations
             public ulong Address { get; set; }
             public object Object { get; set; }
             public string Name { get; set; }
-            public List<ClrObject.ClrObjectModel> Value { get; set; }
+            public ImmutableList<ClrObject.ClrObjectModel> Value { get; set; }
         }
 
         private class LocalVariable
@@ -240,7 +284,7 @@ namespace DumpMiner.Operations
         private List<LocalVariable> ExtractLocalVariablesFromStackFrame(ClrStackFrame stackFrame, ClrThread thread)
         {
             var localVariables = new List<LocalVariable>();
-            
+
             try
             {
                 var method = stackFrame.Method;
@@ -291,7 +335,7 @@ namespace DumpMiner.Operations
 
                 // Parse method signature to extract parameter information
                 var parameterInfo = ParseMethodSignature(signature);
-                
+
                 for (int i = 0; i < parameterInfo.Count; i++)
                 {
                     localVariables.Add(new LocalVariable
@@ -313,7 +357,7 @@ namespace DumpMiner.Operations
         /// <summary>
         /// Extract variables by analyzing stack memory slots
         /// </summary>
-        private void ExtractStackSlotVariables(ClrStackFrame stackFrame, ClrThread thread, ClrHeap heap, 
+        private void ExtractStackSlotVariables(ClrStackFrame stackFrame, ClrThread thread, ClrHeap heap,
             IDataReader dataReader, int pointerSize, List<LocalVariable> localVariables)
         {
             try
@@ -321,7 +365,7 @@ namespace DumpMiner.Operations
                 // Calculate stack frame boundaries
                 var currentSP = stackFrame.StackPointer;
                 var nextFrameSP = GetNextFrameStackPointer(stackFrame, thread);
-                
+
                 if (nextFrameSP == 0) nextFrameSP = currentSP + 0x100; // Estimate frame size
 
                 // Scan stack slots between current frame and next frame
@@ -378,7 +422,7 @@ namespace DumpMiner.Operations
             {
                 // This would use PDB symbols to get actual variable names and types
                 // For now, this is a placeholder for future implementation
-                
+
                 var module = method.Type?.Module;
                 if (module?.Pdb != null)
                 {
@@ -403,7 +447,7 @@ namespace DumpMiner.Operations
         /// <summary>
         /// Extract common value types from stack memory
         /// </summary>
-        private void ExtractValueTypeVariables(ClrStackFrame stackFrame, ClrThread thread, 
+        private void ExtractValueTypeVariables(ClrStackFrame stackFrame, ClrThread thread,
             IDataReader dataReader, int pointerSize, List<LocalVariable> localVariables)
         {
             try
@@ -414,7 +458,7 @@ namespace DumpMiner.Operations
                 for (ulong offset = 0; offset < scanRange; offset += (ulong)pointerSize)
                 {
                     var address = currentSP + offset;
-                    
+
                     // Try to read as different value types
                     if (dataReader.Read(address, out int intValue))
                     {
@@ -464,7 +508,7 @@ namespace DumpMiner.Operations
             {
                 var frames = thread.EnumerateStackTrace().ToList();
                 var currentIndex = frames.FindIndex(f => f.StackPointer == currentFrame.StackPointer);
-                
+
                 if (currentIndex >= 0 && currentIndex < frames.Count - 1)
                 {
                     return frames[currentIndex + 1].StackPointer;
@@ -474,7 +518,7 @@ namespace DumpMiner.Operations
             {
                 // If we can't find the next frame, return 0
             }
-            
+
             return 0;
         }
 
@@ -499,7 +543,7 @@ namespace DumpMiner.Operations
             // Check if it's a potential double/float
             if (pointerSize == 8 && dataReader.Read(address, out double doubleValue))
             {
-                if (!double.IsNaN(doubleValue) && !double.IsInfinity(doubleValue) && 
+                if (!double.IsNaN(doubleValue) && !double.IsInfinity(doubleValue) &&
                     doubleValue > -1e10 && doubleValue < 1e10)
                 {
                     return new LocalVariable
@@ -522,13 +566,13 @@ namespace DumpMiner.Operations
         private List<ParameterInfo> ParseMethodSignature(string signature)
         {
             var parameters = new List<ParameterInfo>();
-            
+
             try
             {
                 // Simple signature parsing - this could be enhanced
                 var startIndex = signature.IndexOf('(');
                 var endIndex = signature.IndexOf(')');
-                
+
                 if (startIndex >= 0 && endIndex > startIndex)
                 {
                     var paramString = signature.Substring(startIndex + 1, endIndex - startIndex - 1);
@@ -539,7 +583,7 @@ namespace DumpMiner.Operations
                         {
                             var param = paramParts[i].Trim();
                             var parts = param.Split(' ');
-                            
+
                             parameters.Add(new ParameterInfo
                             {
                                 Name = parts.Length > 1 ? parts[parts.Length - 1] : $"param{i}",
