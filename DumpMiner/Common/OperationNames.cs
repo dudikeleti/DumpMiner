@@ -32,48 +32,48 @@ namespace DumpMiner.Common
         // === NEW STATE-OF-THE-ART OPERATIONS ===
 
         // Advanced Symbol & Source Analysis
-        public const string SymbolAnalysis = "SymbolAnalysisOperation";
-        public const string SourceMapping = "SourceMappingOperation";
-        public const string PdbAnalysis = "PdbAnalysisOperation";
+        // public const string SymbolAnalysis = "SymbolAnalysisOperation";
+        // public const string SourceMapping = "SourceMappingOperation";
+        // public const string PdbAnalysis = "PdbAnalysisOperation";
 
         // Advanced Memory Analysis
         public const string MemoryLeakDetection = "MemoryLeakDetectionOperation";
-        public const string MemoryFragmentation = "MemoryFragmentationOperation";
-        public const string GenerationAnalysis = "GenerationAnalysisOperation";
-        public const string MemoryPressureAnalysis = "MemoryPressureAnalysisOperation";
-        public const string VirtualMemoryAnalysis = "VirtualMemoryAnalysisOperation";
+        // public const string MemoryFragmentation = "MemoryFragmentationOperation";
+        // public const string GenerationAnalysis = "GenerationAnalysisOperation";
+        // public const string MemoryPressureAnalysis = "MemoryPressureAnalysisOperation";
+        // public const string VirtualMemoryAnalysis = "VirtualMemoryAnalysisOperation";
 
         // Advanced Threading & Synchronization
         public const string DeadlockDetection = "DeadlockDetectionOperation";
-        public const string ThreadContentionAnalysis = "ThreadContentionAnalysisOperation";
-        public const string LockAnalysis = "LockAnalysisOperation";
-        public const string ThreadPerformanceAnalysis = "ThreadPerformanceAnalysisOperation";
+        // public const string ThreadContentionAnalysis = "ThreadContentionAnalysisOperation";
+        // public const string LockAnalysis = "LockAnalysisOperation";
+        // public const string ThreadPerformanceAnalysis = "ThreadPerformanceAnalysisOperation";
 
         // Performance Analysis
         public const string JitAnalysis = "JitAnalysisOperation";
-        public const string HotspotAnalysis = "HotspotAnalysisOperation";
-        public const string AssemblyAnalysis = "AssemblyAnalysisOperation";
-        public const string GCAnalysis = "GCAnalysisOperation";
+        // public const string HotspotAnalysis = "HotspotAnalysisOperation";
+        // public const string AssemblyAnalysis = "AssemblyAnalysisOperation";
+        // public const string GCAnalysis = "GCAnalysisOperation";
 
         // Advanced Heap Analysis
-        public const string ReferenceGraphAnalysis = "ReferenceGraphAnalysisOperation";
-        public const string MemoryUsagePattern = "MemoryUsagePatternOperation";
-        public const string ObjectLifecycleAnalysis = "ObjectLifecycleAnalysisOperation";
+        // public const string ReferenceGraphAnalysis = "ReferenceGraphAnalysisOperation";
+        // public const string MemoryUsagePattern = "MemoryUsagePatternOperation";
+        // public const string ObjectLifecycleAnalysis = "ObjectLifecycleAnalysisOperation";
 
         // Comparison & Reporting
         public const string DumpComparison = "DumpComparisonOperation";
-        public const string TrendAnalysis = "TrendAnalysisOperation";
-        public const string PerformanceReport = "PerformanceReportOperation";
+        // public const string TrendAnalysis = "TrendAnalysisOperation";
+        // public const string PerformanceReport = "PerformanceReportOperation";
 
         // Automation & Scripting
         public const string AutomatedAnalysis = "AutomatedAnalysisOperation";
-        public const string ScriptExecution = "ScriptExecutionOperation";
-        public const string BatchAnalysis = "BatchAnalysisOperation";
+        // public const string ScriptExecution = "ScriptExecutionOperation";
+        // public const string BatchAnalysis = "BatchAnalysisOperation";
 
         // Visualization
-        public const string MemoryMapVisualization = "MemoryMapVisualizationOperation";
-        public const string ReferenceGraphVisualization = "ReferenceGraphVisualizationOperation";
-        public const string TimelineAnalysis = "TimelineAnalysisOperation";
+        // public const string MemoryMapVisualization = "MemoryMapVisualizationOperation";
+        // public const string ReferenceGraphVisualization = "ReferenceGraphVisualizationOperation";
+        // public const string TimelineAnalysis = "TimelineAnalysisOperation";
 
         private static readonly System.Lazy<Dictionary<string, string>> _operationDescriptions =
             new System.Lazy<Dictionary<string, string>>(BuildOperationDescriptions);
@@ -150,48 +150,48 @@ namespace DumpMiner.Common
                 // === NEW STATE-OF-THE-ART OPERATIONS ===
 
                 // Advanced Symbol & Source Analysis
-                [SymbolAnalysis] = "Analyzes symbol information, PDB files, and debugging metadata for comprehensive source mapping",
-                [SourceMapping] = "Maps IL code to source code using available debugging information and symbol servers",
-                [PdbAnalysis] = "Analyzes PDB files for debugging information, source mappings, and symbol resolution",
+                // [SymbolAnalysis] = "Analyzes symbol information, PDB files, and debugging metadata for comprehensive source mapping",
+                // [SourceMapping] = "Maps IL code to source code using available debugging information and symbol servers",
+                // [PdbAnalysis] = "Analyzes PDB files for debugging information, source mappings, and symbol resolution",
 
                 // Advanced Memory Analysis
                 [MemoryLeakDetection] = "Sophisticated memory leak detection using reference graph analysis and generation comparison",
-                [MemoryFragmentation] = "Analyzes heap fragmentation patterns and memory layout inefficiencies",
-                [GenerationAnalysis] = "Detailed analysis of GC generations and object promotion patterns",
-                [MemoryPressureAnalysis] = "Analyzes memory pressure indicators and GC stress patterns",
-                [VirtualMemoryAnalysis] = "Comprehensive virtual memory analysis including reserved, committed, and free regions",
+                // [MemoryFragmentation] = "Analyzes heap fragmentation patterns and memory layout inefficiencies",
+                // [GenerationAnalysis] = "Detailed analysis of GC generations and object promotion patterns",
+                // [MemoryPressureAnalysis] = "Analyzes memory pressure indicators and GC stress patterns",
+                // [VirtualMemoryAnalysis] = "Comprehensive virtual memory analysis including reserved, committed, and free regions",
 
                 // Advanced Threading & Synchronization
                 [DeadlockDetection] = "Advanced deadlock detection using thread state analysis and lock chain examination",
-                [ThreadContentionAnalysis] = "Analyzes thread contention patterns and synchronization bottlenecks",
-                [LockAnalysis] = "Comprehensive lock analysis including lock hierarchy and potential deadlock scenarios",
-                [ThreadPerformanceAnalysis] = "Analyzes thread performance patterns including CPU usage and blocking time",
+                // [ThreadContentionAnalysis] = "Analyzes thread contention patterns and synchronization bottlenecks",
+                // [LockAnalysis] = "Comprehensive lock analysis including lock hierarchy and potential deadlock scenarios",
+                // [ThreadPerformanceAnalysis] = "Analyzes thread performance patterns including CPU usage and blocking time",
 
                 // Performance Analysis
                 [JitAnalysis] = "Analyzes JIT compilation statistics, method compilation status, and optimization patterns",
-                [HotspotAnalysis] = "Identifies performance hotspots and frequently executed code paths",
-                [AssemblyAnalysis] = "Analyzes assembly loading patterns, dependencies, and version conflicts",
-                [GCAnalysis] = "Comprehensive garbage collection analysis including pressure, frequency, and impact",
+                // [HotspotAnalysis] = "Identifies performance hotspots and frequently executed code paths",
+                // [AssemblyAnalysis] = "Analyzes assembly loading patterns, dependencies, and version conflicts",
+                // [GCAnalysis] = "Comprehensive garbage collection analysis including pressure, frequency, and impact",
 
                 // Advanced Heap Analysis
-                [ReferenceGraphAnalysis] = "Analyzes object reference graphs to identify circular references and memory retention patterns",
-                [MemoryUsagePattern] = "Identifies memory usage patterns and allocation behaviors for different object types",
-                [ObjectLifecycleAnalysis] = "Analyzes object lifecycle patterns including creation, usage, and disposal",
+                // [ReferenceGraphAnalysis] = "Analyzes object reference graphs to identify circular references and memory retention patterns",
+                // [MemoryUsagePattern] = "Identifies memory usage patterns and allocation behaviors for different object types",
+                // [ObjectLifecycleAnalysis] = "Analyzes object lifecycle patterns including creation, usage, and disposal",
 
                 // Comparison & Reporting
                 [DumpComparison] = "Compares multiple memory dumps to identify changes, trends, and progressive issues",
-                [TrendAnalysis] = "Analyzes trends across multiple dumps to identify progressive memory leaks or performance degradation",
-                [PerformanceReport] = "Generates comprehensive performance reports with actionable recommendations",
+                // [TrendAnalysis] = "Analyzes trends across multiple dumps to identify progressive memory leaks or performance degradation",
+                // [PerformanceReport] = "Generates comprehensive performance reports with actionable recommendations",
 
                 // Automation & Scripting
                 [AutomatedAnalysis] = "Performs automated analysis with intelligent issue detection and root cause identification",
-                [ScriptExecution] = "Executes custom analysis scripts with full access to dump data and operations",
-                [BatchAnalysis] = "Performs batch analysis of multiple dumps with comparative reporting",
+                // [ScriptExecution] = "Executes custom analysis scripts with full access to dump data and operations",
+                // [BatchAnalysis] = "Performs batch analysis of multiple dumps with comparative reporting",
 
                 // Visualization
-                [MemoryMapVisualization] = "Creates visual representations of memory layout and usage patterns",
-                [ReferenceGraphVisualization] = "Generates visual graphs of object references and memory relationships",
-                [TimelineAnalysis] = "Creates timeline visualizations of application behavior and memory usage"
+                // [MemoryMapVisualization] = "Creates visual representations of memory layout and usage patterns",
+                // [ReferenceGraphVisualization] = "Generates visual graphs of object references and memory relationships",
+                // [TimelineAnalysis] = "Creates timeline visualizations of application behavior and memory usage"
             };
         }
     }

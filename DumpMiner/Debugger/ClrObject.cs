@@ -283,7 +283,7 @@ namespace DumpMiner.Debugger
                 {
                     bool isStruct = field.ElementType == ClrElementType.Struct;
                     ExtractObjectFields(address, field.Type, baseName, field.Name,
-                        offset + (ulong)field.Offset, isStruct, values);ֻ
+                        offset + (ulong)field.Offset, isStruct, values);
                 }
             }
             catch (Exception ex)
